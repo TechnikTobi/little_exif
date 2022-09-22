@@ -1,11 +1,31 @@
 // Copyright © 2022 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 
+use crate::exif_tag_value::ExifTagValue;
+
+pub enum
+ExifTagGroup
+{
+	NO_GROUP,
+	All,
+	ExifIFD,
+	IFD0,
+	IFD1,
+	IFD2,
+	InteropIFD,
+	MakerNotes,
+	SubIFD,
+	SubIFD1,
+	SubIFD2,
+}
+
 macro_rules! build_tag_enum {
 	( 
 		$( (
 			$tag:ident, 
 			$hex_value:expr,
-			$format:expr
+			$format:expr,
+			$writable:expr,
+			$group:expr
 		) ),* 
 	) 
 	=>
@@ -71,6 +91,36 @@ macro_rules! build_tag_enum {
 			}
 
 			pub fn
+			is_writable
+			(
+				&self
+			)
+			-> bool
+			{
+				match *self
+				{
+					$(
+						ExifTag::$tag => $writable,
+					)*
+				}
+			}
+
+			pub fn
+			get_group
+			(
+				&self
+			)
+			-> ExifTagGroup
+			{
+				match *self
+				{
+					$(
+						ExifTag::$tag => ExifTagGroup::$group,
+					)*
+				}
+			}
+
+			pub fn
 			format
 			(
 				&self
@@ -80,51 +130,45 @@ macro_rules! build_tag_enum {
 				match *self
 				{
 					$(
-						ExifTag::$tag => $format,
+						ExifTag::$tag => $format.format(),
 					)*
 				}
 			}
 
 			pub fn
-			bytes_per_component
+			accepts
 			(
-				&self
+				&self,
+				value: &ExifTagValue
 			)
-			-> u32
+			-> bool
 			{
-				match self.format()
-				{
-					1  => 1,	// unsigned byte	int8u
-					2  => 1,	// ascii string		string
-					3  => 2,	// unsigned short	int16u
-					4  => 4,	// unsigned long	int32u
-					5  => 8,	// unsigned rational	rational64u
-					6  => 1,	// signed byte		int8s
-					7  => 1,	// undefined		undef
-					8  => 2,	// signed short		int16s
-					9  => 4,	// signed long		int32s
-					10 => 8,	// signed rational	rational64s
-					11 => 4,	// single float		float
-					12 => 8,	// double float		double
-					_ => panic!("Invalid EXIF tag format value!"),
-				}
-			}
-
+				return self.format() == value.format();
+			}	
 		}
-
 	};
 }
 
+// This is just a small subset of the available EXIF tags
+// Will be expanded in the future
+// Note regarding non-writable tags: Apart from
+// - StripOffsets
+// - StripByteCounts
+// - Opto-ElectricConvFactor
+// - SpatialFrequencyResponse
+// - DeviceSettingDescription
+// none of them are part of the EXIF 2.32 specification
+// (Source: https://exiftool.org/TagNames/EXIF.html )
 build_tag_enum![
-	// Tag				Tag ID	Format	
-	(InteropIndex,			0x0001,	2),
-	(ImageWidth,			0x0100,	4),
-	(ImageHeight,			0x0101,	4),
-	(BitsPerSample,			0x0102,	3),
-	(Compression,			0x0103,	3),
-	(PhotometricInterpretation,	0x0106,	3),
-	(ImageDescription,		0x010e,	2),
-	(Model,				0x0110,	2),
-	(StripOffsets,			0x0111,	4), // not writable?
-	(Orientation,			0x0112,	3)
+	// Tag						Tag ID	Format									Writable	Group
+	(InteropIndex,				0x0001,	ExifTagValue::STRING("".to_string()),	true,		ExifTagGroup::InteropIFD),
+	(ImageWidth,				0x0100,	ExifTagValue::INT32U(0),				true,		ExifTagGroup::IFD0),
+	(ImageHeight,				0x0101,	ExifTagValue::INT32U(0),				true,		ExifTagGroup::IFD0),
+	(BitsPerSample,				0x0102,	ExifTagValue::INT16U(0),				true,		ExifTagGroup::IFD0),
+	(Compression,				0x0103,	ExifTagValue::INT16U(0),				true,		ExifTagGroup::IFD0),
+	(PhotometricInterpretation,	0x0106,	ExifTagValue::INT16U(0),				true,		ExifTagGroup::IFD0),
+	(ImageDescription,			0x010e,	ExifTagValue::STRING("".to_string()),	true,		ExifTagGroup::IFD0),
+	(Model,						0x0110,	ExifTagValue::STRING("".to_string()),	true,		ExifTagGroup::IFD0),
+	(StripOffsets,				0x0111,	ExifTagValue::INT32U(0),				false,		ExifTagGroup::NO_GROUP),
+	(Orientation,				0x0112,	ExifTagValue::INT32U(0),				true,		ExifTagGroup::IFD0)
 ];
