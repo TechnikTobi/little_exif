@@ -25,12 +25,12 @@ macro_rules! build_tag_enum {
 			$hex_value:expr,
 			$format:expr,
 			$writable:expr,
-			$group:expr
+			$group:ident
 		) ),* 
 	) 
 	=>
 	{
-		#[derive(PartialEq, Debug)]
+		#[derive(Eq, PartialEq, Hash, Debug)]
 		pub enum 
 		ExifTag
 		{
@@ -161,14 +161,14 @@ macro_rules! build_tag_enum {
 // (Source: https://exiftool.org/TagNames/EXIF.html )
 build_tag_enum![
 	// Tag						Tag ID	Format									Writable	Group
-	(InteropIndex,				0x0001,	ExifTagValue::STRING("".to_string()),	true,		ExifTagGroup::InteropIFD),
-	(ImageWidth,				0x0100,	ExifTagValue::INT32U(0),				true,		ExifTagGroup::IFD0),
-	(ImageHeight,				0x0101,	ExifTagValue::INT32U(0),				true,		ExifTagGroup::IFD0),
-	(BitsPerSample,				0x0102,	ExifTagValue::INT16U(0),				true,		ExifTagGroup::IFD0),
-	(Compression,				0x0103,	ExifTagValue::INT16U(0),				true,		ExifTagGroup::IFD0),
-	(PhotometricInterpretation,	0x0106,	ExifTagValue::INT16U(0),				true,		ExifTagGroup::IFD0),
-	(ImageDescription,			0x010e,	ExifTagValue::STRING("".to_string()),	true,		ExifTagGroup::IFD0),
-	(Model,						0x0110,	ExifTagValue::STRING("".to_string()),	true,		ExifTagGroup::IFD0),
-	(StripOffsets,				0x0111,	ExifTagValue::INT32U(0),				false,		ExifTagGroup::NO_GROUP),
-	(Orientation,				0x0112,	ExifTagValue::INT32U(0),				true,		ExifTagGroup::IFD0)
+	(InteropIndex,				0x0001,	ExifTagValue::STRING("".to_string()),	true,		InteropIFD),
+	(ImageWidth,				0x0100,	ExifTagValue::INT32U(0),				true,		IFD0),
+	(ImageHeight,				0x0101,	ExifTagValue::INT32U(0),				true,		IFD0),
+	(BitsPerSample,				0x0102,	ExifTagValue::INT16U(0),				true,		IFD0),
+	(Compression,				0x0103,	ExifTagValue::INT16U(0),				true,		IFD0),
+	(PhotometricInterpretation,	0x0106,	ExifTagValue::INT16U(0),				true,		IFD0),
+	(ImageDescription,			0x010e,	ExifTagValue::STRING("".to_string()),	true,		IFD0),
+	(Model,						0x0110,	ExifTagValue::STRING("".to_string()),	true,		IFD0),
+	(StripOffsets,				0x0111,	ExifTagValue::INT32U(0),				false,		NO_GROUP),
+	(Orientation,				0x0112,	ExifTagValue::INT32U(0),				true,		IFD0)
 ];
