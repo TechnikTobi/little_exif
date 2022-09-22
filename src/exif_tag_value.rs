@@ -1,18 +1,18 @@
 pub enum
 ExifTagValue
 {
-	INT8U(u8),
-	STRING(String),
-	INT16U(u16),
-	INT32U(u32),
-	RATIONAL64U(u64),	// ???
-	INT8S(i8),
-	UNDEF,
-	INT16S(i16),
-	INT32S(i32),
-	RATIONAL64S(i64),	// ??
-	FLOAT(f32),
-	DOUBLE(f64)
+	INT8U(u8),			// unsigned byte		int8u
+	STRING(String),		// ascii string			string
+	INT16U(u16),		// unsigned short		int16u
+	INT32U(u32),		// unsigned long		int32u
+	RATIONAL64U(u64),	// unsigned rational	rational64u		should this be u64?
+	INT8S(i8),			// signed byte			int8s
+	UNDEF,				// undefined			undef
+	INT16S(i16),		// signed short			int16s
+	INT32S(i32),		// signed long			int32s
+	RATIONAL64S(i64),	// signed rational		rational64s		should this be i64?
+	FLOAT(f32),			// single float			float
+	DOUBLE(f64)			// double float			double
 }
 
 impl 
@@ -20,7 +20,7 @@ ExifTagValue
 {
 
 	pub fn
-	as_u16
+	format
 	(
 		&self
 	)
@@ -28,18 +28,18 @@ ExifTagValue
 	{
 		match *self
 		{
-			ExifTagValue::INT8U(_)		=> 0x0001,
-			ExifTagValue::STRING(_)		=> 0x0002,
-			ExifTagValue::INT16U(_)		=> 0x0003,
-			ExifTagValue::INT32U(_)		=> 0x0004,
+			ExifTagValue::INT8U(_)			=> 0x0001,
+			ExifTagValue::STRING(_)			=> 0x0002,
+			ExifTagValue::INT16U(_)			=> 0x0003,
+			ExifTagValue::INT32U(_)			=> 0x0004,
 			ExifTagValue::RATIONAL64U(_)	=> 0x0005,
-			ExifTagValue::INT8S(_)		=> 0x0006,
-			ExifTagValue::UNDEF		=> 0x0007,
-			ExifTagValue::INT16S(_)		=> 0x0008,
-			ExifTagValue::INT32S(_)		=> 0x0009,
+			ExifTagValue::INT8S(_)			=> 0x0006,
+			ExifTagValue::UNDEF				=> 0x0007,
+			ExifTagValue::INT16S(_)			=> 0x0008,
+			ExifTagValue::INT32S(_)			=> 0x0009,
 			ExifTagValue::RATIONAL64S(_)	=> 0x000a,
-			ExifTagValue::FLOAT(_)		=> 0x000b,
-			ExifTagValue::DOUBLE(_)		=> 0x000c,
+			ExifTagValue::FLOAT(_)			=> 0x000b,
+			ExifTagValue::DOUBLE(_)			=> 0x000c,
 		}
 	}
 
@@ -50,20 +50,20 @@ ExifTagValue
 	)
 	-> u32
 	{
-		match *self
+		match self.format()
 		{
-			ExifTagValue::INT8U(_)		=> 1,	// unsigned byte	int8u
-			ExifTagValue::STRING(_)		=> 1,	// ascii string		string
-			ExifTagValue::INT16U(_)		=> 2,	// unsigned short	int16u
-			ExifTagValue::INT32U(_)		=> 4,	// unsigned long	int32u
-			ExifTagValue::RATIONAL64U(_)	=> 8,	// unsigned rational	rational64u
-			ExifTagValue::INT8S(_)		=> 1,	// signed byte		int8s
-			ExifTagValue::UNDEF		=> 1,	// undefined		undef
-			ExifTagValue::INT16S(_)		=> 2,	// signed short		int16s
-			ExifTagValue::INT32S(_)		=> 4,	// signed long		int32s
-			ExifTagValue::RATIONAL64S(_)	=> 8,	// signed rational	rational64s
-			ExifTagValue::FLOAT(_)		=> 4,	// single float		float
-			ExifTagValue::DOUBLE(_)		=> 8,	// double float		double
+			0x0001 => 1,
+			0x0002 => 1,
+			0x0003 => 2,
+			0x0004 => 4,
+			0x0005 => 8,
+			0x0006 => 1,
+			0x0007 => 1,
+			0x0008 => 2,
+			0x0009 => 4,
+			0x000a => 8,
+			0x000b => 4,
+			0x000c => 8,
 		}
 	}
 }
