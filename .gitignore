@@ -14,3 +14,7 @@ Cargo.lock
 
 /target
 /Cargo.lock
+
+# Ignore macOS files
+.DS_Store
+*/.DS_Store
