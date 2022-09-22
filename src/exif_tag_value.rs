@@ -68,4 +68,19 @@ ExifTagValue
 			_		=> panic!("Invalid format value for ExifTagValue!"),
 		}
 	}
+
+	pub fn
+	len_in_bytes
+	(
+		&self
+	)
+	-> u32
+	{
+		match *self
+		{
+			ExifTagValue::INT8U(_)			=> 1,
+			ExifTagValue::STRING(value)		=> value.len() + 1,	
+			
+		}
+	}
 }
