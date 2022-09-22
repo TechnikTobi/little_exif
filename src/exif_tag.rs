@@ -18,12 +18,26 @@ ExifTagGroup
 	SubIFD2,
 }
 
+type INT8U			= Vec<u8>;
+type STRING			= String;
+type INT16U			= Vec<u16>;
+type INT32U			= Vec<u32>;
+type RATIONAL64U	= Vec<u64>; // ???
+type INT8S			= Vec<i8>;
+type UNDEF			= Vec<u8>;	// got no better idea for this atm
+type INT16S			= Vec<i16>;
+type INT32S			= Vec<i32>;
+type RATIONAL64S	= Vec<i64>; // ???
+type FLOAT			= Vec<f32>;
+type DOUBLE			= Vec<f64>;
+
 macro_rules! build_tag_enum {
 	( 
 		$( (
 			$tag:ident, 
 			$hex_value:expr,
-			$format:expr,
+			$format:ty,
+			$component_number:expr,
 			$writable:expr,
 			$group:ident
 		) ),* 
@@ -35,7 +49,7 @@ macro_rules! build_tag_enum {
 		ExifTag
 		{
 			$(
-				$tag,
+				$tag($format),
 			)*
 		}
 
@@ -52,7 +66,7 @@ macro_rules! build_tag_enum {
 				match *self
 				{
 					$(
-						ExifTag::$tag => $hex_value,
+						ExifTag::$tag(_) => $hex_value,
 					)*
 				}
 			}
@@ -68,7 +82,7 @@ macro_rules! build_tag_enum {
 				match hex_value
 				{
 					$(
-						$hex_value => Ok(ExifTag::$tag),
+						$hex_value => Ok(ExifTag::$tag(_)),
 					)*
 					_ => Err(String::from("Invalid hex value for EXIF tag")),
 				}
@@ -85,7 +99,7 @@ macro_rules! build_tag_enum {
 				match *self
 				{
 					$(
-						ExifTag::$tag => String::from(stringify!($tag)),
+						ExifTag::$tag(_) => String::from(stringify!($tag)),
 					)*
 				}
 			}
@@ -100,7 +114,7 @@ macro_rules! build_tag_enum {
 				match *self
 				{
 					$(
-						ExifTag::$tag => $writable,
+						ExifTag::$tag(_) => $writable,
 					)*
 				}
 			}
@@ -115,11 +129,12 @@ macro_rules! build_tag_enum {
 				match *self
 				{
 					$(
-						ExifTag::$tag => ExifTagGroup::$group,
+						ExifTag::$tag(_) => ExifTagGroup::$group,
 					)*
 				}
 			}
 
+			/*
 			pub fn
 			format
 			(
@@ -136,15 +151,20 @@ macro_rules! build_tag_enum {
 			}
 
 			pub fn
-			accepts
+			components
 			(
-				&self,
-				value: &ExifTagValue
+				&self
 			)
-			-> bool
+			-> u32
 			{
-				return self.format() == value.format();
-			}	
+				match *self
+				{
+					$(
+						ExifTag::$tag(_)
+					)*
+				}
+			}
+			*/
 		}
 	};
 }
@@ -160,15 +180,15 @@ macro_rules! build_tag_enum {
 // none of them are part of the EXIF 2.32 specification
 // (Source: https://exiftool.org/TagNames/EXIF.html )
 build_tag_enum![
-	// Tag						Tag ID	Format									Writable	Group
-	(InteropIndex,				0x0001,	ExifTagValue::STRING("".to_string()),	true,		InteropIFD),
-	(ImageWidth,				0x0100,	ExifTagValue::INT32U(0),				true,		IFD0),
-	(ImageHeight,				0x0101,	ExifTagValue::INT32U(0),				true,		IFD0),
-	(BitsPerSample,				0x0102,	ExifTagValue::INT16U(0),				true,		IFD0),
-	(Compression,				0x0103,	ExifTagValue::INT16U(0),				true,		IFD0),
-	(PhotometricInterpretation,	0x0106,	ExifTagValue::INT16U(0),				true,		IFD0),
-	(ImageDescription,			0x010e,	ExifTagValue::STRING("".to_string()),	true,		IFD0),
-	(Model,						0x0110,	ExifTagValue::STRING("".to_string()),	true,		IFD0),
-	(StripOffsets,				0x0111,	ExifTagValue::INT32U(0),				false,		NO_GROUP),
-	(Orientation,				0x0112,	ExifTagValue::INT32U(0),				true,		IFD0)
+	// Tag						Tag ID	Format			Nr. Components	Writable	Group
+	(InteroperabilityIndex,		0x0001,	STRING,			Some::<u32>(4),	true,		InteropIFD),
+	(ImageWidth,				0x0100,	INT32U,			Some::<u32>(1),	true,		IFD0),
+	(ImageHeight,				0x0101,	INT32U,			Some::<u32>(1),	true,		IFD0),
+	(BitsPerSample,				0x0102,	INT16U,			Some::<u32>(3),	true,		IFD0),
+	(Compression,				0x0103,	INT16U,			Some::<u32>(1),	true,		IFD0),
+	(PhotometricInterpretation,	0x0106,	INT16U,			Some::<u32>(1),	true,		IFD0),
+	(ImageDescription,			0x010e,	STRING,			None::<u32>,	true,		IFD0),
+	(Model,						0x0110,	STRING,			None::<u32>,	true,		IFD0),
+	(StripOffsets,				0x0111,	INT32U,			None::<u32>,	false,		NO_GROUP),
+	(Orientation,				0x0112,	INT32U,			Some::<u32>(1),	true,		IFD0)
 ];
