@@ -3,32 +3,14 @@ pub type INT8U			= Vec<u8>;
 pub type STRING			= String;
 pub type INT16U			= Vec<u16>;
 pub type INT32U			= Vec<u32>;
-pub type RATIONAL64U	= Vec<u64>; // ???
+pub type RATIONAL64U	= Vec<u32>; 	// ???
 pub type INT8S			= Vec<i8>;
-pub type UNDEF			= Vec<u8>;  // got no better idea for this atm
+pub type UNDEF			= Vec<u8>;  	// got no better idea for this atm
 pub type INT16S			= Vec<i16>;
 pub type INT32S			= Vec<i32>;
-pub type RATIONAL64S	= Vec<i64>; // ???
+pub type RATIONAL64S	= Vec<i32>; 	// ???
 pub type FLOAT			= Vec<f32>;
 pub type DOUBLE			= Vec<f64>;
-
-pub trait ExifTagFormatTypeMarkerTrait<T> {}
-
-impl ExifTagFormatTypeMarkerTrait<T> for STRING {}
-/*
-impl ExifTagFormatTypeMarkerTrait for INT8U {}
-impl ExifTagFormatTypeMarkerTrait for INT16U {}
-impl ExifTagFormatTypeMarkerTrait for INT32U {}
-impl ExifTagFormatTypeMarkerTrait for RATIONAL64U {}
-impl ExifTagFormatTypeMarkerTrait for INT8S {}
-// impl ExifTagFormatTypeMarkerTrait for UNDEF {}
-impl ExifTagFormatTypeMarkerTrait for INT16S {}
-impl ExifTagFormatTypeMarkerTrait for INT32S {}
-impl ExifTagFormatTypeMarkerTrait for RATIONAL64S {}
-impl ExifTagFormatTypeMarkerTrait for FLOAT {}
-impl ExifTagFormatTypeMarkerTrait for DOUBLE {}
-*/
-impl<T> ExifTagFormatTypeMarkerTrait<T> for Vec<T> {}
 
 #[derive(PartialEq, Debug)]
 pub enum
