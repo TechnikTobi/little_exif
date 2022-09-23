@@ -3,6 +3,8 @@ mod exif_tag;
 mod exif_tag_format;
 mod metadata;
 
+mod png;
+
 #[cfg(test)]
 mod tests {
 

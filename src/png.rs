@@ -1,4 +1,6 @@
-pub const PNG_SIGNATURE: [u8, 8] = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+use std::path::Path;
+
+pub const PNG_SIGNATURE: [u8; 8] = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
 enum
 PngChunkOrdering
@@ -17,7 +19,7 @@ macro_rules! build_png_chunk_type_enum {
 			$tag:ident,
 			$critical:expr,
 			$multiple:expr,
-			$ordering:ident,
+			$ordering:ident
 		) ),*
 	)
 	=>
@@ -95,13 +97,24 @@ macro_rules! build_png_chunk_type_enum {
 	}
 }
 
+/*
 struct 
 PNGdata
 {
 	
 }
+*/
 
 pub fn
+write_metadata
+(
+	path: &Path,
+	encoded_metadata: &Vec<u8>
+)
+-> Result<(), String>
+{
+	Ok(())
+}
 
 
 
@@ -112,5 +125,4 @@ build_png_chunk_type_enum![
 	(IDAT,	true,		true,		NONE),
 	(IEND,	true,		false,		LAST),
 	(zTXt,	false,		true,		NONE)
-
 ];
