@@ -4,10 +4,12 @@ mod exif_tag_format;
 mod metadata;
 
 mod png;
+mod png_chunk;
 
 #[cfg(test)]
 mod tests {
 
+	/*
     use crate::exif_tag::ExifTag;
 	use crate::exif_tag_value::ExifTagValue;
 
@@ -16,17 +18,35 @@ mod tests {
         let result = 2 + 2;
         assert_eq!(result, 4);
 
-	let some: ExifTag = ExifTag::ImageDescription;
-	assert_eq!(some.as_u16(), 0x010e);
-	assert_eq!(some.as_string(), String::from("ImageDescription"));
-	assert_eq!(ExifTag::from_u16(0x010e).unwrap(), ExifTag::ImageDescription);
+		let some: ExifTag = ExifTag::ImageDescription;
+		assert_eq!(some.as_u16(), 0x010e);
+		assert_eq!(some.as_string(), String::from("ImageDescription"));
+		assert_eq!(ExifTag::from_u16(0x010e).unwrap(), ExifTag::ImageDescription);
 
-	let some_value = ExifTagValue::STRING("Hello :)".to_string());
-	let other_value = ExifTagValue::INT8U(0);
+		let some_value = ExifTagValue::STRING("Hello :)".to_string());
+		let other_value = ExifTagValue::INT8U(0);
 
-	assert_eq!(some.accepts(&some_value), true);
-	assert_eq!(some.accepts(&other_value), false);
+		assert_eq!(some.accepts(&some_value), true);
+		assert_eq!(some.accepts(&other_value), false);
 
-	println!("hihi {}", some.as_u16());
+		println!("hihi {}", some.as_u16());
     }
+	*/
+
+	use std::path::Path;
+	use crate::png::parse_png;
+
+    #[test]
+	fn test_two() {
+
+		if let Ok(chunks) = parse_png(Path::new("test.png"))
+		{
+			assert_eq!(chunks.len(), 3);
+		}
+		else
+		{
+			panic!("could not parse png file");
+		}
+
+	}
 }
