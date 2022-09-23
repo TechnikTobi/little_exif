@@ -13,10 +13,6 @@ const TIFF_header_big: [u8; 8] = [0x4d, 0x4d, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x08
 const IFD_ENTRY_LENGTH: u32 = 12;
 const IFD_END: [u8; 4] = [0x00, 0x00, 0x00, 0x00];
 
-const SUPPORTED_FILE_TYPES: [&'static str; 1] = [
-	"png"
-];
-
 macro_rules! to_u8_vec_macro {
 	($type:ty, $value:expr, $endian:expr)
 	=>
@@ -93,6 +89,11 @@ Metadata
 	)
 	-> Result<(), String>
 	{
+		if !path.exists()
+		{
+			return Err("Can't write Metadata - File does not exist!".to_string());
+		}
+
 		let file_type = path.extension();
 		if file_type.is_none()
 		{
@@ -105,17 +106,12 @@ Metadata
 			return Err("Can't convert file type to string!".to_string());
 		}
 		
-		if !SUPPORTED_FILE_TYPES.contains(&file_type_str.unwrap().to_lowercase().as_str())
+		match file_type_str.unwrap().to_lowercase().as_str()
 		{
-			return Err("Unsupported file type!".to_string());
+			"png"	=> Ok(()),
+			_		=> Err("Unsupported file type!".to_string()),
 		}
 
-		if !path.exists()
-		{
-			return Err("Can't write Metadata - File does not exist!".to_string());
-		}
-
-		return Ok(());
 	}
 
 	fn
