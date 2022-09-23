@@ -1,9 +1,7 @@
-use std::collections::HashMap;
 use std::path::Path;
 
 use crate::endian::{Endian, U8conversion};
 use crate::exif_tag::ExifTag;
-use crate::exif_tag_value::ExifTagValue;
 
 const NEWLINE: u8 = 0x0a;
 const SPACE: u8 = 0x20;
@@ -19,10 +17,18 @@ const SUPPORTED_FILE_TYPES: [&'static str; 1] = [
 	"png"
 ];
 
+macro_rules! to_u8_vec_macro {
+	($type:ty, $value:expr, $endian:expr)
+	=>
+	{
+		<$type as U8conversion<$type>>::to_u8_vec($value, $endian)
+	};
+}
+
 pub struct
 Metadata
 {
-	data: HashMap<ExifTag, ExifTagValue>,
+	data: Vec<ExifTag>,
 	endian: Endian 
 }
 
@@ -34,7 +40,7 @@ Metadata
 	()
 	-> Metadata
 	{
-		Metadata { endian: Endian::Big, data: HashMap::new() }
+		Metadata { endian: Endian::Big, data: Vec::new() }
 	}
 
 
@@ -45,7 +51,7 @@ Metadata
 	)
 	-> Metadata
 	{
-		Metadata { endian: Endian::Big, data: HashMap::new() }
+		Metadata { endian: Endian::Big, data: Vec::new() }
 	}
 	
 
@@ -53,11 +59,18 @@ Metadata
 	get_tag
 	(
 		&self,
-		tag: ExifTag
+		input_tag: &ExifTag
 	)
-	-> Option<&ExifTagValue> 
+	-> Option<&ExifTag> 
 	{
-		self.data.get(&tag)
+		for tag in &self.data
+		{
+			if tag.as_u16() == input_tag.as_u16()
+			{
+				return Some(tag);
+			}
+		}
+		return None;
 	}
 
 
@@ -65,22 +78,11 @@ Metadata
 	set_tag
 	(
 		&mut self,
-		tag: ExifTag,
-		value: ExifTagValue
+		input_tag: ExifTag,
 	)
-	-> Result<(), String>
 	{
-		if !tag.is_writable() {
-			return Err("This tag can't be set (it is not writable)".to_string());
-		}
-
-		if !tag.accepts(&value) {
-			return Err("Tag not compatible with value".to_string());
-		}
-
-		self.data.insert(tag, value);
-
-		return Ok(());
+		self.data.retain(|tag| tag.as_u16() != input_tag.as_u16());
+		self.data.push(input_tag);
 	}
 
 
@@ -133,7 +135,7 @@ Metadata
 		// Number of IFD entries
 		// Note: Currently everything will be written into IFD0
 		//       as I don't yet understand when to use other IFDs
-		exif_vec.extend((self.data.len() as u16).to_u8_vec(&self.endian).iter());
+		exif_vec.extend(to_u8_vec_macro!(u16, &(self.data.len() as u16), &self.endian).iter());
 
 		assert!(exif_vec.len() == 10);
 
@@ -146,32 +148,66 @@ Metadata
 		let mut exif_offset_area: Vec<u8> = Vec::new();
 
 		// Write IFD entries
-		for (tag, value) in &self.data
+		for tag in &self.data
 		{
 
-			assert!(tag.accepts(value));
-
-			// Add Tag & Data Format /		2 + 2 bytes
-			exif_vec.extend(tag.as_u16().to_u8_vec(&self.endian).iter());
-			exif_vec.extend(tag.format().to_u8_vec(&self.endian).iter());
-
-			// Add number of components /	4 bytes
-			let number_of_components: u32 = (date.data.len() as u32) / tag.bytes_per_component();
-			exif_vec.extend(number_of_components.to_u8_vec(&self.endian).iter());
-
-			// Add offset or value /		4 bytes
-			// Depending on the amount of data, either put it directly into the
-			// next 4 bytes or write an offset where the data can be found 
-			if date.data.len() > 4
+			// Skip tags that can't be written
+			if !tag.is_writable()
 			{
-				exif_vec.extend(next_offset.to_u8_vec(&self.endian).iter());
-				exif_offset_area.extend(date.data.iter());
+				continue;
+			}
 
-				next_offset += date.data.len() as u32;
+			if let value = tag.value_as_u8_vec(&self.endian)
+			{
+
+				// Add Tag & Data Format /		2 + 2 bytes
+				exif_vec.extend(to_u8_vec_macro!(u16, &tag.as_u16(), &self.endian).iter());
+				exif_vec.extend(to_u8_vec_macro!(u16, &tag.format().as_u16(), &self.endian).iter());
+
+				// Add number of components /	4 bytes
+				let number_of_components: u32 = tag.number_of_components();
+				let byte_count: u32 = number_of_components * tag.format().bytes_per_component();
+				exif_vec.extend(to_u8_vec_macro!(u32, &number_of_components, &self.endian).iter());
+
+				// Optional string padding (i.e. string is shorter than it should be)
+				let mut string_padding: Vec<u8> = Vec::new();
+				if tag.is_string()
+				{
+					for _ in 0..(number_of_components - value.len() as u32)
+					{
+						string_padding.push(0x00);
+					}	
+				}
+
+				// Add offset or value /		4 bytes
+				// Depending on the amount of data, either put it directly into the
+				// next 4 bytes or write an offset where the data can be found 
+				if byte_count > 4
+				{
+					exif_vec.extend(to_u8_vec_macro!(u32, &next_offset, &self.endian).iter());
+					exif_offset_area.extend(value.iter());
+					exif_offset_area.extend(string_padding.iter());
+
+					next_offset += byte_count;
+				}
+				else
+				{
+					let pre_length = exif_vec.len();
+
+					exif_vec.extend(value.iter());
+					exif_vec.extend(string_padding.iter());
+
+					let post_length = exif_vec.len();
+
+					// Make sure that this area is indeed *exactly* 4 bytes long
+					for _ in 0..(4-(post_length - pre_length) ) {
+						exif_vec.push(0x00);
+					}
+				}
 			}
 			else
 			{
-				exif_vec.extend(date.data.iter());
+				println!("Can't unpack value from ExifTag!");
 			}
 		}
 
@@ -179,13 +215,15 @@ Metadata
 		exif_vec.extend(IFD_END.iter());
 		exif_vec.extend(exif_offset_area.iter());
 
-
 		// The size of the EXIF data area, consists of
 		// - length of EXIF header (follows after ssss)
 		// - length of exif_vec
 		// - 1 for ssss itself (why not 4? idk)
-		let ssss = (EXIF_header.len() as u32 + exif_vec.len() as u32 + 1)
-		.to_string();
+		let ssss = (
+			EXIF_header.len()	as u32 
+			+ exif_vec.len()	as u32 
+			+ 1					as u32
+		).to_string();
 
 		// Construct final vector with the bytes as they will be sent to the encoder
 		//                               \n       e     x     i     f
@@ -199,29 +237,35 @@ Metadata
 		exif_all.extend(ssss.as_bytes().to_vec().iter());
 		exif_all.push(NEWLINE);
 
-		// Write EXIF header
-		// (See next for loop comment for explanation)
+		// Write EXIF header and previously constructed EXIF data
 		for byte in &EXIF_header
 		{
-			exif_all.push(byte / 16 + (if byte / 16 < 10 {'0' as u8} else {'a' as u8 - 10}));
-			exif_all.push(byte % 16 + (if byte % 16 < 10 {'0' as u8} else {'a' as u8 - 10}));
+			exif_all.extend(Self::encode_byte(byte).iter());
 		}
 
-		// Every byte currently in exif_vec needs to be divided into its two hex digits
-		// These two hex digits are then treated as ASCII characters
-		// The value of these characters (e.g. 0x30 for '0') are then pushed to exif_all
-		// Example: 48 (=0x30) in exif_vec results in the two consecutive values 51 and 48 in exif_all
 		for byte in &exif_vec
 		{
-			exif_all.push(byte / 16 + (if byte / 16 < 10 {'0' as u8} else {'a' as u8 - 10}));
-			exif_all.push(byte % 16 + (if byte % 16 < 10 {'0' as u8} else {'a' as u8 - 10}));
+			exif_all.extend(Self::encode_byte(byte).iter());
 		}
 		
 		// Write end of EXIF data
-		exif_all.push(0x30);
-		exif_all.push(0x30);
+		exif_all.push(0x00);
+		exif_all.push(0x00);
 		exif_all.push(NEWLINE);
 
 		return exif_all;
+	}
+
+	// The bytes during encoding need to be encoded themselves:
+	// A given byte (e.g. 0x30 for the char '0') has two values in the string of its hex representation ('3' and '0')
+	// These two characters need to be encoded themselves (51 for '3', 48 for '0'), resulting in the final encoded
+	// version of the EXIF data
+	// Independent of endian as this does not affect the ordering of values WITHIN a byte 
+	fn encode_byte(byte: &u8) -> [u8; 2] 
+	{
+		[
+			byte / 16 + (if byte / 16 < 10 {'0' as u8} else {'a' as u8 - 10}),
+			byte % 16 + (if byte % 16 < 10 {'0' as u8} else {'a' as u8 - 10}) 
+		]
 	}
 }
