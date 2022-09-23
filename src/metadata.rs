@@ -2,6 +2,7 @@ use std::path::Path;
 
 use crate::endian::{Endian, U8conversion};
 use crate::exif_tag::ExifTag;
+use crate::png::write_metadata_to_png;
 
 const NEWLINE: u8 = 0x0a;
 const SPACE: u8 = 0x20;
@@ -85,6 +86,7 @@ Metadata
 	pub fn
 	write_to_file
 	(
+		&self,
 		path: &Path
 	)
 	-> Result<(), String>
@@ -108,7 +110,7 @@ Metadata
 		
 		match file_type_str.unwrap().to_lowercase().as_str()
 		{
-			"png"	=> Ok(()),
+			"png"	=> write_metadata_to_png(&path, &self.encode()),
 			_		=> Err("Unsupported file type!".to_string()),
 		}
 
@@ -245,8 +247,8 @@ Metadata
 		}
 		
 		// Write end of EXIF data
-		exif_all.push(0x00);
-		exif_all.push(0x00);
+		exif_all.push(0x30);
+		exif_all.push(0x30);
 		exif_all.push(NEWLINE);
 
 		return exif_all;
