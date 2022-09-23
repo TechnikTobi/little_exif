@@ -1,14 +1,23 @@
 use std::path::Path;
 use std::io::Read;
+use std::io::Write;
 use std::io::Seek;
+use std::io::SeekFrom;
 use std::fs::File;
 use std::fs::OpenOptions;
 
 use crc::{Crc, CRC_32_ISO_HDLC};
+use deflate::deflate_bytes_zlib;
 
 use crate::png_chunk::{PngChunkOrdering, PngChunk};
 
 pub const PNG_SIGNATURE: [u8; 8] = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+pub const RAW_PROFILE_TYPE_EXIF: [u8; 23] = [
+	0x52, 0x61, 0x77, 0x20,								// Raw
+	0x70, 0x72, 0x6F, 0x66, 0x69, 0x6C, 0x65, 0x20,		// profile
+	0x74, 0x79, 0x70, 0x65, 0x20,						// type
+	0x65, 0x78, 0x69, 0x66, 0x00, 0x00					// exif NUL NUL
+];
 
 fn
 check_signature
@@ -64,19 +73,18 @@ get_next_chunk_descriptor
 		return Err("Could not read start of chunk".to_string());
 	}
 
-	// Construct name of chunk and its length (+4 for the CRC at the end)
+	// Construct name of chunk and its length
 	let chunk_name = String::from_utf8((&chunk_start[4..8]).to_vec());
 	let mut chunk_length = 0u32;
 	for byte in &chunk_start[0..4]
 	{
 		chunk_length = chunk_length * 256 + *byte as u32;
 	}
-	chunk_length += 4;
 
 	// Read chunk data ...
-	let mut chunk_data_buffer = vec![0u8; (chunk_length-4) as usize];
+	let mut chunk_data_buffer = vec![0u8; chunk_length as usize];
 	bytes_read = file.read(&mut chunk_data_buffer).unwrap();
-	if bytes_read != (chunk_length-4) as usize
+	if bytes_read != chunk_length as usize
 	{
 		return Err("Could not read chunk data".to_string());
 	}
@@ -106,6 +114,7 @@ get_next_chunk_descriptor
 	}
 
 	// If validating the chunk using the CRC was successful, return its descriptor
+	// Note: chunk_length does NOT include the +4 for the CRC area!
 	PngChunk::from_string(
 		&chunk_name.unwrap(),
 		chunk_length
@@ -146,18 +155,119 @@ parse_png
 		}
 	}
 
-	file.unwrap().rewind();
-
 	return Ok(chunks);
 }
 
+// Clears existing metadata from a png file
+// Gets called before writing any new metadata
 pub fn
-write_metadata
+clear_metadata_from_png
+(
+	path: &Path
+)
+-> Result<(), String>
+{
+	if let Ok(chunks) = parse_png(path)
+	{
+		let mut file = check_signature(path).unwrap();
+		let mut seek_counter = 0u64;
+
+		for chunk in &chunks
+		{
+			if chunk.as_string() == String::from("zTXt")
+			{
+				// Get to the next chunk...
+				file.seek(SeekFrom::Current(chunk.length() as i64 + 12));
+
+				// Copy data from there onwards into a buffer
+				let mut buffer = Vec::new();
+				let bytes_read = file.read_to_end(&mut buffer).unwrap();
+
+				// Go back to the chunk to be removed
+				// And overwrite it using the data from the buffer
+				file.seek(SeekFrom::Start(seek_counter));
+				file.write_all(&buffer);
+				file.seek(SeekFrom::Start(seek_counter));
+			}
+			else
+			{
+				seek_counter += (chunk.length() as u64 + 12);
+				file.seek(SeekFrom::Current(chunk.length() as i64 + 12));
+			}
+		}
+
+		return Ok(());
+	}
+	else
+	{
+		return Err("Could not clear metadata from PNG".to_string());
+	}
+}
+
+pub fn
+write_metadata_to_png
 (
 	path: &Path,
 	encoded_metadata: &Vec<u8>
 )
 -> Result<(), String>
 {
-	Ok(())
+
+	// First clear the existing metadata
+	// This also parses the PNG and checks its validity, so it is safe to
+	// assume that is, in fact, a usable PNG file
+	if let Err(_) = clear_metadata_from_png(path)
+	{
+		return Err("Could not safely write new metadata to PNG".to_string());
+	}
+
+	let mut IHDR_length = 0u32;
+	if let Ok(chunks) = parse_png(path)
+	{
+		IHDR_length = chunks[0].length();
+	}
+
+	let mut file = OpenOptions::new()
+		.write(true)
+		.read(true)
+		.open(path)
+		.expect("Could not open file");
+
+	let seek_start = 0u64			// Skip ...
+	+ PNG_SIGNATURE.len()	as u64	// 	PNG Signature
+	+ IHDR_length			as u64	//	IHDR data section
+	+ 12					as u64;	//	rest of IHDR chunk (length, type, CRC)
+
+	// Get to first chunk after IHDR, copy all the data starting from there
+	file.seek(SeekFrom::Start(seek_start));
+	let mut buffer = Vec::new();
+	file.read_to_end(&mut buffer);
+	file.seek(SeekFrom::Start(seek_start));
+
+	// Build data of new chunk
+	let mut zTXt_chunk_data: Vec<u8> = vec![0x7a, 0x54, 0x58, 0x74];
+	zTXt_chunk_data.extend(RAW_PROFILE_TYPE_EXIF.iter());
+	zTXt_chunk_data.extend(deflate_bytes_zlib(&encoded_metadata).iter());
+
+	// Compute CRC and append it to the chunk data
+	let crc_struct = Crc::<u32>::new(&CRC_32_ISO_HDLC);
+	let checksum = crc_struct.checksum(&zTXt_chunk_data) as u32;
+	for i in 0..4
+	{
+		zTXt_chunk_data.push( (checksum >> (8 * (3-i))) as u8);		
+	}
+
+	// Write new data to PNG file
+	// Start with length of the new chunk (subtracting 8 for type and CRC)
+	let chunk_data_len = zTXt_chunk_data.len() as u32 - 8;
+	for i in 0..4
+	{
+		file.write( &[(chunk_data_len >> (8 * (3-i))) as u8] );
+	}
+
+	// Write data of new chunk and rest of PNG file
+	file.write_all(&zTXt_chunk_data);
+	file.write_all(&buffer);
+
+	return Ok(());
 }
