@@ -9,30 +9,6 @@ mod png_chunk;
 #[cfg(test)]
 mod tests {
 
-	/*
-    use crate::exif_tag::ExifTag;
-	use crate::exif_tag_value::ExifTagValue;
-
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-
-		let some: ExifTag = ExifTag::ImageDescription;
-		assert_eq!(some.as_u16(), 0x010e);
-		assert_eq!(some.as_string(), String::from("ImageDescription"));
-		assert_eq!(ExifTag::from_u16(0x010e).unwrap(), ExifTag::ImageDescription);
-
-		let some_value = ExifTagValue::STRING("Hello :)".to_string());
-		let other_value = ExifTagValue::INT8U(0);
-
-		assert_eq!(some.accepts(&some_value), true);
-		assert_eq!(some.accepts(&other_value), false);
-
-		println!("hihi {}", some.as_u16());
-    }
-	*/
-
 	use std::path::Path;
 	use crate::png::parse_png;
 
@@ -47,6 +23,35 @@ mod tests {
 		{
 			panic!("could not parse png file");
 		}
+
+	}
+
+	use std::fs::copy;
+	use std::fs::remove_file;
+	use crate::metadata::Metadata;
+	use crate::exif_tag::ExifTag;
+
+	#[test]
+	fn test_three() {
+
+		remove_file("copy.png");
+		copy("test.png", "copy.png");
+
+		let mut data = Metadata::new();
+		data.set_tag(
+			ExifTag::ImageDescription("Hello World!".to_string())
+		);
+		data.set_tag(
+			ExifTag::ImageWidth(vec!(4))
+		);
+		data.set_tag(
+			ExifTag::ImageHeight(vec!(6))
+		);
+		data.set_tag(
+			ExifTag::Model("Testcam(1)".to_string())
+		);
+
+		data.write_to_file(Path::new("copy.png"));
 
 	}
 }
