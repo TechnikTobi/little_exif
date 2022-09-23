@@ -1,5 +1,6 @@
 // Copyright © 2022 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 
+use crate::endian::{U8conversion, Endian};
 use crate::exif_tag_format::*;
 
 pub enum
@@ -145,7 +146,7 @@ macro_rules! build_tag_enum {
 			)
 			-> u32
 			{
-				match *self
+				match self
 				{
 					$(
 						ExifTag::$tag(value) => {
@@ -180,16 +181,17 @@ macro_rules! build_tag_enum {
 			}
 
 			pub fn
-			value
+			value_as_u8_vec
 			(
-				&self
+				&self,
+				endian: &Endian
 			)
-			-> impl ExifTagFormatTypeMarkerTrait<T>
+			-> Vec<u8>
 			{
-				match *self
+				match self
 				{
 					$(
-						ExifTag::$tag(value) => value,
+						ExifTag::$tag(value) => value.to_u8_vec(endian),
 					)*
 				}
 			}
