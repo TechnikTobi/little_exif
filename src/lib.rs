@@ -1,6 +1,6 @@
 mod endian;
 mod exif_tag;
-mod exif_tag_value;
+mod exif_tag_format;
 mod metadata;
 
 #[cfg(test)]
