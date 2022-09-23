@@ -7,7 +7,7 @@ Endian
 }
 
 pub trait
-U8conversion
+U8conversion<T>
 {
 	fn
 	to_u8_vec
@@ -18,8 +18,26 @@ U8conversion
 	-> Vec<u8>;
 }
 
+impl<T: U8conversion<T>> U8conversion<T> for Vec<T>
+{
+	fn
+	to_u8_vec
+	(
+		&self,
+		endian: &Endian
+	)
+	-> Vec<u8>
+	{
+		let mut u8_vec = Vec::new();
+		for value in self
+		{
+			u8_vec.extend(value.to_u8_vec(endian).iter());
+		}
+		return u8_vec;
+	}
+}
 
-impl U8conversion for u8
+impl<T> U8conversion<T> for u8
 {
 	fn
 	to_u8_vec
@@ -33,7 +51,7 @@ impl U8conversion for u8
 	}
 }
 
-impl U8conversion for i8
+impl<T> U8conversion<T> for i8
 {
 	fn
 	to_u8_vec
@@ -47,7 +65,7 @@ impl U8conversion for i8
 	}
 }
 
-impl U8conversion for u16
+impl<T> U8conversion<T> for u16
 {
 	fn
 	to_u8_vec
@@ -59,19 +77,13 @@ impl U8conversion for u16
 	{
 		match *endian
 		{
-			Endian::Little => vec![
-				*self as u8, 
-				(*self >> 8) as u8
-			],
-			Endian::Big => vec![
-				(*self >> 8) as u8,
-				*self as u8
-			],
+			Endian::Little => self.to_le_bytes().to_vec(),
+			Endian::Big => self.to_be_bytes().to_vec(),
 		}
 	}
 }
 
-impl U8conversion for i16
+impl<T> U8conversion<T> for i16
 {
 	fn
 	to_u8_vec
@@ -83,19 +95,13 @@ impl U8conversion for i16
 	{
 		match *endian
 		{
-			Endian::Little => vec![
-				*self as u8, 
-				(*self >> 8) as u8
-			],
-			Endian::Big => vec![
-				(*self >> 8) as u8,
-				*self as u8
-			],
+			Endian::Little => self.to_le_bytes().to_vec(),
+			Endian::Big => self.to_be_bytes().to_vec(),
 		}
 	}
 }
 
-impl U8conversion for u32
+impl<T> U8conversion<T> for u32
 {
 	fn
 	to_u8_vec
@@ -105,18 +111,105 @@ impl U8conversion for u32
 	)
 	-> Vec<u8>
 	{
-		let mut u8_vec: Vec<u8> = Vec::new();
-
-		for i in 0..4
+		match *endian
 		{
-			u8_vec.push((*self >> (8 * (if *endian == Endian::Big {3-i} else {i} ) )) as u8);
+			Endian::Little => self.to_le_bytes().to_vec(),
+			Endian::Big => self.to_be_bytes().to_vec(),
 		}
-
-		return u8_vec;
 	}
 }
 
-impl U8conversion for String
+impl<T> U8conversion<T> for i32
+{
+	fn
+	to_u8_vec
+	(
+		&self,
+		endian: &Endian
+	)
+	-> Vec<u8>
+	{
+		match *endian
+		{
+			Endian::Little => self.to_le_bytes().to_vec(),
+			Endian::Big => self.to_be_bytes().to_vec(),
+		}
+	}
+}
+
+impl<T> U8conversion<T> for u64
+{
+	fn
+	to_u8_vec
+	(
+		&self,
+		endian: &Endian
+	)
+	-> Vec<u8>
+	{
+		match *endian
+		{
+			Endian::Little => self.to_le_bytes().to_vec(),
+			Endian::Big => self.to_be_bytes().to_vec(),
+		}
+	}
+}
+
+impl<T> U8conversion<T> for i64
+{
+	fn
+	to_u8_vec
+	(
+		&self,
+		endian: &Endian
+	)
+	-> Vec<u8>
+	{
+		match *endian
+		{
+			Endian::Little => self.to_le_bytes().to_vec(),
+			Endian::Big => self.to_be_bytes().to_vec(),
+		}
+	}
+}
+
+impl<T> U8conversion<T> for f32
+{
+	fn
+	to_u8_vec
+	(
+		&self,
+		endian: &Endian
+	)
+	-> Vec<u8>
+	{
+		match *endian
+		{
+			Endian::Little => self.to_le_bytes().to_vec(),
+			Endian::Big => self.to_be_bytes().to_vec(),
+		}
+	}
+}
+
+impl<T> U8conversion<T> for f64
+{
+	fn
+	to_u8_vec
+	(
+		&self,
+		endian: &Endian
+	)
+	-> Vec<u8>
+	{
+		match *endian
+		{
+			Endian::Little => self.to_le_bytes().to_vec(),
+			Endian::Big => self.to_be_bytes().to_vec(),
+		}
+	}
+}
+
+impl<T> U8conversion<T> for String
 {
 	fn
 	to_u8_vec
