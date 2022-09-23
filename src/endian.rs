@@ -18,11 +18,11 @@ U8conversion<T>
 	-> Vec<u8>;
 }
 
-macro_rules! build_u8conversion 
+macro_rules! build_u8conversion
 {
-	$(
+	(
 		$type:ty
-	),*
+	)
 	=>
 	{
 		impl<T> U8conversion<T> for $type
@@ -42,6 +42,26 @@ macro_rules! build_u8conversion
 				}
 			}
 		}
+
+		impl<T> U8conversion<T> for Vec<$type>
+		{
+			fn
+			to_u8_vec
+			(
+				&self,
+				endian: &Endian
+			)
+			-> Vec<u8>
+			{
+				let mut u8_vec = Vec::new();
+				for value in self
+				{
+					// u8_vec.extend(value.to_u8_vec(endian).iter());
+					u8_vec.extend(<$type as U8conversion<$type>>::to_u8_vec(value, endian).iter());
+				}
+				return u8_vec;
+			}
+		}
 	}
 }
 
@@ -56,6 +76,7 @@ build_u8conversion![i64];
 build_u8conversion![f32];
 build_u8conversion![f64];
 
+/*
 impl<T: U8conversion<T>> U8conversion<T> for Vec<T>
 {
 	fn
@@ -74,6 +95,7 @@ impl<T: U8conversion<T>> U8conversion<T> for Vec<T>
 		return u8_vec;
 	}
 }
+*/
 
 impl<T> U8conversion<T> for String
 {

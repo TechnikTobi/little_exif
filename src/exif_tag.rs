@@ -191,7 +191,7 @@ macro_rules! build_tag_enum {
 				match self
 				{
 					$(
-						ExifTag::$tag(value) => value.to_u8_vec(endian),
+						ExifTag::$tag(value) => <$format_type as U8conversion<$format_type>>::to_u8_vec(value, endian),
 					)*
 				}
 			}
