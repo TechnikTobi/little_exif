@@ -76,27 +76,6 @@ build_u8conversion![i64];
 build_u8conversion![f32];
 build_u8conversion![f64];
 
-/*
-impl<T: U8conversion<T>> U8conversion<T> for Vec<T>
-{
-	fn
-	to_u8_vec
-	(
-		&self,
-		endian: &Endian
-	)
-	-> Vec<u8>
-	{
-		let mut u8_vec = Vec::new();
-		for value in self
-		{
-			u8_vec.extend(value.to_u8_vec(endian).iter());
-		}
-		return u8_vec;
-	}
-}
-*/
-
 impl<T> U8conversion<T> for String
 {
 	fn
