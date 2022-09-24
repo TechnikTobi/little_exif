@@ -117,6 +117,32 @@ Metadata
 	}
 
 	fn
+	decode
+	(
+		encoded_data: &Vec<u8>
+	)
+	->
+	Metadata
+	{
+
+		let mut exif_all = Vec::new();
+		let mut other_byte: Option<u8> = None;
+
+		for byte in &encoded_data
+		{
+			if other_byte.is_none()
+			{
+				other_byte = Some(byte);
+				continue;
+			}
+			
+			
+
+			other_byte = None;
+		}
+	}
+
+	fn
 	encode
 	(
 		&self
