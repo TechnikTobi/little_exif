@@ -80,6 +80,32 @@ Metadata
 	{
 		self.data.retain(|tag| tag.as_u16() != input_tag.as_u16());
 		self.data.push(input_tag);
+
+		// Sort the tags by the IFD they will go into the file later on
+		self.data.sort_by(
+			|a, b| 
+			if b.get_group() == a.get_group() 
+			{
+				std::cmp::Ordering::Equal
+			}
+			else
+			{
+				if b.get_group() < a.get_group()
+				{
+					std::cmp::Ordering::Greater
+				}
+				else
+				{
+					std::cmp::Ordering::Less
+				}
+			}
+		);
+
+		println!("Output after set_tag");
+		for value in &self.data
+		{
+			println!("{:?}", value.get_group());
+		}
 	}
 
 
@@ -116,6 +142,7 @@ Metadata
 
 	}
 
+	/*
 	fn
 	decode
 	(
@@ -136,11 +163,12 @@ Metadata
 				continue;
 			}
 			
-			
+
 
 			other_byte = None;
 		}
 	}
+	*/
 
 	fn
 	encode
