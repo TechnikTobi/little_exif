@@ -5,20 +5,20 @@ use paste::paste;
 use crate::endian::{U8conversion, Endian};
 use crate::exif_tag_format::*;
 
+#[derive(Debug, Eq, PartialEq, PartialOrd)]
 pub enum
 ExifTagGroup
 {
 	NO_GROUP,
-	All,
-	ExifIFD,
 	IFD0,
+		ExifIFD,
+			InteropIFD,
+			MakerNotes,
 	IFD1,
-	IFD2,
-	InteropIFD,
-	MakerNotes,
-	SubIFD,
-	SubIFD1,
-	SubIFD2,
+	// IFD2,
+	// SubIFD,
+	// SubIFD1,
+	// SubIFD2,
 }
 
 macro_rules! build_tag_enum {
