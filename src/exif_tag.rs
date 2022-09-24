@@ -1,5 +1,7 @@
 // Copyright © 2022 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 
+use paste::paste;
+
 use crate::endian::{U8conversion, Endian};
 use crate::exif_tag_format::*;
 
@@ -24,7 +26,6 @@ macro_rules! build_tag_enum {
 		$( (
 			$tag:ident, 
 			$hex_value:expr,
-			$format_type:ty,
 			$format_enum:ident,
 			$component_number:expr,
 			$writable:expr,
@@ -38,7 +39,7 @@ macro_rules! build_tag_enum {
 		ExifTag
 		{
 			$(
-				$tag($format_type),
+				$tag(paste!{[<$format_enum>]}),
 			)*
 		}
 
@@ -71,7 +72,7 @@ macro_rules! build_tag_enum {
 				match hex_value
 				{
 					$(
-						$hex_value => Ok(ExifTag::$tag(<$format_type>::new())),
+						$hex_value => Ok(ExifTag::$tag(<paste!{[<$format_enum>]}>::new())),
 					)*
 					_ => Err(String::from("Invalid hex value for EXIF tag")),
 				}
@@ -159,7 +160,7 @@ macro_rules! build_tag_enum {
 
 							// In case we have a string, return its length +1 for 0x00 at the end
 							// Otherwise just the containers length of the container
-							return value.len() as u32 + (ExifTagFormat::$format_enum == ExifTagFormat::STRING) as u32;
+							return value.len() as u32 + self.is_string() as u32;
 						},
 					)*
 				}
@@ -191,7 +192,7 @@ macro_rules! build_tag_enum {
 				match self
 				{
 					$(
-						ExifTag::$tag(value) => <$format_type as U8conversion<$format_type>>::to_u8_vec(value, endian),
+						ExifTag::$tag(value) => <paste!{[<$format_enum>]} as U8conversion<paste!{[<$format_enum>]}>>::to_u8_vec(value, endian),
 					)*
 				}
 			}
@@ -210,19 +211,17 @@ macro_rules! build_tag_enum {
 // - DeviceSettingDescription
 // none of them are part of the EXIF 2.32 specification
 // (Source: https://exiftool.org/TagNames/EXIF.html )
-//
-// The format of a tag has to be inserted twice, once as type and the time as enum variant
 
 build_tag_enum![
-	// Tag						Tag ID	FormatType		ExifTagFormat	Nr. Components	Writable	Group
-	(InteroperabilityIndex,		0x0001,	STRING,			STRING,			Some::<u32>(4),	true,		InteropIFD),
-	(ImageWidth,				0x0100,	INT32U,			INT32U,			Some::<u32>(1),	true,		IFD0),
-	(ImageHeight,				0x0101,	INT32U,			INT32U,			Some::<u32>(1),	true,		IFD0),
-	(BitsPerSample,				0x0102,	INT16U,			INT16U,			Some::<u32>(3),	true,		IFD0),
-	(Compression,				0x0103,	INT16U,			INT16U,			Some::<u32>(1),	true,		IFD0),
-	(PhotometricInterpretation,	0x0106,	INT16U,			INT16U,			Some::<u32>(1),	true,		IFD0),
-	(ImageDescription,			0x010e,	STRING,			STRING,			None::<u32>,	true,		IFD0),
-	(Model,						0x0110,	STRING,			STRING,			None::<u32>,	true,		IFD0),
-	(StripOffsets,				0x0111,	INT32U,			INT32U,			None::<u32>,	false,		NO_GROUP),
-	(Orientation,				0x0112,	INT32U,			INT32U,			Some::<u32>(1),	true,		IFD0)
+	// Tag						Tag ID	Format		Nr. Components	Writable	Group
+	(InteroperabilityIndex,		0x0001,	STRING,		Some::<u32>(4),	true,		InteropIFD),
+	(ImageWidth,				0x0100,	INT32U,		Some::<u32>(1),	true,		IFD0),
+	(ImageHeight,				0x0101,	INT32U,		Some::<u32>(1),	true,		IFD0),
+	(BitsPerSample,				0x0102,	INT16U,		Some::<u32>(3),	true,		IFD0),
+	(Compression,				0x0103,	INT16U,		Some::<u32>(1),	true,		IFD0),
+	(PhotometricInterpretation,	0x0106,	INT16U,		Some::<u32>(1),	true,		IFD0),
+	(ImageDescription,			0x010e,	STRING,		None::<u32>,	true,		IFD0),
+	(Model,						0x0110,	STRING,		None::<u32>,	true,		IFD0),
+	(StripOffsets,				0x0111,	INT32U,		None::<u32>,	false,		NO_GROUP),
+	(Orientation,				0x0112,	INT32U,		Some::<u32>(1),	true,		IFD0)
 ];
