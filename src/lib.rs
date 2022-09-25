@@ -5,6 +5,7 @@ mod metadata;
 
 mod png;
 mod png_chunk;
+mod jpg;
 
 #[cfg(test)]
 mod tests {

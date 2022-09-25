@@ -42,7 +42,7 @@ check_signature
 	let signature_is_valid = signature_buffer.iter()
 		.zip(PNG_SIGNATURE.iter())
 		.filter(|&(read, constant)| read == constant)
-		.count() == 8;
+		.count() == PNG_SIGNATURE.len();
 
 	if !signature_is_valid
 	{
