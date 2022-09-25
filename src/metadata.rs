@@ -11,6 +11,8 @@ const EXIF_header: [u8; 6] = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00];
 const TIFF_header_little: [u8; 8] = [0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00];
 const TIFF_header_big: [u8; 8] = [0x4d, 0x4d, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x08];
 
+const JPG_APP1_MARKER: [u8; 2] = [0xff, 0xe1];
+
 const IFD_ENTRY_LENGTH: u32 = 12;
 const IFD_END: [u8; 4] = [0x00, 0x00, 0x00, 0x00];
 
@@ -371,8 +373,7 @@ Metadata
 	)
 	-> Vec<u8>
 	{
-		// IFD0/PNG specific stuff
-
+		// Get the general version of the encoded metadata
 		let exif_vec = self.encode_metadata_general();
 
 		// The size of the EXIF data area, consists of
@@ -414,5 +415,31 @@ Metadata
 		png_exif.push(NEWLINE);
 
 		return png_exif;
+	}
+
+	fn
+	encode_metadata_jpg
+	(
+		&self
+	)
+	-> Vec<u8>
+	{
+		// Get the general version of the encoded metadata
+		let exif_vec = self.encode_metadata_general();
+
+		// vector storing the data that will be returned
+		let mut jpg_exif: Vec<u8> = Vec::new();
+
+		// Compute the length of the exif data (includes the two bytes of the
+		// actual length field)
+		let length = 2u16 + (exif_vec.len() as u16);
+
+		// Start with the APP1 marker and the length of the data
+		// Then copy the previously encoded EXIF data 
+		jpg_exif.extend(JPG_APP1_MARKER.iter());
+		jpg_exif.extend(to_u8_vec_macro!(u16, &length, &Endian::Big));
+		jpg_exif.extend(exif_vec.iter());
+
+		return jpg_exif;
 	}
 }
