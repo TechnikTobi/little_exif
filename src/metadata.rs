@@ -325,7 +325,7 @@ Metadata
 		exif_vec.extend(ifd0_data.iter());
 
 		// ExifIFD
-		let exif(offset_post_exififd, exififd_data)ifd_result = self.encode_ifd(
+		let (offset_post_exififd, exififd_data) = self.encode_ifd(
 			ExifTagGroup::ExifIFD,
 			offset_post_ifd0,													// Don't need +8 as already accounted for in this value due to previous function call
 			&[0x00, 0x00, 0x00, 0x00],
