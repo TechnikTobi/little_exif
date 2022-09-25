@@ -261,7 +261,7 @@ build_tag_enum![
 	(ExposureTime,				0x829a,	RATIONAL64U,	Some::<u32>(1),		true,		ExifIFD),
 	(FNumber,					0x829d,	RATIONAL64U,	Some::<u32>(1),		true,		ExifIFD),
 
-	(ExifOffset,				0x8769,	INT32U,			Some::<u32>(1),		true,		IFD0),		// is this really writable? Doesn't this need to be determined automatically?
+	(ExifOffset,				0x8769,	INT32U,			Some::<u32>(1),		false,		IFD0),
 
 	(ExposureProgram,			0x8822,	INT16U,			Some::<u32>(1),		true,		ExifIFD),
 	(SpectralSensitivity,		0x8824,	STRING,			None::<u32>,		true,		ExifIFD),
