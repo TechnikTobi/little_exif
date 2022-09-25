@@ -136,7 +136,7 @@ Metadata
 		
 		match file_type_str.unwrap().to_lowercase().as_str()
 		{
-			"png"	=> write_metadata_to_png(&path, &self.encode_metadata()),
+			"png"	=> write_metadata_to_png(&path, &self.encode_metadata_png()),
 			_		=> Err("Unsupported file type!".to_string()),
 		}
 
@@ -300,7 +300,7 @@ Metadata
 	}
 
 	fn
-	encode_metadata
+	encode_metadata_general
 	(
 		&self
 	)
@@ -313,84 +313,42 @@ Metadata
 			Endian::Big		=> exif_vec.extend(TIFF_header_big.iter())
 		}
 
-		let ifd0_result = self.encode_ifd(
+		// IFD0
+		let (offset_post_ifd0, ifd0_data) = self.encode_ifd(
 			ExifTagGroup::IFD0,
 			8,																	// For the TIFF header
 			&[0x00, 0x00, 0x00, 0x00],											// For now no link to IFD1
 			Some(ExifTag::ExifOffset(vec![0]))
-		);
-
-		if ifd0_result.is_none()
-		{
-			panic!("AHHH1");
-		}
-
-		let (offset_post_ifd0, ifd0_data) = ifd0_result.unwrap();
+		).unwrap();
 		exif_vec.extend(ifd0_data.iter());
 
-		let exififd_result = self.encode_ifd(
+		// ExifIFD
+		let exif(offset_post_exififd, exififd_data)ifd_result = self.encode_ifd(
 			ExifTagGroup::ExifIFD,
 			offset_post_ifd0,													// Don't need +8 as already accounted for in this value due to previous function call
 			&[0x00, 0x00, 0x00, 0x00],
 			None
-		);
-
-		if exififd_result.is_none()
-		{
-			panic!("AHHH2");
-		}
-
-		let (offset_post_exififd, exififd_data) = exififd_result.unwrap();
+		).unwrap();
 		exif_vec.extend(exififd_data.iter());
 
+		// Other directories here... (someday)
+		
 		let mut counter = 0u32;
 		for byte in &exif_vec
 		{
-			println!("{:#04x} {:#04x} {}", counter, *byte, *byte as char);
+			if *byte > 0x20
+			{
+				println!("{:#04x} {:#04x} {}", counter, *byte, *byte as char);
+			}
+			else
+			{
+				println!("{:#04x} {:#04x}", counter, *byte);
+			}
+			
 			counter += 1;
 		}
-
-		// IFD0 specific stuff
-
-		// The size of the EXIF data area, consists of
-		// - length of EXIF header (follows after ssss)
-		// - length of exif_vec
-		// - 1 for ssss itself (why not 4? idk)
-		let ssss = (
-			EXIF_header.len()	as u32 
-			+ exif_vec.len()	as u32 
-			+ 1					as u32
-		).to_string();
-
-		// Construct final vector with the bytes as they will be sent to the encoder
-		//                               \n       e     x     i     f     \n
-		let mut exif_all: Vec<u8> = vec![NEWLINE, 0x65, 0x78, 0x69, 0x66, NEWLINE];
-
-		// Write ssss
-		for _ in 0..(8-ssss.len())
-		{
-			exif_all.push(SPACE);
-		}
-		exif_all.extend(ssss.as_bytes().to_vec().iter());
-		exif_all.push(NEWLINE);
-
-		// Write EXIF header and previously constructed EXIF data
-		for byte in &EXIF_header
-		{
-			exif_all.extend(Self::encode_byte(byte).iter());
-		}
-
-		for byte in &exif_vec
-		{
-			exif_all.extend(Self::encode_byte(byte).iter());
-		}
 		
-		// Write end of EXIF data
-		exif_all.push(0x30);
-		exif_all.push(0x30);
-		exif_all.push(NEWLINE);
-
-		return exif_all;
+		return exif_vec;
 	}
 
 	// The bytes during encoding need to be encoded themselves:
@@ -404,5 +362,57 @@ Metadata
 			byte / 16 + (if byte / 16 < 10 {'0' as u8} else {'a' as u8 - 10}),
 			byte % 16 + (if byte % 16 < 10 {'0' as u8} else {'a' as u8 - 10}) 
 		]
+	}
+
+	fn
+	encode_metadata_png
+	(
+		&self
+	)
+	-> Vec<u8>
+	{
+		// IFD0/PNG specific stuff
+
+		let exif_vec = self.encode_metadata_general();
+
+		// The size of the EXIF data area, consists of
+		// - length of EXIF header (follows after ssss)
+		// - length of exif_vec
+		// - 1 for ssss itself (why not 4? idk)
+		let ssss = (
+			EXIF_header.len()	as u32 
+			+ exif_vec.len()	as u32 
+			+ 1					as u32
+		).to_string();
+
+		// Construct final vector with the bytes as they will be sent to the encoder
+		//                               \n       e     x     i     f     \n
+		let mut png_exif: Vec<u8> = vec![NEWLINE, 0x65, 0x78, 0x69, 0x66, NEWLINE];
+
+		// Write ssss
+		for _ in 0..(8-ssss.len())
+		{
+			png_exif.push(SPACE);
+		}
+		png_exif.extend(ssss.as_bytes().to_vec().iter());
+		png_exif.push(NEWLINE);
+
+		// Write EXIF header and previously constructed EXIF data as encoded bytes
+		for byte in &EXIF_header
+		{
+			png_exif.extend(Self::encode_byte(byte).iter());
+		}
+
+		for byte in &exif_vec
+		{
+			png_exif.extend(Self::encode_byte(byte).iter());
+		}
+		
+		// Write end of EXIF data
+		png_exif.push(0x30);
+		png_exif.push(0x30);
+		png_exif.push(NEWLINE);
+
+		return png_exif;
 	}
 }
