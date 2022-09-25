@@ -234,7 +234,7 @@ write_metadata_to_png
 		.expect("Could not open file");
 
 	let seek_start = 0u64			// Skip ...
-	+ PNG_SIGNATURE.len()	as u64	// 	PNG Signature
+	+ PNG_SIGNATURE.len()	as u64	//	PNG Signature
 	+ IHDR_length			as u64	//	IHDR data section
 	+ 12					as u64;	//	rest of IHDR chunk (length, type, CRC)
 
