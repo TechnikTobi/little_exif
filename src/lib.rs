@@ -1,3 +1,18 @@
+//! # little-exif
+//! A small crate for reading and writing (at least some) EXIF data written entirely in Rust.
+//! 
+//! # Usage
+//! ## Write EXIF data
+//! ```rust
+//! // what use statements are needed here?
+//! 
+//! let mut exif_data = Metadata::new();
+//! data.set_tag(
+//!     ExifTag::ImageDescription("Hello World!".to_string())
+//! );
+//! exif_data.write_to_file(Path::new("image.png"));
+//! ```
+
 mod endian;
 mod exif_tag;
 mod exif_tag_format;
