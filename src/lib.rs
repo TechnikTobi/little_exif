@@ -13,6 +13,10 @@
 //! exif_data.write_to_file(Path::new("image.png"));
 //! ```
 
+#![forbid(unsafe_code)]
+#![crate_type = "lib"]
+#![crate_name = "little-exif"]
+
 mod endian;
 mod exif_tag;
 mod exif_tag_format;
