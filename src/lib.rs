@@ -1,4 +1,4 @@
-//! # little-exif
+//! # little_exif
 //! A small crate for reading and writing (at least some) EXIF data written entirely in Rust.
 //! 
 //! # Usage
@@ -15,12 +15,12 @@
 
 #![forbid(unsafe_code)]
 #![crate_type = "lib"]
-#![crate_name = "little-exif"]
+#![crate_name = "little_exif"]
 
 mod endian;
-mod exif_tag;
+pub mod exif_tag;
 mod exif_tag_format;
-mod metadata;
+pub mod metadata;
 
 mod png;
 mod png_chunk;
