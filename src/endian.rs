@@ -82,7 +82,7 @@ impl U8conversion for String
 	to_u8_vec
 	(
 		&self,
-		endian: &Endian
+		_endian: &Endian
 	)
 	-> Vec<u8>
 	{

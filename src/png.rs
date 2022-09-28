@@ -9,7 +9,7 @@ use std::fs::OpenOptions;
 use crc::{Crc, CRC_32_ISO_HDLC};
 use deflate::deflate_bytes_zlib;
 
-use crate::png_chunk::{PngChunkOrdering, PngChunk};
+use crate::png_chunk::PngChunk;
 use crate::general_file_io::*;
 
 pub const PNG_SIGNATURE: [u8; 8] = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
@@ -53,8 +53,6 @@ check_signature
 	// Signature is valid - can proceed using the file as PNG file
 	return Ok(file);
 }
-
-
 
 // TODO: Check if this is also affected by endianness
 fn
@@ -187,22 +185,22 @@ clear_metadata_from_png
 			if chunk.as_string() == String::from("zTXt")
 			{
 				// Get to the next chunk...
-				file.seek(SeekFrom::Current(chunk.length() as i64 + 12));
+				perform_file_action!(file.seek(SeekFrom::Current(chunk.length() as i64 + 12)));
 
 				// Copy data from there onwards into a buffer
 				let mut buffer = Vec::new();
-				let bytes_read = file.read_to_end(&mut buffer).unwrap();
+				perform_file_action!(file.read_to_end(&mut buffer));
 
 				// Go back to the chunk to be removed
 				// And overwrite it using the data from the buffer
-				file.seek(SeekFrom::Start(seek_counter));
-				file.write_all(&buffer);
-				file.seek(SeekFrom::Start(seek_counter));
+				perform_file_action!(file.seek(SeekFrom::Start(seek_counter)));
+				perform_file_action!(file.write_all(&buffer));
+				perform_file_action!(file.seek(SeekFrom::Start(seek_counter)));
 			}
 			else
 			{
-				seek_counter += (chunk.length() as u64 + 12);
-				file.seek(SeekFrom::Current(chunk.length() as i64 + 12));
+				seek_counter += chunk.length() as u64 + 12;
+				perform_file_action!(file.seek(SeekFrom::Current(chunk.length() as i64 + 12)));
 			}
 		}
 
@@ -214,6 +212,7 @@ clear_metadata_from_png
 	}
 }
 
+#[allow(non_snake_case)]
 pub fn
 write_metadata_to_png
 (
@@ -251,8 +250,8 @@ write_metadata_to_png
 	// Get to first chunk after IHDR, copy all the data starting from there
 	perform_file_action!(file.seek(SeekFrom::Start(seek_start)));
 	let mut buffer = Vec::new();
-	file.read_to_end(&mut buffer);
-	file.seek(SeekFrom::Start(seek_start));
+	perform_file_action!(file.read_to_end(&mut buffer));
+	perform_file_action!(file.seek(SeekFrom::Start(seek_start)));
 
 	// Build data of new chunk
 	let mut zTXt_chunk_data: Vec<u8> = vec![0x7a, 0x54, 0x58, 0x74];
@@ -272,12 +271,12 @@ write_metadata_to_png
 	let chunk_data_len = zTXt_chunk_data.len() as u32 - 8;
 	for i in 0..4
 	{
-		file.write( &[(chunk_data_len >> (8 * (3-i))) as u8] );
+		perform_file_action!(file.write( &[(chunk_data_len >> (8 * (3-i))) as u8] ));
 	}
 
 	// Write data of new chunk and rest of PNG file
-	file.write_all(&zTXt_chunk_data);
-	file.write_all(&buffer);
+	perform_file_action!(file.write_all(&zTXt_chunk_data));
+	perform_file_action!(file.write_all(&buffer));
 
 	return Ok(());
 }

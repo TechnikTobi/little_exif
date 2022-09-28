@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::io::{Error, ErrorKind};
 
 use crate::endian::{Endian, U8conversion};
 use crate::exif_tag::{ExifTag, ExifTagGroup};
@@ -9,9 +8,9 @@ use crate::general_file_io::*;
 const NEWLINE: u8 = 0x0a;
 const SPACE: u8 = 0x20;
 
-const EXIF_header: [u8; 6] = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00];
-const TIFF_header_little: [u8; 8] = [0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00];
-const TIFF_header_big: [u8; 8] = [0x4d, 0x4d, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x08];
+const EXIF_HEADER: [u8; 6] = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00];
+const TIFF_HEADER_LITTLE: [u8; 8] = [0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00];
+const TIFF_HEADER_BIG: [u8; 8] = [0x4d, 0x4d, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x08];
 
 const JPG_APP1_MARKER: [u8; 2] = [0xff, 0xe1];
 
@@ -52,7 +51,8 @@ Metadata
 	)
 	-> Metadata
 	{
-		Metadata { endian: Endian::Little, data: Vec::new() }
+		//Metadata { endian: Endian::Little, data: Vec::new() }
+		todo!();
 	}
 	
 
@@ -201,7 +201,7 @@ Metadata
 		// Start Interop IFD with number of entries
 		// If there are none, return None
 		let mut ifd_vec: Vec<u8> = Vec::new();
-		let mut count_entries = (subifd_tag.is_some() as u16);
+		let mut count_entries = subifd_tag.is_some() as u16;
 		for tag in &self.data
 		{
 			if tag.is_writable() && tag.get_group() == group
@@ -236,57 +236,53 @@ Metadata
 				continue;
 			}
 
-			if let value = tag.value_as_u8_vec(&self.endian)
+			let value = tag.value_as_u8_vec(&self.endian);
+			
+			// Add Tag & Data Format /										2 + 2 bytes
+			ifd_vec.extend(to_u8_vec_macro!(u16, &tag.as_u16(), &self.endian).iter());
+			ifd_vec.extend(to_u8_vec_macro!(u16, &tag.format().as_u16(), &self.endian).iter());
+
+			// Add number of components /									4 bytes
+			let number_of_components: u32 = tag.number_of_components();
+			ifd_vec.extend(to_u8_vec_macro!(u32, &number_of_components, &self.endian).iter());
+
+			// Optional string padding (i.e. string is shorter than it should be)
+			let mut string_padding: Vec<u8> = Vec::new();
+			if tag.is_string()
 			{
-				// Add Tag & Data Format /										2 + 2 bytes
-				ifd_vec.extend(to_u8_vec_macro!(u16, &tag.as_u16(), &self.endian).iter());
-				ifd_vec.extend(to_u8_vec_macro!(u16, &tag.format().as_u16(), &self.endian).iter());
-
-				// Add number of components /									4 bytes
-				let number_of_components: u32 = tag.number_of_components();
-				ifd_vec.extend(to_u8_vec_macro!(u32, &number_of_components, &self.endian).iter());
-
-				// Optional string padding (i.e. string is shorter than it should be)
-				let mut string_padding: Vec<u8> = Vec::new();
-				if tag.is_string()
+				for _ in 0..(number_of_components - value.len() as u32)
 				{
-					for _ in 0..(number_of_components - value.len() as u32)
-					{
-						string_padding.push(0x00);
-					}	
-				}
+					string_padding.push(0x00);
+				}	
+			}
 
-				// Add offset or value /										4 bytes
-				// Depending on the amount of data, either put it directly into
-				// next 4 bytes or write an offset where the data can be found 
-				let byte_count: u32 = number_of_components * tag.format().bytes_per_component();
-				if byte_count > 4
-				{
-					ifd_vec.extend(to_u8_vec_macro!(u32, &next_offset, &self.endian).iter());
-					ifd_offset_area.extend(value.iter());
-					ifd_offset_area.extend(string_padding.iter());
+			// Add offset or value /										4 bytes
+			// Depending on the amount of data, either put it directly into
+			// next 4 bytes or write an offset where the data can be found 
+			let byte_count: u32 = number_of_components * tag.format().bytes_per_component();
+			if byte_count > 4
+			{
+				ifd_vec.extend(to_u8_vec_macro!(u32, &next_offset, &self.endian).iter());
+				ifd_offset_area.extend(value.iter());
+				ifd_offset_area.extend(string_padding.iter());
 
-					next_offset += byte_count;
-				}
-				else
-				{
-					let pre_length = ifd_vec.len();
-
-					ifd_vec.extend(value.iter());
-					ifd_vec.extend(string_padding.iter());
-
-					let post_length = ifd_vec.len();
-
-					// Make sure that this area is indeed *exactly* 4 bytes long
-					for _ in 0..(4-(post_length - pre_length) ) {
-						ifd_vec.push(0x00);
-					}
-				}
+				next_offset += byte_count;
 			}
 			else
 			{
-				println!("Can't unpack value from Tag!");
+				let pre_length = ifd_vec.len();
+
+				ifd_vec.extend(value.iter());
+				ifd_vec.extend(string_padding.iter());
+
+				let post_length = ifd_vec.len();
+
+				// Make sure that this area is indeed *exactly* 4 bytes long
+				for _ in 0..(4-(post_length - pre_length) ) {
+					ifd_vec.push(0x00);
+				}
 			}
+			
 		}
 
 		// In case we have to write a SubIFD (e.g. ExifIFD) next
@@ -325,8 +321,8 @@ Metadata
 		// Start construction with TIFF header
 		let mut exif_vec: Vec<u8> = Vec::new();
 		match self.endian {
-			Endian::Little	=> exif_vec.extend(TIFF_header_little.iter()),
-			Endian::Big		=> exif_vec.extend(TIFF_header_big.iter())
+			Endian::Little	=> exif_vec.extend(TIFF_HEADER_LITTLE.iter()),
+			Endian::Big		=> exif_vec.extend(TIFF_HEADER_BIG.iter())
 		}
 
 		// IFD0
@@ -395,7 +391,7 @@ Metadata
 		// - length of exif_vec
 		// - 1 for ssss itself (why not 4? idk)
 		let ssss = (
-			EXIF_header.len()	as u32 
+			EXIF_HEADER.len()	as u32 
 			+ exif_vec.len()	as u32 
 			+ 1					as u32
 		).to_string();
@@ -413,7 +409,7 @@ Metadata
 		png_exif.push(NEWLINE);
 
 		// Write EXIF header and previously constructed EXIF data as encoded bytes
-		for byte in &EXIF_header
+		for byte in &EXIF_HEADER
 		{
 			png_exif.extend(Self::encode_byte(byte).iter());
 		}
