@@ -20,7 +20,7 @@ macro_rules! to_u8_vec_macro {
 	($type:ty, $value:expr, $endian:expr)
 	=>
 	{
-		<$type as U8conversion<$type>>::to_u8_vec($value, $endian)
+		<$type as U8conversion>::to_u8_vec($value, $endian)
 	};
 }
 

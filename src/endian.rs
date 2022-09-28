@@ -7,7 +7,7 @@ Endian
 }
 
 pub trait
-U8conversion<T>
+U8conversion
 {
 	fn
 	to_u8_vec
@@ -25,7 +25,7 @@ macro_rules! build_u8conversion
 	)
 	=>
 	{
-		impl<T> U8conversion<T> for $type
+		impl U8conversion for $type
 		{
 			fn
 			to_u8_vec
@@ -43,7 +43,7 @@ macro_rules! build_u8conversion
 			}
 		}
 
-		impl<T> U8conversion<T> for Vec<$type>
+		impl U8conversion for Vec<$type>
 		{
 			fn
 			to_u8_vec
@@ -57,7 +57,7 @@ macro_rules! build_u8conversion
 				for value in self
 				{
 					// u8_vec.extend(value.to_u8_vec(endian).iter());
-					u8_vec.extend(<$type as U8conversion<$type>>::to_u8_vec(value, endian).iter());
+					u8_vec.extend(<$type as U8conversion>::to_u8_vec(value, endian).iter());
 				}
 				return u8_vec;
 			}
@@ -76,7 +76,7 @@ build_u8conversion![i64];
 build_u8conversion![f32];
 build_u8conversion![f64];
 
-impl<T> U8conversion<T> for String
+impl U8conversion for String
 {
 	fn
 	to_u8_vec
