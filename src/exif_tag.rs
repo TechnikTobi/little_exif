@@ -5,7 +5,7 @@ use paste::paste;
 use crate::endian::{U8conversion, Endian};
 use crate::exif_tag_format::*;
 
-#[derive(Debug, Eq, PartialEq, PartialOrd, Hash)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Hash, Clone, Copy)]
 pub enum
 ExifTagGroup
 {
@@ -15,10 +15,6 @@ ExifTagGroup
 			InteropIFD,
 			MakerNotes,
 	IFD1,
-	// IFD2,
-	// SubIFD,
-	// SubIFD1,
-	// SubIFD2,
 }
 
 macro_rules! build_tag_enum {
@@ -34,15 +30,26 @@ macro_rules! build_tag_enum {
 	) 
 	=>
 	{
-		#[derive(Eq, PartialEq, Hash, Debug)]
+		// #[derive(Eq, PartialEq, Hash, Debug)]
+		#[derive(PartialEq, Debug)]
 		pub enum 
 		ExifTag
 		{
 			$(
 				$tag(paste!{[<$format_enum>]}),
 			)*
-			UNKNOWN_STRING(STRING, u16, ExifTagGroup),		// data, tag, group
-			UNKNOWN_OTHER(Vec<u8>, u16, ExifTagGroup, u16)	// data, tag, group, format
+			UNKNOWN_STRING(		 STRING,		u16, ExifTagGroup),
+			UNKNOWN_INT8U(		 INT8U,			u16, ExifTagGroup),
+			UNKNOWN_INT16U(		 INT16U,		u16, ExifTagGroup),
+			UNKNOWN_INT32U(		 INT32U,		u16, ExifTagGroup),
+			UNKNOWN_RATIONAL64U( RATIONAL64U,	u16, ExifTagGroup),
+			UNKNOWN_INT8S(		 INT8S,			u16, ExifTagGroup),
+			UNKNOWN_UNDEF(		 UNDEF,			u16, ExifTagGroup),
+			UNKNOWN_INT16S(		 INT16S,		u16, ExifTagGroup),
+			UNKNOWN_INT32S(		 INT32S,		u16, ExifTagGroup),
+			UNKNOWN_RATIONAL64S( RATIONAL64S,	u16, ExifTagGroup),
+			UNKNOWN_FLOAT(		 FLOAT,			u16, ExifTagGroup),
+			UNKNOWN_DOUBLE(		 DOUBLE,		u16, ExifTagGroup),
 		}
 
 		impl ExifTag
@@ -60,8 +67,18 @@ macro_rules! build_tag_enum {
 					$(
 						ExifTag::$tag(_) => $hex_value,
 					)*
-					ExifTag::UNKNOWN_STRING(_, tag, _) => tag,
-					ExifTag::UNKNOWN_OTHER(_, tag, _, _) => tag,
+					ExifTag::UNKNOWN_STRING(		_, tag, _) => tag,
+					ExifTag::UNKNOWN_INT8U(			_, tag, _) => tag,
+					ExifTag::UNKNOWN_INT16U(		_, tag, _) => tag,
+					ExifTag::UNKNOWN_INT32U(		_, tag, _) => tag,
+					ExifTag::UNKNOWN_RATIONAL64U(	_, tag, _) => tag,
+					ExifTag::UNKNOWN_INT8S(			_, tag, _) => tag,
+					ExifTag::UNKNOWN_UNDEF(			_, tag, _) => tag,
+					ExifTag::UNKNOWN_INT16S(		_, tag, _) => tag,
+					ExifTag::UNKNOWN_INT32S(		_, tag, _) => tag,
+					ExifTag::UNKNOWN_RATIONAL64S(	_, tag, _) => tag,
+					ExifTag::UNKNOWN_FLOAT(			_, tag, _) => tag,
+					ExifTag::UNKNOWN_DOUBLE(		_, tag, _) => tag,
 				}
 			}
 
@@ -78,28 +95,9 @@ macro_rules! build_tag_enum {
 					$(
 						$hex_value => Ok(ExifTag::$tag(<paste!{[<$format_enum>]}>::new())),
 					)*
-					_ => Err(String::from("Invalid hex value for EXIF tag - Use 'UNKNOWN_STRING' or 'UNKNOWN_OTHER' instead")),
+					_ => Err(String::from("Invalid hex value for EXIF tag - Use 'UNKNOWN_...' instead")),
 				}
 			}
-
-			// Gets the String representation of an EXIF tag
-			/*
-			pub fn
-			as_string
-			(
-				&self
-			)
-			-> String
-			{
-				match *self
-				{
-					$(
-						ExifTag::$tag(_) => String::from(stringify!($tag)),
-					)*
-					_ => 
-				}
-			}
-			*/
 
 			pub fn
 			is_writable
@@ -113,8 +111,7 @@ macro_rules! build_tag_enum {
 					$(
 						ExifTag::$tag(_) => $writable,
 					)*
-					ExifTag::UNKNOWN_STRING(_, _, _) => true,
-					ExifTag::UNKNOWN_OTHER(_, _, _, _) => true,
+					_ => true,
 				}
 			}
 
@@ -127,8 +124,18 @@ macro_rules! build_tag_enum {
 			{
 				match *self
 				{
-					ExifTag::UNKNOWN_STRING(_, _, _) => true,
-					ExifTag::UNKNOWN_OTHER(_, _, _, _) => true,
+					ExifTag::UNKNOWN_STRING(		_, _, _) => true,
+					ExifTag::UNKNOWN_INT8U(			_, _, _) => true,
+					ExifTag::UNKNOWN_INT16U(		_, _, _) => true,
+					ExifTag::UNKNOWN_INT32U(		_, _, _) => true,
+					ExifTag::UNKNOWN_RATIONAL64U(	_, _, _) => true,
+					ExifTag::UNKNOWN_INT8S(			_, _, _) => true,
+					ExifTag::UNKNOWN_UNDEF(			_, _, _) => true,
+					ExifTag::UNKNOWN_INT16S(		_, _, _) => true,
+					ExifTag::UNKNOWN_INT32S(		_, _, _) => true,
+					ExifTag::UNKNOWN_RATIONAL64S(	_, _, _) => true,
+					ExifTag::UNKNOWN_FLOAT(			_, _, _) => true,
+					ExifTag::UNKNOWN_DOUBLE(		_, _, _) => true,
 					_ => false
 				}
 			}
@@ -162,9 +169,18 @@ macro_rules! build_tag_enum {
 					$(
 						ExifTag::$tag(_) => ExifTagGroup::$group,
 					)*
-					_ => todo!()
-					//ExifTag::UNKNOWN_STRING(_, _, group) => group,
-					//ExifTag::UNKNOWN_OTHER(_, _, group, _) => group,
+					ExifTag::UNKNOWN_STRING(		_, _, group) => group,
+					ExifTag::UNKNOWN_INT8U(			_, _, group) => group,
+					ExifTag::UNKNOWN_INT16U(		_, _, group) => group,
+					ExifTag::UNKNOWN_INT32U(		_, _, group) => group,
+					ExifTag::UNKNOWN_RATIONAL64U(	_, _, group) => group,
+					ExifTag::UNKNOWN_INT8S(			_, _, group) => group,
+					ExifTag::UNKNOWN_UNDEF(			_, _, group) => group,
+					ExifTag::UNKNOWN_INT16S(		_, _, group) => group,
+					ExifTag::UNKNOWN_INT32S(		_, _, group) => group,
+					ExifTag::UNKNOWN_RATIONAL64S(	_, _, group) => group,
+					ExifTag::UNKNOWN_FLOAT(			_, _, group) => group,
+					ExifTag::UNKNOWN_DOUBLE(		_, _, group) => group,
 				}
 			}
 
@@ -180,7 +196,18 @@ macro_rules! build_tag_enum {
 					$(
 						ExifTag::$tag(_) => ExifTagFormat::$format_enum,
 					)*
-					_ => todo!(),
+					ExifTag::UNKNOWN_STRING(		_, _, _) => ExifTagFormat::STRING,
+					ExifTag::UNKNOWN_INT8U(			_, _, _) => ExifTagFormat::INT8U,
+					ExifTag::UNKNOWN_INT16U(		_, _, _) => ExifTagFormat::INT16U,
+					ExifTag::UNKNOWN_INT32U(		_, _, _) => ExifTagFormat::INT32U,
+					ExifTag::UNKNOWN_RATIONAL64U(	_, _, _) => ExifTagFormat::RATIONAL64U,
+					ExifTag::UNKNOWN_INT8S(			_, _, _) => ExifTagFormat::INT8S,
+					ExifTag::UNKNOWN_UNDEF(			_, _, _) => ExifTagFormat::UNDEF,
+					ExifTag::UNKNOWN_INT16S(		_, _, _) => ExifTagFormat::INT16S,
+					ExifTag::UNKNOWN_INT32S(		_, _, _) => ExifTagFormat::INT32S,
+					ExifTag::UNKNOWN_RATIONAL64S(	_, _, _) => ExifTagFormat::RATIONAL64S,
+					ExifTag::UNKNOWN_FLOAT(			_, _, _) => ExifTagFormat::FLOAT,
+					ExifTag::UNKNOWN_DOUBLE(		_, _, _) => ExifTagFormat::DOUBLE,
 				}
 			}
 
@@ -207,7 +234,18 @@ macro_rules! build_tag_enum {
 							return value.len() as u32 + self.is_string() as u32;
 						},
 					)*
-					_ => todo!(),
+					ExifTag::UNKNOWN_STRING(		value, _, _) => value.len() as u32 + 1,
+					ExifTag::UNKNOWN_INT8U(			value, _, _) => value.len() as u32,
+					ExifTag::UNKNOWN_INT16U(		value, _, _) => value.len() as u32,
+					ExifTag::UNKNOWN_INT32U(		value, _, _) => value.len() as u32,
+					ExifTag::UNKNOWN_RATIONAL64U(	value, _, _) => value.len() as u32,
+					ExifTag::UNKNOWN_INT8S(			value, _, _) => value.len() as u32,
+					ExifTag::UNKNOWN_UNDEF(			value, _, _) => value.len() as u32,
+					ExifTag::UNKNOWN_INT16S(		value, _, _) => value.len() as u32,
+					ExifTag::UNKNOWN_INT32S(		value, _, _) => value.len() as u32,
+					ExifTag::UNKNOWN_RATIONAL64S(	value, _, _) => value.len() as u32,
+					ExifTag::UNKNOWN_FLOAT(			value, _, _) => value.len() as u32,
+					ExifTag::UNKNOWN_DOUBLE(		value, _, _) => value.len() as u32,
 				}
 			}
 
@@ -224,7 +262,7 @@ macro_rules! build_tag_enum {
 						ExifTag::$tag(_) => (ExifTagFormat::$format_enum == ExifTagFormat::STRING),
 					)*
 					ExifTag::UNKNOWN_STRING(_, _, _) => true,
-					ExifTag::UNKNOWN_OTHER(_, _, _, _) => false,
+					_ => false,
 				}
 			}
 
@@ -239,12 +277,20 @@ macro_rules! build_tag_enum {
 				match self
 				{
 					$(
-						// ExifTag::$tag(value) => <paste!{[<$format_enum>]} as U8conversion<paste!{[<$format_enum>]}>>::to_u8_vec(value, endian),
-						ExifTag::$tag(value) => <paste!{[<$format_enum>]} as U8conversion>::to_u8_vec(value, endian),
+						ExifTag::$tag(value) => value.to_u8_vec(endian),
 					)*
-					ExifTag::UNKNOWN_STRING(data, _, _) => data.to_u8_vec(endian),
-					ExifTag::UNKNOWN_OTHER(data, _, _, _) => data.to_u8_vec(endian),
-					_ => todo!(),
+					ExifTag::UNKNOWN_STRING(		value, _, _) => value.to_u8_vec(endian),
+					ExifTag::UNKNOWN_INT8U(			value, _, _) => value.to_u8_vec(endian),
+					ExifTag::UNKNOWN_INT16U(		value, _, _) => value.to_u8_vec(endian),
+					ExifTag::UNKNOWN_INT32U(		value, _, _) => value.to_u8_vec(endian),
+					ExifTag::UNKNOWN_RATIONAL64U(	value, _, _) => value.to_u8_vec(endian),
+					ExifTag::UNKNOWN_INT8S(			value, _, _) => value.to_u8_vec(endian),
+					ExifTag::UNKNOWN_UNDEF(			value, _, _) => value.to_u8_vec(endian),
+					ExifTag::UNKNOWN_INT16S(		value, _, _) => value.to_u8_vec(endian),
+					ExifTag::UNKNOWN_INT32S(		value, _, _) => value.to_u8_vec(endian),
+					ExifTag::UNKNOWN_RATIONAL64S(	value, _, _) => value.to_u8_vec(endian),
+					ExifTag::UNKNOWN_FLOAT(			value, _, _) => value.to_u8_vec(endian),
+					ExifTag::UNKNOWN_DOUBLE(		value, _, _) => value.to_u8_vec(endian),
 				}
 			}
 		}
@@ -257,7 +303,7 @@ macro_rules! build_tag_enum {
 // Note regarding non-writable tags: Apart from
 // - StripOffsets
 // - StripByteCounts
-// - Opto-ElectricConvFactor
+// - Opto-ElectricConvFactor (OECF)
 // - SpatialFrequencyResponse
 // - DeviceSettingDescription
 // none of them are part of the EXIF 2.32 specification
