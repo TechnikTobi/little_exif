@@ -5,7 +5,7 @@ use paste::paste;
 use crate::endian::{U8conversion, Endian};
 use crate::exif_tag_format::*;
 
-#[derive(Debug, Eq, PartialEq, PartialOrd)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Hash)]
 pub enum
 ExifTagGroup
 {
@@ -41,6 +41,8 @@ macro_rules! build_tag_enum {
 			$(
 				$tag(paste!{[<$format_enum>]}),
 			)*
+			UNKNOWN_STRING(STRING, u16, ExifTagGroup),		// data, tag, group
+			UNKNOWN_OTHER(Vec<u8>, u16, ExifTagGroup, u16)	// data, tag, group, format
 		}
 
 		impl ExifTag
@@ -58,6 +60,8 @@ macro_rules! build_tag_enum {
 					$(
 						ExifTag::$tag(_) => $hex_value,
 					)*
+					ExifTag::UNKNOWN_STRING(_, tag, _) => tag,
+					ExifTag::UNKNOWN_OTHER(_, tag, _, _) => tag,
 				}
 			}
 
@@ -74,11 +78,12 @@ macro_rules! build_tag_enum {
 					$(
 						$hex_value => Ok(ExifTag::$tag(<paste!{[<$format_enum>]}>::new())),
 					)*
-					_ => Err(String::from("Invalid hex value for EXIF tag")),
+					_ => Err(String::from("Invalid hex value for EXIF tag - Use 'UNKNOWN_STRING' or 'UNKNOWN_OTHER' instead")),
 				}
 			}
 
 			// Gets the String representation of an EXIF tag
+			/*
 			pub fn
 			as_string
 			(
@@ -91,8 +96,10 @@ macro_rules! build_tag_enum {
 					$(
 						ExifTag::$tag(_) => String::from(stringify!($tag)),
 					)*
+					_ => 
 				}
 			}
+			*/
 
 			pub fn
 			is_writable
@@ -106,7 +113,41 @@ macro_rules! build_tag_enum {
 					$(
 						ExifTag::$tag(_) => $writable,
 					)*
+					ExifTag::UNKNOWN_STRING(_, _, _) => true,
+					ExifTag::UNKNOWN_OTHER(_, _, _, _) => true,
 				}
+			}
+
+			pub fn
+			is_unknown
+			(
+				&self
+			)
+			-> bool
+			{
+				match *self
+				{
+					ExifTag::UNKNOWN_STRING(_, _, _) => true,
+					ExifTag::UNKNOWN_OTHER(_, _, _, _) => true,
+					_ => false
+				}
+			}
+
+			pub fn
+			unknown_is_justified
+			(
+				&self
+			)
+			-> bool
+			{
+				if self.is_unknown()
+				{
+					if let Ok(_) = Self::from_u16(self.as_u16())
+					{
+						return false;
+					}
+				}
+				return true;
 			}
 
 			pub fn
@@ -121,10 +162,12 @@ macro_rules! build_tag_enum {
 					$(
 						ExifTag::$tag(_) => ExifTagGroup::$group,
 					)*
+					_ => todo!()
+					//ExifTag::UNKNOWN_STRING(_, _, group) => group,
+					//ExifTag::UNKNOWN_OTHER(_, _, group, _) => group,
 				}
 			}
 
-			
 			pub fn
 			format
 			(
@@ -137,6 +180,7 @@ macro_rules! build_tag_enum {
 					$(
 						ExifTag::$tag(_) => ExifTagFormat::$format_enum,
 					)*
+					_ => todo!(),
 				}
 			}
 
@@ -163,6 +207,7 @@ macro_rules! build_tag_enum {
 							return value.len() as u32 + self.is_string() as u32;
 						},
 					)*
+					_ => todo!(),
 				}
 			}
 
@@ -178,6 +223,8 @@ macro_rules! build_tag_enum {
 					$(
 						ExifTag::$tag(_) => (ExifTagFormat::$format_enum == ExifTagFormat::STRING),
 					)*
+					ExifTag::UNKNOWN_STRING(_, _, _) => true,
+					ExifTag::UNKNOWN_OTHER(_, _, _, _) => false,
 				}
 			}
 
@@ -192,8 +239,12 @@ macro_rules! build_tag_enum {
 				match self
 				{
 					$(
-						ExifTag::$tag(value) => <paste!{[<$format_enum>]} as U8conversion<paste!{[<$format_enum>]}>>::to_u8_vec(value, endian),
+						// ExifTag::$tag(value) => <paste!{[<$format_enum>]} as U8conversion<paste!{[<$format_enum>]}>>::to_u8_vec(value, endian),
+						ExifTag::$tag(value) => <paste!{[<$format_enum>]} as U8conversion>::to_u8_vec(value, endian),
 					)*
+					ExifTag::UNKNOWN_STRING(data, _, _) => data.to_u8_vec(endian),
+					ExifTag::UNKNOWN_OTHER(data, _, _, _) => data.to_u8_vec(endian),
+					_ => todo!(),
 				}
 			}
 		}
