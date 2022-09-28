@@ -1,4 +1,3 @@
-
 pub type INT8U			= Vec<u8>;
 pub type STRING			= String;
 pub type INT16U			= Vec<u16>;
