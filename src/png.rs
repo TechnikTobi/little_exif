@@ -10,6 +10,7 @@ use crc::{Crc, CRC_32_ISO_HDLC};
 use deflate::deflate_bytes_zlib;
 
 use crate::png_chunk::{PngChunkOrdering, PngChunk};
+use crate::general_file_io::*;
 
 pub const PNG_SIGNATURE: [u8; 8] = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 pub const RAW_PROFILE_TYPE_EXIF: [u8; 23] = [
@@ -24,11 +25,11 @@ check_signature
 (
 	path: &Path
 )
--> Result<File, String>
+-> Result<File, std::io::Error>
 {
 	if !path.exists()
 	{
-		return Err("Can't parse PNG file - File does not exist!".to_string());
+		return io_error!(NotFound, "Can't parse PNG file - File does not exist!");
 	}
 
 	let mut file = OpenOptions::new()
@@ -46,7 +47,7 @@ check_signature
 
 	if !signature_is_valid
 	{
-		return Err("Can't parse PNG file - Wrong signature!".to_string());
+		return io_error!(InvalidData, "Can't parse PNG file - Wrong signature!");
 	}
 
 	// Signature is valid - can proceed using the file as PNG file
@@ -61,7 +62,7 @@ get_next_chunk_descriptor
 (
 	file: &mut File
 )
--> Result<PngChunk, String>
+-> Result<PngChunk, std::io::Error>
 {
 	// Read the start of the chunk
 	let mut chunk_start = [0u8; 8];
@@ -70,7 +71,7 @@ get_next_chunk_descriptor
 	// Check that indeed 8 bytes were read
 	if bytes_read != 8
 	{
-		return Err("Could not read start of chunk".to_string());
+		return io_error!(Other, "Could not read start of chunk");
 	}
 
 	// Construct name of chunk and its length
@@ -86,7 +87,7 @@ get_next_chunk_descriptor
 	bytes_read = file.read(&mut chunk_data_buffer).unwrap();
 	if bytes_read != chunk_length as usize
 	{
-		return Err("Could not read chunk data".to_string());
+		return io_error!(Other, "Could not read chunk data");
 	}
 
 	// ... and CRC values
@@ -94,7 +95,7 @@ get_next_chunk_descriptor
 	bytes_read = file.read(&mut chunk_crc_buffer).unwrap();
 	if bytes_read != 4
 	{
-		return Err("Could not read chunk CRC".to_string());
+		return io_error!(Other, "Could not read chunk CRC");
 	}
 
 	// Compute CRC on chunk
@@ -109,16 +110,23 @@ get_next_chunk_descriptor
 	{
 		if ((checksum >> (8 * (3-i))) as u8) != chunk_crc_buffer[i]
 		{
-			return Err("Checksum check failed while reading PNG!".to_string());
+			return io_error!(InvalidData, "Checksum check failed while reading PNG!");
 		}
 	}
 
 	// If validating the chunk using the CRC was successful, return its descriptor
 	// Note: chunk_length does NOT include the +4 for the CRC area!
-	PngChunk::from_string(
+	if let Ok(png_chunk) = PngChunk::from_string(
 		&chunk_name.unwrap(),
 		chunk_length
 	)
+	{
+		return Ok(png_chunk);
+	}
+	else
+	{
+		return io_error!(Other, "Invalid PNG chunk name");
+	}
 }
 
 
@@ -128,7 +136,7 @@ parse_png
 (
 	path: &Path
 )
--> Result<Vec<PngChunk>, String>
+-> Result<Vec<PngChunk>, std::io::Error>
 {
 	let mut file = check_signature(path);
 	let mut chunks = Vec::new();
@@ -140,7 +148,8 @@ parse_png
 
 	loop
 	{
-		if let Ok(chunk_descriptor) = get_next_chunk_descriptor(file.as_mut().unwrap())
+		let next_chunk_descriptor_result = get_next_chunk_descriptor(file.as_mut().unwrap());
+		if let Ok(chunk_descriptor) = next_chunk_descriptor_result
 		{
 			chunks.push(chunk_descriptor);
 
@@ -151,7 +160,7 @@ parse_png
 		}
 		else
 		{
-			return Err("Could not read next chunk".to_string());
+			return Err(next_chunk_descriptor_result.err().unwrap());
 		}
 	}
 
@@ -165,9 +174,10 @@ clear_metadata_from_png
 (
 	path: &Path
 )
--> Result<(), String>
+-> Result<(), std::io::Error>
 {
-	if let Ok(chunks) = parse_png(path)
+	let parse_png_result = parse_png(path);
+	if let Ok(chunks) = parse_png_result
 	{
 		let mut file = check_signature(path).unwrap();
 		let mut seek_counter = 0u64;
@@ -200,7 +210,7 @@ clear_metadata_from_png
 	}
 	else
 	{
-		return Err("Could not clear metadata from PNG".to_string());
+		return Err(parse_png_result.err().unwrap());
 	}
 }
 
@@ -210,15 +220,15 @@ write_metadata_to_png
 	path: &Path,
 	encoded_metadata: &Vec<u8>
 )
--> Result<(), String>
+-> Result<(), std::io::Error>
 {
 
 	// First clear the existing metadata
 	// This also parses the PNG and checks its validity, so it is safe to
 	// assume that is, in fact, a usable PNG file
-	if let Err(_) = clear_metadata_from_png(path)
+	if let Err(error) = clear_metadata_from_png(path)
 	{
-		return Err("Could not safely write new metadata to PNG".to_string());
+		return Err(error);
 	}
 
 	let mut IHDR_length = 0u32;
@@ -239,7 +249,7 @@ write_metadata_to_png
 	+ 12					as u64;	//	rest of IHDR chunk (length, type, CRC)
 
 	// Get to first chunk after IHDR, copy all the data starting from there
-	file.seek(SeekFrom::Start(seek_start));
+	perform_file_action!(file.seek(SeekFrom::Start(seek_start)));
 	let mut buffer = Vec::new();
 	file.read_to_end(&mut buffer);
 	file.seek(SeekFrom::Start(seek_start));

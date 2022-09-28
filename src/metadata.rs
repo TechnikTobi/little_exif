@@ -1,8 +1,10 @@
 use std::path::Path;
+use std::io::{Error, ErrorKind};
 
 use crate::endian::{Endian, U8conversion};
 use crate::exif_tag::{ExifTag, ExifTagGroup};
 use crate::png::write_metadata_to_png;
+use crate::general_file_io::*;
 
 const NEWLINE: u8 = 0x0a;
 const SPACE: u8 = 0x20;
@@ -123,36 +125,35 @@ Metadata
 		}
 	}
 
-
 	pub fn
 	write_to_file
 	(
 		&self,
 		path: &Path
 	)
-	-> Result<(), String>
+	-> Result<(), std::io::Error>
 	{
 		if !path.exists()
 		{
-			return Err("Can't write Metadata - File does not exist!".to_string());
+			return io_error!(Other, "Can't write Metadata - File does not exist!");
 		}
 
 		let file_type = path.extension();
 		if file_type.is_none()
 		{
-			return Err("Can't get extension from given path!".to_string());
+			return io_error!(Other, "Can't get extension from given path!");
 		}
 
 		let file_type_str = file_type.unwrap().to_str();
 		if file_type_str.is_none()
 		{
-			return Err("Can't convert file type to string!".to_string());
+			return io_error!(Other, "Can't convert file type to string!");
 		}
 		
 		match file_type_str.unwrap().to_lowercase().as_str()
 		{
 			"png"	=> write_metadata_to_png(&path, &self.encode_metadata_png()),
-			_		=> Err("Unsupported file type!".to_string()),
+			_		=> io_error!(Unsupported, "Unsupported file type!"),
 		}
 
 	}
