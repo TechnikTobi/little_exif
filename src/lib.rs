@@ -18,13 +18,15 @@
 #![crate_name = "little_exif"]
 
 mod endian;
-pub mod exif_tag;
 mod exif_tag_format;
-pub mod metadata;
+mod general_file_io;
 
 mod png;
 mod png_chunk;
 mod jpg;
+
+pub mod exif_tag;
+pub mod metadata;
 
 #[cfg(test)]
 mod tests {
