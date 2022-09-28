@@ -17,11 +17,19 @@ main()
 	// Create a new Metadata struct
 	let mut data = Metadata::new();
 
-	// Set the ImageDescription tag as an example
+	// Set the ImageDescription (IFD0) an ISO (ExifIFD) tag as examples
 	data.set_tag(
 		ExifTag::ImageDescription("-w 1000 -h 1000 --x_mid=0 --y_mid=0 -z 0.5 -i 1000 -c 8".to_string())
 	);
+	data.set_tag(
+		ExifTag::ISO(vec![2022])
+	);
 
 	// Write the metadata to the copy
-	data.write_to_file(Path::new("copy.png"));
+	let write_result = data.write_to_file(Path::new("examples/copy.png"));
+
+	if write_result.is_err()
+	{
+		println!("{}", write_result.err().unwrap());
+	}
 }
