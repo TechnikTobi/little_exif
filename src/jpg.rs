@@ -1,3 +1,4 @@
+/*
 use std::path::Path;
 use std::io::Read;
 use std::io::Write;
@@ -44,3 +45,4 @@ check_signature
 	// Signature is valid - can proceed using the file as JPG file
 	return Ok(file);
 }
+*/

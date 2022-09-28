@@ -1,3 +1,4 @@
+#[allow(non_camel_case_types)]
 pub enum
 PngChunkOrdering
 {
@@ -21,6 +22,7 @@ macro_rules! build_png_chunk_type_enum {
 	)
 	=>
 	{
+		#[allow(non_camel_case_types)]
 		pub enum
 		PngChunk
 		{
@@ -31,6 +33,7 @@ macro_rules! build_png_chunk_type_enum {
 
 		impl PngChunk
 		{
+			/*
 			pub fn
 			is_critical
 			(
@@ -75,6 +78,7 @@ macro_rules! build_png_chunk_type_enum {
 					)*
 				}
 			}
+			*/
 
 			pub fn
 			length
