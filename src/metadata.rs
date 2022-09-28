@@ -86,19 +86,32 @@ Metadata
 		// Sort the tags by the IFD they will go into the file later on
 		self.data.sort_by(
 			|a, b| 
-			if b.get_group() == a.get_group() 
+			if a.get_group() == b.get_group() 
 			{
-				std::cmp::Ordering::Equal
-			}
-			else
-			{
-				if b.get_group() < a.get_group()
+				// Same group, but unknown should go last 
+				if a.is_unknown() == b.is_unknown()
 				{
-					std::cmp::Ordering::Greater
+					std::cmp::Ordering::Equal
+				}
+				else if !a.is_unknown() && b.is_unknown()
+				{
+					std::cmp::Ordering::Less
 				}
 				else
 				{
+					std::cmp::Ordering::Greater
+				}
+				
+			}
+			else
+			{
+				if a.get_group() < b.get_group() // e.g. IFD0 < ExifIFD
+				{
 					std::cmp::Ordering::Less
+				}
+				else
+				{
+					std::cmp::Ordering::Greater
 				}
 			}
 		);
@@ -106,7 +119,7 @@ Metadata
 		println!("Output after set_tag");
 		for value in &self.data
 		{
-			println!("{:?}", value.get_group());
+			println!("{:?} {}", value.get_group(), value.is_unknown());
 		}
 	}
 
