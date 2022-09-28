@@ -9,6 +9,7 @@ PngChunkOrdering
 	NONE
 }
 
+/// This macro builds the enum for the different type of PNG chunks
 macro_rules! build_png_chunk_type_enum {
 	(
 		$( (
