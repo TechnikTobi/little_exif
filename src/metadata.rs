@@ -278,7 +278,7 @@ Metadata
 	(
 		encoded_data: &Vec<u8>
 	)
-	-> Result<Vec<u8>, std::io::Error>
+	-> Result<Vec<ExifTag>, std::io::Error>
 	{
 
 		// Ensure that we have enough data
@@ -314,10 +314,12 @@ Metadata
 		let test = Self::decode_ifd(
 			&encoded_data[14..].to_vec(),
 			&ExifTagGroup::IFD0,
+			8,
 			&Endian::Little
 		);
 
-		Ok(Vec::new())
+		//Ok(Vec::new())
+		return test;
 	}
 	
 
@@ -326,6 +328,7 @@ Metadata
 	(
 		encoded_data: &Vec<u8>,
 		group: &ExifTagGroup,
+		given_offset: u32,
 		endian: &Endian
 	)
 	-> Result<Vec<ExifTag>, std::io::Error>
@@ -337,6 +340,7 @@ Metadata
 		// Assert that we have enough data to unpack
 		assert!(2 + IFD_ENTRY_LENGTH as usize * number_of_entries as usize + IFD_END.len() <= encoded_data.len());
 
+		let mut tags = Vec::new();
 		for i in 0..number_of_entries
 		{
 			// index within the given data where the current entry starts
@@ -358,24 +362,44 @@ Metadata
 				return io_error!(Other, "Illegal format value!");
 			}
 
+			// Check if the tag is known and compatible with the given format
+			// Return error if incompatible
+			// Use one of the unkown tags if unknown
+			let use_unknown;
+			if let Ok(tag) = ExifTag::from_u16(hex_tag)
+			{
+				if tag.format().as_u16() != format.as_u16()
+				{
+					return io_error!(Other, "Illegal format for known tag!");
+				}
+				use_unknown = false;
+			}
+			else
+			{
+				use_unknown = true;
+			}
+
 			// Calculating the number of required bytes to determine if next
 			// 4 bytes are data or an offset to data
 			let byte_count = format.bytes_per_component() * hex_component_number;
 
-			let data;
+			let raw_data;
 			if byte_count > 4
 			{
 				// Compute the offset
-				let hex_offset = from_u8_vec_macro!(u32, &encoded_data[(ifd_start_index+8)..(ifd_start_index+12)].to_vec(), endian);
-				data = Vec::new();
+				let hex_offset = from_u8_vec_macro!(u32, &encoded_data[(ifd_start_index+8)..(ifd_start_index+12)].to_vec(), endian) - given_offset;
+				raw_data = encoded_data[(hex_offset as usize)..((hex_offset+byte_count) as usize)].to_vec();
 			}
 			else
 			{
-				data = String::new();
+				// The 4 bytes are the actual data
+				raw_data = encoded_data[(ifd_start_index+8)..(ifd_start_index+12)].to_vec();
 			}
+
+			tags.push(ExifTag::from_u16_with_data(hex_tag, &format, &raw_data, &endian, group).unwrap());
 		}
 
-		Ok(Vec::new())
+		return Ok(tags);
 	}
 
 	fn
