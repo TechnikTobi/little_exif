@@ -1,4 +1,3 @@
-/*
 use std::path::Path;
 use std::io::Read;
 use std::io::Write;
@@ -45,4 +44,24 @@ check_signature
 	// Signature is valid - can proceed using the file as JPG file
 	return Ok(file);
 }
-*/
+
+pub fn
+clear_metadata
+(
+	path: &Path
+)
+-> Result<(), std::io::Error>
+{
+	Ok(())
+}
+
+pub fn
+write_metadata
+(
+	path: &Path,
+	encoded_metadata: &Vec<u8>
+)
+-> Result<(), std::io::Error>
+{
+	Ok(())
+}
