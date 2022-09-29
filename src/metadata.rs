@@ -1,9 +1,12 @@
 use std::path::Path;
+use std::collections::VecDeque;
 
 use crate::endian::{Endian, U8conversion};
 use crate::exif_tag::{ExifTag, ExifTagGroup};
-use crate::png::write_metadata_to_png;
 use crate::general_file_io::*;
+
+use crate::jpg;
+use crate::png;
 
 const NEWLINE: u8 = 0x0a;
 const SPACE: u8 = 0x20;
@@ -51,8 +54,13 @@ Metadata
 	)
 	-> Metadata
 	{
-		//Metadata { endian: Endian::Little, data: Vec::new() }
-		todo!();
+		/*
+		for value in &Self::decode_metadata_png(path)
+		{
+			println!("{}", value);
+		}
+		*/
+		Metadata { endian: Endian::Little, data: Vec::new() }
 	}
 	
 
@@ -152,40 +160,164 @@ Metadata
 		
 		match file_type_str.unwrap().to_lowercase().as_str()
 		{
-			"png"	=> write_metadata_to_png(&path, &self.encode_metadata_png()),
+			"jpg"	=> jpg::write_metadata(&path, &self.encode_metadata_jpg()),
+			"jpeg"	=> jpg::write_metadata(&path, &self.encode_metadata_jpg()),
+			"png"	=> png::write_metadata(&path, &self.encode_metadata_png()),
 			_		=> io_error!(Unsupported, "Unsupported file type!"),
 		}
 
 	}
 
-	/*
-	fn
-	decode
+
+	pub fn
+	decode_metadata_png
 	(
 		encoded_data: &Vec<u8>
 	)
-	->
-	Metadata
+	-> Vec<u8>
 	{
 
-		let mut exif_all = Vec::new();
+		let mut exif_all: VecDeque<u8> = VecDeque::new();
 		let mut other_byte: Option<u8> = None;
 
-		for byte in &encoded_data
+		// This performs the reverse operation to encode_byte:
+		// Two successing bytes represent the ASCII values of the digits of 
+		// a hex value, e.g. 0x31, 0x32 represent '1' and '2', so the resulting
+		// hex value is 0x12, which gets pushed onto exif_all
+		for byte in encoded_data
 		{
-			if other_byte.is_none()
+			// Ignore newline characters
+			if *byte == '\n' as u8
 			{
-				other_byte = Some(byte);
 				continue;
 			}
+
+			if other_byte.is_none()
+			{
+				other_byte = Some(*byte);
+				continue;
+			}
+
+			let value_string = "".to_owned()
+				+ &(other_byte.unwrap() as char).to_string()
+				+ &(*byte as char).to_string();
+			if let Ok(value) = u8::from_str_radix(value_string.trim(), 16)
+			{
+				exif_all.push_back(value);
+			}
 			
-
-
 			other_byte = None;
 		}
-	}
-	*/
 
+		// Now remove the first element until the exif header is found
+		// Store the popped elements to get the size information
+		let mut exif_header_found = false;
+		let mut pop_storage: Vec<u8> = Vec::new();
+
+		while !exif_header_found
+		{
+			let mut counter = 0;
+			for header_value in &EXIF_HEADER
+			{
+				if *header_value != exif_all[counter]
+				{
+					break;
+				}
+				counter += 1;
+			}
+
+			exif_header_found = counter == EXIF_HEADER.len();
+
+			if exif_header_found
+			{
+				break;
+			}
+			pop_storage.push(exif_all.pop_front().unwrap());
+		}
+
+		// The exif header has been found
+		// -> exif_all now starts with the exif header information
+		// -> pop_storage has in its last 4 elements the size information
+		//    that will now get extracted
+		// Consider this part optional as it might be removed in the future and
+		// isn't strictly necessary and just for validating the data we get
+		assert!(pop_storage.len() > 0);
+
+		// Using the encode_byte function re-encode the bytes regarding the size
+		// information and construct its value using decimal based shifting
+		// Example: 153 = 0
+		// + 5*10*10^(2*0) + 3*1*10^(2*0) 
+		// + 0*10*10^(2*1) + 1*1*10^(2*1)
+		let mut given_exif_len = 0u64;
+		for i in 0..std::cmp::min(4, pop_storage.len())
+		{
+			let re_encoded_byte = Self::encode_byte(&pop_storage[pop_storage.len() -1 -i]);
+			let tens_place = u64::from_str_radix(&(re_encoded_byte[0] as char).to_string(), 10).unwrap();
+			let ones_place = u64::from_str_radix(&(re_encoded_byte[1] as char).to_string(), 10).unwrap();
+			given_exif_len = given_exif_len + tens_place * 10 * 10_u64.pow((2 * i).try_into().unwrap());
+			given_exif_len = given_exif_len + ones_place *  1 * 10_u64.pow((2 * i).try_into().unwrap());
+		}
+
+		assert!(given_exif_len == exif_all.len().try_into().unwrap());
+		// End optional part
+
+		return Vec::from(exif_all);
+	}
+
+	pub fn
+	decode_metadata_general
+	(
+		encoded_data: &Vec<u8>
+	)
+	-> Result<Vec<u8>, std::io::Error>
+	{
+
+		// Ensure that we have enough data
+		if encoded_data.len() < (EXIF_HEADER.len() + TIFF_HEADER_BIG.len() + 2 + IFD_END.len())
+		{
+			return io_error!(Other, "Not enough data for encoding!");
+		}
+
+		// Validate EXIF header
+		for i in 0..EXIF_HEADER.len()
+		{
+			if encoded_data[i] != EXIF_HEADER[i]
+			{
+				return io_error!(Other, "Could not validate EXIF header!");
+			}
+		}
+
+		// Determine endian
+		let endian;
+		if encoded_data[6] == 0x49 && encoded_data[7] == 0x49
+		{
+			endian = Endian::Little;
+		}
+		else if encoded_data[6] == 0x4d && encoded_data[7] == 0x4d
+		{
+			endian = Endian::Big;
+		}
+		else
+		{
+			return io_error!(Other, "Illegal endian information!");
+		}
+
+
+
+		Ok(Vec::new())
+	}
+	
+
+	fn
+	decode_ifd
+	(
+		encoded_data: &Vec<u8>,
+		group: ExifTagGroup,
+	)
+	-> Result<Vec<ExifTag>, std::io::Error>
+	{
+		Ok(Vec::new())
+	}
 
 	fn
 	encode_ifd
@@ -376,7 +508,7 @@ Metadata
 		]
 	}
 
-	fn
+	pub fn
 	encode_metadata_png
 	(
 		&self
@@ -419,7 +551,7 @@ Metadata
 			png_exif.extend(Self::encode_byte(byte).iter());
 		}
 		
-		// Write end of EXIF data
+		// Write end of EXIF data - 2* 0x30 results in the String "00" for 0x00
 		png_exif.push(0x30);
 		png_exif.push(0x30);
 		png_exif.push(NEWLINE);
