@@ -333,6 +333,13 @@ Metadata
 	)
 	-> Result<Vec<ExifTag>, std::io::Error>
 	{
+
+		println!("{:?}", group);
+		for value in encoded_data
+		{
+			println!("{:#04x}", value);
+		}
+
 		// The first two bytes give us the number of entries in this IFD
 		let number_of_entries = from_u8_vec_macro!(u16, &encoded_data[0..2].to_vec(), endian);
 		println!("{}", number_of_entries);
@@ -340,7 +347,7 @@ Metadata
 		// Assert that we have enough data to unpack
 		assert!(2 + IFD_ENTRY_LENGTH as usize * number_of_entries as usize + IFD_END.len() <= encoded_data.len());
 
-		let mut tags = Vec::new();
+		let mut tags: Vec<ExifTag> = Vec::new();
 		for i in 0..number_of_entries
 		{
 			// index within the given data where the current entry starts
@@ -365,18 +372,12 @@ Metadata
 			// Check if the tag is known and compatible with the given format
 			// Return error if incompatible
 			// Use one of the unkown tags if unknown
-			let use_unknown;
 			if let Ok(tag) = ExifTag::from_u16(hex_tag)
 			{
 				if tag.format().as_u16() != format.as_u16()
 				{
 					return io_error!(Other, "Illegal format for known tag!");
 				}
-				use_unknown = false;
-			}
-			else
-			{
-				use_unknown = true;
 			}
 
 			// Calculating the number of required bytes to determine if next
@@ -396,7 +397,32 @@ Metadata
 				raw_data = encoded_data[(ifd_start_index+8)..(ifd_start_index+12)].to_vec();
 			}
 
+			// If this is known tag...
+			if let Ok(tag) = ExifTag::from_u16(hex_tag)
+			{
+				// ...for a SubIFD...
+				if let Some(subifd_group) = tag.is_offset_tag()
+				{
+					// ...perform a recursive call
+					let offset = from_u8_vec_macro!(u32, &raw_data, endian) - given_offset;
+					if let Ok(subifd_result) = Self::decode_ifd(
+						&encoded_data[offset as usize..].to_vec(),
+						&subifd_group,
+						offset,
+						endian
+					)
+					{
+						tags.extend(subifd_result);
+					}
+					else
+					{
+						return io_error!(Other, "Could not decode SubIFD!");
+					}
+				}
+			}
+			
 			tags.push(ExifTag::from_u16_with_data(hex_tag, &format, &raw_data, &endian, group).unwrap());
+			
 		}
 
 		return Ok(tags);
