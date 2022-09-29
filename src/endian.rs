@@ -173,7 +173,10 @@ impl U8conversion<String> for String
 
 		for byte in u8_vec
 		{
-			result.push(*byte as char);
+			if *byte > 0
+			{
+				result.push(*byte as char);
+			}
 		}
 
 		return result;
