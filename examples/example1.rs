@@ -41,9 +41,12 @@ main()
 
 	let encoded_data = data.encode_metadata_png();
 	let decoded_data1 = Metadata::decode_metadata_png(&encoded_data);
-	let decoded_data2 = Metadata::decode_metadata_general(&decoded_data1);
+	let decoded_data2 = Metadata::decode_metadata_general(&decoded_data1).unwrap();
 
-	
+	for tag in &decoded_data2
+	{
+		println!("{:?} {}", tag.get_group(), tag.is_unknown());
+	}
 
 	if write_result.is_err()
 	{
