@@ -13,8 +13,6 @@ const NEWLINE: u8 = 0x0a;
 const SPACE: u8 = 0x20;
 
 const EXIF_HEADER: [u8; 6] = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00];
-const TIFF_HEADER_LITTLE: [u8; 8] = [0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00];
-const TIFF_HEADER_BIG: [u8; 8] = [0x4d, 0x4d, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x08];
 
 const JPG_APP1_MARKER: [u8; 2] = [0xff, 0xe1];
 
@@ -40,7 +38,7 @@ macro_rules! from_u8_vec_macro {
 pub struct
 Metadata
 {
-	data: Vec<ExifTag>,
+	pub data: Vec<ExifTag>,
 	endian: Endian 
 }
 
@@ -63,13 +61,38 @@ Metadata
 	)
 	-> Metadata
 	{
-		/*
-		for value in &Self::decode_metadata_png(path)
+		if !path.exists()
 		{
-			println!("{}", value);
+			panic!("Can't write Metadata - File does not exist!");
 		}
-		*/
-		Metadata { endian: Endian::Little, data: Vec::new() }
+
+		let file_type = path.extension();
+		if file_type.is_none()
+		{
+			panic!("Can't get extension from given path!");
+		}
+
+		let file_type_str = file_type.unwrap().to_str();
+		if file_type_str.is_none()
+		{
+			panic!("Can't convert file type to string!");
+		}
+		
+		if let Ok(pre_decode_general) = match file_type_str.unwrap().to_lowercase().as_str()
+		{
+			// "jpg"	=> jpg::read_metadata(&path),
+			// "jpeg"	=> jpg::read_metadata(&path, &self.encode_metadata_jpg()),
+			"png"	=> Self::decode_metadata_png(&png::read_metadata(&path).unwrap()),
+			_		=> panic!("Unsupported file type!"),
+		}
+		{
+			if let Ok((endian, data)) = Self::decode_metadata_general(&pre_decode_general)
+			{
+				return Metadata { endian, data };
+			}
+		}
+
+		panic!("AHH");
 	}
 	
 
@@ -183,7 +206,7 @@ Metadata
 	(
 		encoded_data: &Vec<u8>
 	)
-	-> Vec<u8>
+	-> Result<Vec<u8>, std::io::Error>
 	{
 
 		let mut exif_all: VecDeque<u8> = VecDeque::new();
@@ -270,7 +293,7 @@ Metadata
 		assert!(given_exif_len == exif_all.len().try_into().unwrap());
 		// End optional part
 
-		return Vec::from(exif_all);
+		return Ok(Vec::from(exif_all));
 	}
 
 	pub fn
@@ -278,11 +301,11 @@ Metadata
 	(
 		encoded_data: &Vec<u8>
 	)
-	-> Result<Vec<ExifTag>, std::io::Error>
+	-> Result<(Endian, Vec<ExifTag>), std::io::Error>
 	{
 
 		// Ensure that we have enough data
-		if encoded_data.len() < (EXIF_HEADER.len() + TIFF_HEADER_BIG.len() + 2 + IFD_END.len())
+		if encoded_data.len() < (EXIF_HEADER.len() + Endian::Big.header().len() + 2 + IFD_END.len())
 		{
 			return io_error!(Other, "Not enough data for encoding!");
 		}
@@ -298,11 +321,11 @@ Metadata
 
 		// Determine endian
 		let endian;
-		if encoded_data[6] == 0x49 && encoded_data[7] == 0x49
+		if encoded_data[6] == 0x49 && encoded_data[7] == 0x49					// "II"
 		{
 			endian = Endian::Little;
 		}
-		else if encoded_data[6] == 0x4d && encoded_data[7] == 0x4d
+		else if encoded_data[6] == 0x4d && encoded_data[7] == 0x4d				// "MM"
 		{
 			endian = Endian::Big;
 		}
@@ -311,15 +334,25 @@ Metadata
 			return io_error!(Other, "Illegal endian information!");
 		}
 
-		let test = Self::decode_ifd(
+		// Decode all the tags
+		let mut all_tags = Vec::new();
+
+		// Start with IFD0
+		if let Ok(ifd0_and_subifd_tags) = Self::decode_ifd(
 			&encoded_data[14..].to_vec(),
 			&ExifTagGroup::IFD0,
 			8,
-			&Endian::Little
-		);
+			&endian
+		)
+		{
+			all_tags.extend(ifd0_and_subifd_tags);
+		}
+		else
+		{
+			return io_error!(Other, "Could not get IFD0 tags!");
+		}
 
-		//Ok(Vec::new())
-		return test;
+		return Ok((endian, all_tags));
 	}
 	
 
@@ -333,16 +366,8 @@ Metadata
 	)
 	-> Result<Vec<ExifTag>, std::io::Error>
 	{
-
-		println!("{:?}", group);
-		for value in encoded_data
-		{
-			println!("{:#04x}", value);
-		}
-
 		// The first two bytes give us the number of entries in this IFD
 		let number_of_entries = from_u8_vec_macro!(u16, &encoded_data[0..2].to_vec(), endian);
-		println!("{}", number_of_entries);
 
 		// Assert that we have enough data to unpack
 		assert!(2 + IFD_ENTRY_LENGTH as usize * number_of_entries as usize + IFD_END.len() <= encoded_data.len());
@@ -560,32 +585,36 @@ Metadata
 	-> Vec<u8>
 	{
 		// Start construction with TIFF header
-		let mut exif_vec: Vec<u8> = Vec::new();
-		match self.endian {
-			Endian::Little	=> exif_vec.extend(TIFF_HEADER_LITTLE.iter()),
-			Endian::Big		=> exif_vec.extend(TIFF_HEADER_BIG.iter())
-		}
+		let mut exif_vec: Vec<u8> = Vec::from(self.endian.header());
+		let mut current_offset: u32 = 8;
 
 		// IFD0
-		let (offset_post_ifd0, ifd0_data) = self.encode_ifd(
+		if let Some((offset_post_ifd0, ifd0_data)) = self.encode_ifd(
 			ExifTagGroup::IFD0,
-			8,																	// For the TIFF header
+			current_offset,																	// For the TIFF header
 			&[0x00, 0x00, 0x00, 0x00],											// For now no link to IFD1
 			Some(ExifTag::ExifOffset(vec![0]))
-		).unwrap();
-		exif_vec.extend(ifd0_data.iter());
+		)
+		{
+			current_offset = offset_post_ifd0;
+			exif_vec.extend(ifd0_data.iter());
+		}
 
 		// ExifIFD
-		let (offset_post_exififd, exififd_data) = self.encode_ifd(
+		if let Some((offset_post_exififd, exififd_data)) = self.encode_ifd(
 			ExifTagGroup::ExifIFD,
-			offset_post_ifd0,													// Don't need +8 as already accounted for in this value due to previous function call
+			current_offset,													// Don't need +8 as already accounted for in this value due to previous function call
 			&[0x00, 0x00, 0x00, 0x00],
 			None
-		).unwrap();
-		exif_vec.extend(exififd_data.iter());
+		)
+		{
+			current_offset = offset_post_exififd;
+			exif_vec.extend(exififd_data.iter());
+		}
 
 		// Other directories here... (someday)
 		
+		/*
 		let mut counter = 0u32;
 		for byte in &exif_vec
 		{
@@ -600,6 +629,7 @@ Metadata
 			
 			counter += 1;
 		}
+		*/
 		
 		return exif_vec;
 	}
