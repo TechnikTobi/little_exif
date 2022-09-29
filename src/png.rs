@@ -127,8 +127,6 @@ get_next_chunk_descriptor
 	}
 }
 
-
-
 pub fn
 parse_png
 (
@@ -168,7 +166,7 @@ parse_png
 // Clears existing metadata from a png file
 // Gets called before writing any new metadata
 pub fn
-clear_metadata_from_png
+clear_metadata
 (
 	path: &Path
 )
@@ -214,7 +212,7 @@ clear_metadata_from_png
 
 #[allow(non_snake_case)]
 pub fn
-write_metadata_to_png
+write_metadata
 (
 	path: &Path,
 	encoded_metadata: &Vec<u8>
@@ -225,7 +223,7 @@ write_metadata_to_png
 	// First clear the existing metadata
 	// This also parses the PNG and checks its validity, so it is safe to
 	// assume that is, in fact, a usable PNG file
-	if let Err(error) = clear_metadata_from_png(path)
+	if let Err(error) = clear_metadata(path)
 	{
 		return Err(error);
 	}
