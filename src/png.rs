@@ -7,7 +7,8 @@ use std::fs::File;
 use std::fs::OpenOptions;
 
 use crc::{Crc, CRC_32_ISO_HDLC};
-use deflate::deflate_bytes_zlib;
+use miniz_oxide::deflate::compress_to_vec_zlib;
+use miniz_oxide::inflate::decompress_to_vec_zlib;
 
 use crate::png_chunk::PngChunk;
 use crate::general_file_io::*;
@@ -55,6 +56,7 @@ check_signature
 }
 
 // TODO: Check if this is also affected by endianness
+// Edit: Should... not? I guess?
 fn
 get_next_chunk_descriptor
 (
@@ -246,15 +248,15 @@ write_metadata
 	+ 12					as u64;	//	rest of IHDR chunk (length, type, CRC)
 
 	// Get to first chunk after IHDR, copy all the data starting from there
-	perform_file_action!(file.seek(SeekFrom::Start(seek_start)));
 	let mut buffer = Vec::new();
+	perform_file_action!(file.seek(SeekFrom::Start(seek_start)));
 	perform_file_action!(file.read_to_end(&mut buffer));
 	perform_file_action!(file.seek(SeekFrom::Start(seek_start)));
 
-	// Build data of new chunk
+	// Build data of new chunk using zlib compression (level=8 -> default)
 	let mut zTXt_chunk_data: Vec<u8> = vec![0x7a, 0x54, 0x58, 0x74];
 	zTXt_chunk_data.extend(RAW_PROFILE_TYPE_EXIF.iter());
-	zTXt_chunk_data.extend(deflate_bytes_zlib(&encoded_metadata).iter());
+	zTXt_chunk_data.extend(compress_to_vec_zlib(&encoded_metadata, 8).iter());
 
 	// Compute CRC and append it to the chunk data
 	let crc_struct = Crc::<u32>::new(&CRC_32_ISO_HDLC);
@@ -277,4 +279,66 @@ write_metadata
 	perform_file_action!(file.write_all(&buffer));
 
 	return Ok(());
+}
+
+pub fn
+read_metadata
+(
+	path: &Path
+)
+-> Result<Vec<u8>, std::io::Error>
+{
+	let parse_png_result = parse_png(path);
+	if let Ok(chunks) = parse_png_result
+	{
+		let mut file = check_signature(path).unwrap();
+
+		for chunk in &chunks
+		{
+			if chunk.as_string() == String::from("zTXt")
+			{
+
+				// Skip chunk length and type (4+4 Bytes)
+				perform_file_action!(file.seek(SeekFrom::Current(8)));
+
+				// Read chunk data into buffer
+				// No need to verify this using CRC as already done by parse_png(path)
+				let mut zTXt_chunk_data = vec![0u8; chunk.length() as usize];
+				if file.read(&mut zTXt_chunk_data).unwrap() != chunk.length() as usize
+				{
+					return io_error!(Other, "Could not read chunk data");
+				}
+
+				// Check that this is the correct zTXt chunk...
+				let mut correct_zTXt_chunk = true;
+				for i in 0..RAW_PROFILE_TYPE_EXIF.len()
+				{
+					if zTXt_chunk_data[i] != RAW_PROFILE_TYPE_EXIF[i]
+					{
+						correct_zTXt_chunk = false;
+					}
+				}
+
+				if !correct_zTXt_chunk
+				{
+					// Skip CRC from current (wrong) zTXt chunk and continue
+					perform_file_action!(file.seek(SeekFrom::Current(4)));
+					continue;
+				}
+
+				// Decode zlib data and return
+				return Ok(decompress_to_vec_zlib(&zTXt_chunk_data[RAW_PROFILE_TYPE_EXIF.len()..]).unwrap());
+			}
+
+			// Seek to next chunk
+			perform_file_action!(file.seek(SeekFrom::Current(chunk.length() as i64 + 12)));
+			
+		}
+
+		return io_error!(Other, "No metadata found!");
+	}
+	else
+	{
+		return Err(parse_png_result.err().unwrap());
+	}
 }
