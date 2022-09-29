@@ -7,6 +7,5 @@ edition = "2021"
 
 [dependencies]
 crc = "3.0.0"
-deflate = "1.0.0"
 paste = "1.0.9"
 miniz_oxide = "0.6.2"
