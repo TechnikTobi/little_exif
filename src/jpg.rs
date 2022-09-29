@@ -65,3 +65,13 @@ write_metadata
 {
 	Ok(())
 }
+
+pub fn
+read_metadata
+(
+	path: &Path
+)
+-> Result<Vec<u8>, std::io::Error>
+{
+	Ok(Vec::new())
+}
