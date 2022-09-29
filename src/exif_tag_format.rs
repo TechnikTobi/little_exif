@@ -58,6 +58,32 @@ ExifTagFormat
 	}
 
 	pub fn
+	from_u16
+	(
+		hex_code: u16
+	)
+	-> Option<ExifTagFormat>
+	{
+		match hex_code
+		{
+			0x0001	=> Some(ExifTagFormat::INT8U),
+			0x0002	=> Some(ExifTagFormat::STRING),
+			0x0003	=> Some(ExifTagFormat::INT16U),
+			0x0004	=> Some(ExifTagFormat::INT32U),
+			0x0005	=> Some(ExifTagFormat::RATIONAL64U),
+			0x0006	=> Some(ExifTagFormat::INT8S),
+			0x0007	=> Some(ExifTagFormat::UNDEF),
+			0x0008	=> Some(ExifTagFormat::INT16S),
+			0x0009	=> Some(ExifTagFormat::INT32S),
+			0x000a	=> Some(ExifTagFormat::RATIONAL64S),
+			0x000b	=> Some(ExifTagFormat::FLOAT),
+			0x000c	=> Some(ExifTagFormat::DOUBLE),
+			_ => None,
+		}
+	}
+
+
+	pub fn
 	bytes_per_component
 	(
 		&self
