@@ -3,6 +3,7 @@ use std::collections::VecDeque;
 
 use crate::endian::{Endian, U8conversion};
 use crate::exif_tag::{ExifTag, ExifTagGroup};
+use crate::exif_tag_format::ExifTagFormat;
 use crate::general_file_io::*;
 
 use crate::jpg;
@@ -311,7 +312,7 @@ Metadata
 		}
 
 		let test = Self::decode_ifd(
-			&encoded_data[14..],
+			&encoded_data[14..].to_vec(),
 			&ExifTagGroup::IFD0,
 			&Endian::Little
 		);
@@ -323,7 +324,7 @@ Metadata
 	fn
 	decode_ifd
 	(
-		encoded_data: &[u8],
+		encoded_data: &Vec<u8>,
 		group: &ExifTagGroup,
 		endian: &Endian
 	)
@@ -336,6 +337,43 @@ Metadata
 		// Assert that we have enough data to unpack
 		assert!(2 + IFD_ENTRY_LENGTH as usize * number_of_entries as usize + IFD_END.len() <= encoded_data.len());
 
+		for i in 0..number_of_entries
+		{
+			// index within the given data where the current entry starts
+			let ifd_start_index = (2 + (i as u32)*IFD_ENTRY_LENGTH) as usize;
+
+			// Decode the first 8 bytes with the tag, format and component number
+			let hex_tag = from_u8_vec_macro!(u16, &encoded_data[(ifd_start_index)..(ifd_start_index+2)].to_vec(), endian);
+			let hex_format = from_u8_vec_macro!(u16, &encoded_data[(ifd_start_index+2)..(ifd_start_index+4)].to_vec(), endian);
+			let hex_component_number = from_u8_vec_macro!(u32, &encoded_data[(ifd_start_index+4)..(ifd_start_index+8)].to_vec(), endian);
+
+			// Decoding the format
+			let format;
+			if let Some(decoded_format) = ExifTagFormat::from_u16(hex_format)
+			{
+				format = decoded_format;
+			}
+			else
+			{
+				return io_error!(Other, "Illegal format value!");
+			}
+
+			// Calculating the number of required bytes to determine if next
+			// 4 bytes are data or an offset to data
+			let byte_count = format.bytes_per_component() * hex_component_number;
+
+			let data;
+			if byte_count > 4
+			{
+				// Compute the offset
+				let hex_offset = from_u8_vec_macro!(u32, &encoded_data[(ifd_start_index+8)..(ifd_start_index+12)].to_vec(), endian);
+				data = Vec::new();
+			}
+			else
+			{
+				data = String::new();
+			}
+		}
 
 		Ok(Vec::new())
 	}
