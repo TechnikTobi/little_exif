@@ -24,8 +24,16 @@ macro_rules! to_u8_vec_macro {
 	($type:ty, $value:expr, $endian:expr)
 	=>
 	{
-		<$type as U8conversion>::to_u8_vec($value, $endian)
+		<$type as U8conversion<$type>>::to_u8_vec($value, $endian)
 	};
+}
+
+macro_rules! from_u8_vec_macro {
+	($type:ty, $value:expr, $endian:expr)
+	=>
+	{
+		<$type as U8conversion<$type>>::from_u8_vec($value, $endian)
+	}
 }
 
 pub struct
@@ -302,7 +310,11 @@ Metadata
 			return io_error!(Other, "Illegal endian information!");
 		}
 
-
+		let test = Self::decode_ifd(
+			&encoded_data[14..],
+			&ExifTagGroup::IFD0,
+			&Endian::Little
+		);
 
 		Ok(Vec::new())
 	}
@@ -311,11 +323,20 @@ Metadata
 	fn
 	decode_ifd
 	(
-		encoded_data: &Vec<u8>,
-		group: ExifTagGroup,
+		encoded_data: &[u8],
+		group: &ExifTagGroup,
+		endian: &Endian
 	)
 	-> Result<Vec<ExifTag>, std::io::Error>
 	{
+		// The first two bytes give us the number of entries in this IFD
+		let number_of_entries = from_u8_vec_macro!(u16, &encoded_data[0..2].to_vec(), endian);
+		println!("{}", number_of_entries);
+
+		// Assert that we have enough data to unpack
+		assert!(2 + IFD_ENTRY_LENGTH as usize * number_of_entries as usize + IFD_END.len() <= encoded_data.len());
+
+
 		Ok(Vec::new())
 	}
 
