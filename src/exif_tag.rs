@@ -14,7 +14,8 @@ ExifTagGroup
 	IFD0,
 		ExifIFD,
 			InteropIFD,
-			MakerNotes,
+			MakerNotesIFD,
+		GPSIFD,
 	IFD1,
 }
 
@@ -500,3 +501,32 @@ build_tag_enum![
 
 	(Gamma,						0xa500,	RATIONAL64U,	Some::<u32>(1),		true,		ExifIFD)
 ];
+
+impl ExifTag
+{
+	pub fn
+	is_offset_tag
+	(
+		&self
+	)
+	-> Option<ExifTagGroup>
+	{
+		match *self
+		{
+			ExifTag::ExifOffset(_)		=> Some(ExifTagGroup::ExifIFD),
+			ExifTag::GPSInfo(_)			=> Some(ExifTagGroup::GPSIFD),
+			ExifTag::MakerNote(_)		=> Some(ExifTagGroup::MakerNotesIFD),
+			ExifTag::InteropOffset(_)	=> Some(ExifTagGroup::InteropIFD),
+			_ => None
+		}
+	}
+}
+
+/*
+pub const OFFSET_TAGS = [
+	ExifTag::ExifOffset,
+	ExifTag::GPSInfo,
+	ExifTag::MakerNote,
+	ExifTag::InteropOffset
+]
+*/
