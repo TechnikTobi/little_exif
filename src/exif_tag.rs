@@ -468,7 +468,7 @@ build_tag_enum![
 
 	(SensingMethod,				0xa217,	INT16U,			Some::<u32>(1),		true,		ExifIFD),
 
-	(FileSource,				0xa301,	UNDEF,			None::<u32>,		true,		ExifIFD),
+	(FileSource,				0xa300,	UNDEF,			None::<u32>,		true,		ExifIFD),
 	(SceneType,					0xa301,	UNDEF,			None::<u32>,		true,		ExifIFD),
 	(CFAPattern,				0xa302,	UNDEF,			None::<u32>,		true,		ExifIFD),
 
