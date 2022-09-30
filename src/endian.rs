@@ -183,3 +183,21 @@ impl U8conversion<String> for String
 	}
 }
 
+macro_rules! to_u8_vec_macro {
+	($type:ty, $value:expr, $endian:expr)
+	=>
+	{
+		<$type as U8conversion<$type>>::to_u8_vec($value, $endian)
+	};
+}
+
+macro_rules! from_u8_vec_macro {
+	($type:ty, $value:expr, $endian:expr)
+	=>
+	{
+		<$type as U8conversion<$type>>::from_u8_vec($value, $endian)
+	}
+}
+
+pub(crate) use to_u8_vec_macro;
+pub(crate) use from_u8_vec_macro;
