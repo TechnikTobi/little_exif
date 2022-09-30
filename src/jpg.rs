@@ -7,7 +7,6 @@ use std::fs::File;
 use std::fs::OpenOptions;
 
 use crc::{Crc, CRC_32_ISO_HDLC};
-use deflate::deflate_bytes_zlib;
 
 pub const JPG_SIGNATURE: [u8; 2] = [0xff, 0xd8];
 

@@ -165,7 +165,7 @@ parse_png
 	return Ok(chunks);
 }
 
-// Clears existing metadata from a png file
+// Clears existing metadata chunk from a png file
 // Gets called before writing any new metadata
 pub fn
 clear_metadata
@@ -174,42 +174,74 @@ clear_metadata
 )
 -> Result<(), std::io::Error>
 {
+
+	// Parse the PNG - if this fails, the clear operation fails as well
 	let parse_png_result = parse_png(path);
-	if let Ok(chunks) = parse_png_result
+	if let Err(error) = parse_png_result
 	{
-		let mut file = check_signature(path).unwrap();
-		let mut seek_counter = 0u64;
+		return Err(error);
+	}
 
-		for chunk in &chunks
+	// Parsed PNG is Ok to use - Open the file and go through the chunks
+	let mut file = check_signature(path).unwrap();
+	let mut seek_counter = 0u64;
+
+	for chunk in &parse_png_result.unwrap()
+	{
+		// If this is not a zTXt chunk, jump to the next chunk
+		if chunk.as_string() != String::from("zTXt")
 		{
-			if chunk.as_string() == String::from("zTXt")
-			{
-				// Get to the next chunk...
-				perform_file_action!(file.seek(SeekFrom::Current(chunk.length() as i64 + 12)));
+			seek_counter += chunk.length() as u64 + 12;
+			perform_file_action!(file.seek(SeekFrom::Current(chunk.length() as i64 + 12)));
+			continue;
+		}
 
-				// Copy data from there onwards into a buffer
-				let mut buffer = Vec::new();
-				perform_file_action!(file.read_to_end(&mut buffer));
+		// Skip chunk length and type (4+4 Bytes)
+		perform_file_action!(file.seek(SeekFrom::Current(8)));
 
-				// Go back to the chunk to be removed
-				// And overwrite it using the data from the buffer
-				perform_file_action!(file.seek(SeekFrom::Start(seek_counter)));
-				perform_file_action!(file.write_all(&buffer));
-				perform_file_action!(file.seek(SeekFrom::Start(seek_counter)));
-			}
-			else
+		// Read chunk data into buffer for checking that this is the 
+		// correct chunk to delete
+		let mut zTXt_chunk_data = vec![0u8; chunk.length() as usize];
+		if file.read(&mut zTXt_chunk_data).unwrap() != chunk.length() as usize
+		{
+			return io_error!(Other, "Could not read chunk data");
+		}
+
+		// Compare to the "Raw profile type exif" string constant
+		let mut correct_zTXt_chunk = true;
+		for i in 0..RAW_PROFILE_TYPE_EXIF.len()
+		{
+			if zTXt_chunk_data[i] != RAW_PROFILE_TYPE_EXIF[i]
 			{
-				seek_counter += chunk.length() as u64 + 12;
-				perform_file_action!(file.seek(SeekFrom::Current(chunk.length() as i64 + 12)));
+				correct_zTXt_chunk = false;
 			}
 		}
 
-		return Ok(());
+		// If this is not the correct zTXt chunk, skip CRC from current
+		// (wrong) zTXt chunk and continue with next chunk
+		if !correct_zTXt_chunk
+		{
+			perform_file_action!(file.seek(SeekFrom::Current(4)));
+			continue;
+		}
+		
+		// We have now established that this is the correct chunk to delete
+		// Therefore: Get to the next chunk...
+		perform_file_action!(file.seek(SeekFrom::Current(chunk.length() as i64 + 12)));
+
+		// ...copy data from there onwards into a buffer...
+		let mut buffer = Vec::new();
+		perform_file_action!(file.read_to_end(&mut buffer));
+
+		// ...go back to the chunk to be removed...
+		perform_file_action!(file.seek(SeekFrom::Start(seek_counter)));
+
+		// ...and overwrite it using the data from the buffer
+		perform_file_action!(file.write_all(&buffer));
+		perform_file_action!(file.seek(SeekFrom::Start(seek_counter)));		
 	}
-	else
-	{
-		return Err(parse_png_result.err().unwrap());
-	}
+
+	return Ok(());
 }
 
 #[allow(non_snake_case)]
@@ -288,57 +320,57 @@ read_metadata
 )
 -> Result<Vec<u8>, std::io::Error>
 {
+	// Parse the PNG - if this fails, the read fails as well
 	let parse_png_result = parse_png(path);
-	if let Ok(chunks) = parse_png_result
+	if let Err(error) = parse_png_result
 	{
-		let mut file = check_signature(path).unwrap();
+		return Err(error);
+	}
 
-		for chunk in &chunks
+	// Parsed PNG is Ok to use - Open the file and go through the chunks
+	let mut file = check_signature(path).unwrap();
+	for chunk in &parse_png_result.unwrap()
+	{
+		// Wrong chunk? Seek to the next one
+		if chunk.as_string() != String::from("zTXt")
 		{
-			if chunk.as_string() == String::from("zTXt")
-			{
-
-				// Skip chunk length and type (4+4 Bytes)
-				perform_file_action!(file.seek(SeekFrom::Current(8)));
-
-				// Read chunk data into buffer
-				// No need to verify this using CRC as already done by parse_png(path)
-				let mut zTXt_chunk_data = vec![0u8; chunk.length() as usize];
-				if file.read(&mut zTXt_chunk_data).unwrap() != chunk.length() as usize
-				{
-					return io_error!(Other, "Could not read chunk data");
-				}
-
-				// Check that this is the correct zTXt chunk...
-				let mut correct_zTXt_chunk = true;
-				for i in 0..RAW_PROFILE_TYPE_EXIF.len()
-				{
-					if zTXt_chunk_data[i] != RAW_PROFILE_TYPE_EXIF[i]
-					{
-						correct_zTXt_chunk = false;
-					}
-				}
-
-				if !correct_zTXt_chunk
-				{
-					// Skip CRC from current (wrong) zTXt chunk and continue
-					perform_file_action!(file.seek(SeekFrom::Current(4)));
-					continue;
-				}
-
-				// Decode zlib data and return
-				return Ok(decompress_to_vec_zlib(&zTXt_chunk_data[RAW_PROFILE_TYPE_EXIF.len()..]).unwrap());
-			}
-
-			// Seek to next chunk
 			perform_file_action!(file.seek(SeekFrom::Current(chunk.length() as i64 + 12)));
-			
 		}
 
-		return io_error!(Other, "No metadata found!");
+		// We now have a zTXt chunk:
+		// Skip chunk length and type (4+4 Bytes)
+		perform_file_action!(file.seek(SeekFrom::Current(8)));
+
+		// Read chunk data into buffer
+		// No need to verify this using CRC as already done by parse_png(path)
+		let mut zTXt_chunk_data = vec![0u8; chunk.length() as usize];
+		if file.read(&mut zTXt_chunk_data).unwrap() != chunk.length() as usize
+		{
+			return io_error!(Other, "Could not read chunk data");
+		}
+
+		// Check that this is the correct zTXt chunk...
+		let mut correct_zTXt_chunk = true;
+		for i in 0..RAW_PROFILE_TYPE_EXIF.len()
+		{
+			if zTXt_chunk_data[i] != RAW_PROFILE_TYPE_EXIF[i]
+			{
+				correct_zTXt_chunk = false;
+			}
+		}
+
+		if !correct_zTXt_chunk
+		{
+			// Skip CRC from current (wrong) zTXt chunk and continue
+			perform_file_action!(file.seek(SeekFrom::Current(4)));
+			continue;
+		}
+
+		// Decode zlib data and return
+		return Ok(decompress_to_vec_zlib(&zTXt_chunk_data[RAW_PROFILE_TYPE_EXIF.len()..]).unwrap());
+		
 	}
-	else
-	{
-		return Err(parse_png_result.err().unwrap());
-	}
+
+	return io_error!(Other, "No metadata found!");
+
 }

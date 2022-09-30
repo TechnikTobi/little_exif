@@ -438,6 +438,7 @@ Metadata
 					)
 					{
 						tags.extend(subifd_result);
+						continue;
 					}
 					else
 					{
