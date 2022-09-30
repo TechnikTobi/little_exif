@@ -324,6 +324,7 @@ parse_png
 
 // Clears existing metadata chunk from a png file
 // Gets called before writing any new metadata
+#[allow(non_snake_case)]
 pub fn
 clear_metadata
 (
@@ -401,6 +402,7 @@ clear_metadata
 	return Ok(());
 }
 
+#[allow(non_snake_case)]
 pub fn
 read_metadata
 (

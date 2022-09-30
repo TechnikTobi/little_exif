@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::collections::VecDeque;
 
 use crate::endian::*;
 use crate::exif_tag::{ExifTag, ExifTagGroup};
@@ -57,8 +56,8 @@ Metadata
 		
 		if let Ok(pre_decode_general) = match file_type_str.unwrap().to_lowercase().as_str()
 		{
-			// "jpg"	=> jpg::read_metadata(&path),
-			// "jpeg"	=> jpg::read_metadata(&path, &self.encode_metadata_jpg()),
+			"jpg"	=> jpg::read_metadata(&path),
+			"jpeg"	=> jpg::read_metadata(&path),
 			"png"	=> png::read_metadata(&path),
 			_		=> panic!("Unsupported file type!"),
 		}
