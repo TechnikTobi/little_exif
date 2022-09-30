@@ -8,7 +8,33 @@ use std::fs::OpenOptions;
 
 use crc::{Crc, CRC_32_ISO_HDLC};
 
+use crate::endian::*;
+
 pub const JPG_SIGNATURE: [u8; 2] = [0xff, 0xd8];
+const JPG_APP1_MARKER: [u8; 2] = [0xff, 0xe1];
+
+fn
+encode_metadata_jpg
+(
+	exif_vec: &Vec<u8>
+)
+-> Vec<u8>
+{
+	// vector storing the data that will be returned
+	let mut jpg_exif: Vec<u8> = Vec::new();
+
+	// Compute the length of the exif data (includes the two bytes of the
+	// actual length field)
+	let length = 2u16 + (exif_vec.len() as u16);
+
+	// Start with the APP1 marker and the length of the data
+	// Then copy the previously encoded EXIF data 
+	jpg_exif.extend(JPG_APP1_MARKER.iter());
+	jpg_exif.extend(to_u8_vec_macro!(u16, &length, &Endian::Big));
+	jpg_exif.extend(exif_vec.iter());
+
+	return jpg_exif;
+}
 
 fn
 check_signature
