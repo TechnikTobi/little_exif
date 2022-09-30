@@ -163,7 +163,7 @@ impl U8conversion<String> for String
 	from_u8_vec
 	(
 		u8_vec: &Vec<u8>,
-		endian: &Endian
+		_endian: &Endian
 	)
 	-> String
 	{
