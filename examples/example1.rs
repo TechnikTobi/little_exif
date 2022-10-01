@@ -13,7 +13,9 @@ main()
 
 	// Remove old copy and create new one for writing EXIF data to
 	remove_file("examples/copy.png");
+	remove_file("examples/copy.jpg");
 	copy("examples/image.png", "examples/copy.png");
+	copy("examples/image.jpg", "examples/copy.jpg");
 
 	// Create a new Metadata struct
 	let mut data = Metadata::new();
@@ -28,22 +30,35 @@ main()
 		ExifTag::ImageDescription("-w 1000 -h 1000 --x_mid=0 --y_mid=0 -z 0.5 -i 1000 -c 8".to_string())
 	);
 
-	
 	data.set_tag(
 		ExifTag::ISO(vec![2022])
 	);
-	
 
 	data.set_tag(
 		ExifTag::UnknownSTRING("test".to_string(), 0x010c, ExifTagGroup::IFD0)
 	);
 
 	// Write the metadata to the copy
-	let write_result = data.write_to_file(Path::new("examples/copy.png"));
+	if let Err(error) = data.write_to_file(Path::new("examples/copy.jpg"))
+	{
+		println!("{}", error);
+	}
+	if let Err(error) = data.write_to_file(Path::new("examples/copy.png"))
+	{
+		println!("{}", error);
+	}
 
-	let new_data = Metadata::new_from_path(Path::new("examples/copy.png"));
+	let png_data = Metadata::new_from_path(Path::new("examples/copy.png"));
+	let jpg_data = Metadata::new_from_path(Path::new("examples/copy.jpg"));
 
-	for tag in new_data.data
+	println!("PNG:");
+	for tag in png_data.data
+	{
+		println!("{:?}", tag);
+	}
+	
+	println!("JPG:");
+	for tag in jpg_data.data
 	{
 		println!("{:?}", tag);
 	}
@@ -59,8 +74,10 @@ main()
 	}
 	*/
 
+	/*
 	if write_result.is_err()
 	{
 		println!("{}", write_result.err().unwrap());
 	}
+	*/
 }
