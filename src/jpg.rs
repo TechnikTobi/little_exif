@@ -28,12 +28,13 @@ encode_metadata_jpg
 
 	// Compute the length of the exif data (includes the two bytes of the
 	// actual length field)
-	let length = 2u16 + (exif_vec.len() as u16);
+	let length = 2u16 + (EXIF_HEADER.len() as u16) + (exif_vec.len() as u16);
 
 	// Start with the APP1 marker and the length of the data
 	// Then copy the previously encoded EXIF data 
 	jpg_exif.extend(to_u8_vec_macro!(u16, &JPG_APP1_MARKER, &Endian::Big));
 	jpg_exif.extend(to_u8_vec_macro!(u16, &length, &Endian::Big));
+	jpg_exif.extend(EXIF_HEADER.iter());
 	jpg_exif.extend(exif_vec.iter());
 
 	return jpg_exif;
@@ -125,7 +126,7 @@ clear_metadata
 	{
 		// Read next byte into buffer
 		perform_file_action!(file.read(&mut byte_buffer));
-		println!("{} {:#04x}", seek_counter, byte_buffer[0]);
+		// println!("{} {:#04x}", seek_counter, byte_buffer[0]);
 
 		if previous_byte_was_marker_prefix
 		{
@@ -222,7 +223,10 @@ write_metadata
 	perform_file_action!(file.seek(SeekFrom::Start(JPG_SIGNATURE.len() as u64)));
 	perform_file_action!(file.read_to_end(&mut buffer));
 
-	// ...write the exif data...
+	// ...seek back to where the encoded data will be written
+	perform_file_action!(file.seek(SeekFrom::Start(JPG_SIGNATURE.len() as u64)));
+
+	// ...and write the exif data...
 	perform_file_action!(file.write_all(&encoded_metadata));
 
 	// ...and the rest of the file from the buffer
