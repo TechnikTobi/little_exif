@@ -192,6 +192,7 @@ check_signature
 
 	let mut file = OpenOptions::new()
 		.read(true)
+		.write(true)
 		.open(path)
 		.expect("Could not open file");
 	
@@ -342,7 +343,7 @@ clear_metadata
 
 	// Parsed PNG is Ok to use - Open the file and go through the chunks
 	let mut file = check_signature(path).unwrap();
-	let mut seek_counter = 0u64;
+	let mut seek_counter = 8u64;
 
 	for chunk in &parse_png_result.unwrap()
 	{
@@ -375,21 +376,23 @@ clear_metadata
 			}
 		}
 
-		// If this is not the correct zTXt chunk, skip CRC from current
+		// Skip the CRC as it is not important at this point
+		perform_file_action!(file.seek(SeekFrom::Current(4)));
+
+		// If this is not the correct zTXt chunk, ignore current
 		// (wrong) zTXt chunk and continue with next chunk
 		if !correct_zTXt_chunk
-		{
-			perform_file_action!(file.seek(SeekFrom::Current(4)));
+		{	
 			continue;
 		}
 		
 		// We have now established that this is the correct chunk to delete
-		// Therefore: Get to the next chunk...
-		perform_file_action!(file.seek(SeekFrom::Current(chunk.length() as i64 + 12)));
-
-		// ...copy data from there onwards into a buffer...
+		// Therefore: Copy data from here (after CRC) onwards into a buffer...
 		let mut buffer = Vec::new();
 		perform_file_action!(file.read_to_end(&mut buffer));
+
+		// ...compute the new file length while we are at it...
+		let new_file_length = seek_counter + buffer.len() as u64;
 
 		// ...go back to the chunk to be removed...
 		perform_file_action!(file.seek(SeekFrom::Start(seek_counter)));
@@ -397,6 +400,10 @@ clear_metadata
 		// ...and overwrite it using the data from the buffer
 		perform_file_action!(file.write_all(&buffer));
 		perform_file_action!(file.seek(SeekFrom::Start(seek_counter)));		
+
+		// Update the size of the file - otherwise there will be
+		// duplicate bytes at the end!
+		perform_file_action!(file.set_len(new_file_length));
 	}
 
 	return Ok(());
@@ -491,6 +498,8 @@ write_metadata
 	{
 		return Err(error);
 	}
+
+	return Ok(());
 
 	let mut IHDR_length = 0u32;
 	if let Ok(chunks) = parse_png(path)
