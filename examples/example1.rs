@@ -43,41 +43,29 @@ main()
 	{
 		println!("{}", error);
 	}
+	else
+	{
+		let png_data = Metadata::new_from_path(Path::new("examples/copy.png"));
+		println!("PNG read result:");
+		
+		for tag in png_data.data
+		{
+			println!("{:?}", tag);
+		}
+	}
+
 	if let Err(error) = data.write_to_file(Path::new("examples/copy.png"))
 	{
 		println!("{}", error);
 	}
-
-	let png_data = Metadata::new_from_path(Path::new("examples/copy.png"));
-	let jpg_data = Metadata::new_from_path(Path::new("examples/copy.jpg"));
-
-	println!("PNG:");
-	for tag in png_data.data
+	else
 	{
-		println!("{:?}", tag);
-	}
-	
-	println!("JPG:");
-	for tag in jpg_data.data
-	{
-		println!("{:?}", tag);
-	}
+		let jpg_data = Metadata::new_from_path(Path::new("examples/copy.jpg"));
+		println!("JPG read result:");
 
-	/*
-	let encoded_data = data.encode_metadata_png();
-	let decoded_data1 = Metadata::decode_metadata_png(&encoded_data);
-	let decoded_data2 = Metadata::decode_metadata_general(&decoded_data1).unwrap();
-
-	for tag in &decoded_data2
-	{
-		println!("{:?} {}", tag.get_group(), tag.is_unknown());
+		for tag in jpg_data.data
+		{
+			println!("{:?}", tag);
+		}
 	}
-	*/
-
-	/*
-	if write_result.is_err()
-	{
-		println!("{}", write_result.err().unwrap());
-	}
-	*/
 }
