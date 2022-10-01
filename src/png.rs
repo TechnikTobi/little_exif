@@ -192,7 +192,6 @@ check_signature
 
 	let mut file = OpenOptions::new()
 		.read(true)
-		.write(true)
 		.open(path)
 		.expect("Could not open file");
 	
@@ -342,7 +341,11 @@ clear_metadata
 	}
 
 	// Parsed PNG is Ok to use - Open the file and go through the chunks
-	let mut file = check_signature(path).unwrap();
+	let mut file = OpenOptions::new()
+		.write(true)
+		.read(true)
+		.open(path)
+		.expect("Could not open file");
 	let mut seek_counter = 8u64;
 
 	for chunk in &parse_png_result.unwrap()
@@ -489,8 +492,6 @@ write_metadata
 -> Result<(), std::io::Error>
 {
 
-	let encoded_metadata = encode_metadata_png(general_encoded_metadata);
-
 	// First clear the existing metadata
 	// This also parses the PNG and checks its validity, so it is safe to
 	// assume that is, in fact, a usable PNG file
@@ -499,20 +500,19 @@ write_metadata
 		return Err(error);
 	}
 
-	return Ok(());
-
 	let mut IHDR_length = 0u32;
 	if let Ok(chunks) = parse_png(path)
 	{
 		IHDR_length = chunks[0].length();
 	}
 
+	// Encode the data specifically for PNG and open the image file
+	let encoded_metadata = encode_metadata_png(general_encoded_metadata);
 	let mut file = OpenOptions::new()
 		.write(true)
 		.read(true)
 		.open(path)
 		.expect("Could not open file");
-
 	let seek_start = 0u64			// Skip ...
 	+ PNG_SIGNATURE.len()	as u64	//	PNG Signature
 	+ IHDR_length			as u64	//	IHDR data section
