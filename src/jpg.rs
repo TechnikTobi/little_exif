@@ -123,6 +123,9 @@ clear_metadata
 					let mut buffer = Vec::new();
 					perform_file_action!(file.read_to_end(&mut buffer));
 
+					// ...compute the new file length while we are at it...
+					let new_file_length = (seek_counter-1) + buffer.len() as u64;
+
 					// ...go back to the chunk to be removed...
 					// Note on why -1: This has to do with "previous_byte_was_marker_prefix"
 					// We need to overwrite this byte as well - however, it was 
@@ -132,13 +135,16 @@ clear_metadata
 					// ...and overwrite it using the data from the buffer
 					perform_file_action!(file.write_all(&buffer));
 
-					// Seek back to where we started and decrement the seek_counter
-					// by 2 (= length of marker) as it will be incremented at
-					// the end of the loop again
+					// Seek back to where we started (-1 for same reason as above) 
+					// and decrement the seek_counter by 2 (= length of marker)
+					// as it will be incremented at the end of the loop again
 					perform_file_action!(file.seek(SeekFrom::Start(seek_counter-1)));
-
 					seek_counter -= 2;
 					cleared_segments += 1;
+
+					// Update the size of the file - otherwise there will be
+					// duplicate bytes at the end!
+					perform_file_action!(file.set_len(new_file_length));
 				},
 				0xd9	=> {													// EOI marker
 					return Ok(cleared_segments);
