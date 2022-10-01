@@ -40,6 +40,32 @@ encode_metadata_jpg
 }
 
 fn
+decode_metadata_jpg
+(
+	encoded_data: &Vec<u8>
+)
+-> Result<Vec<u8>, std::io::Error>
+{
+	// Get the marker and length from the encoded data
+	let marker = from_u8_vec_macro!(u16, &encoded_data[0..2].to_vec(), &Endian::Big);
+	let length = from_u8_vec_macro!(u16, &encoded_data[2..4].to_vec(), &Endian::Big);
+
+	// Check that the marker is the correct one
+	if marker != JPG_APP1_MARKER
+	{
+		return io_error!(InvalidData, "Wrong marker for EXIF data!");
+	}
+
+	// Compare lengths - Add 2 for the two bytes of the marker
+	if encoded_data.len() != (length + 2).into()
+	{
+		return io_error!(InvalidData, "Wrong length for EXIF segment!");
+	}
+
+	return Ok(encoded_data[4..].to_vec());
+}
+
+fn
 check_signature
 (
 	path: &Path
@@ -146,9 +172,7 @@ clear_metadata
 					// duplicate bytes at the end!
 					perform_file_action!(file.set_len(new_file_length));
 				},
-				0xd9	=> {													// EOI marker
-					return Ok(cleared_segments);
-				}
+				0xd9	=> break,												// EOI marker
 				_		=> (),													// Every other marker
 			}
 
@@ -170,7 +194,7 @@ pub fn
 write_metadata
 (
 	path: &Path,
-	encoded_metadata: &Vec<u8>
+	general_encoded_metadata: &Vec<u8>
 )
 -> Result<(), std::io::Error>
 {
@@ -184,8 +208,26 @@ write_metadata
 	{
 		println!("Cleared {} segments!", clearing_result.unwrap());
 	}
-	
 
+	// Encode the data specifically for JPG and open the file...
+	let encoded_metadata = encode_metadata_jpg(general_encoded_metadata);
+	let mut file = OpenOptions::new()
+		.write(true)
+		.read(true)
+		.open(path)
+		.expect("Could not open file");
+
+	// ...and copy everything after the signature into a buffer...
+	let mut buffer = Vec::new();
+	perform_file_action!(file.seek(SeekFrom::Start(JPG_SIGNATURE.len() as u64)));
+	perform_file_action!(file.read_to_end(&mut buffer));
+
+	// ...write the exif data...
+	perform_file_action!(file.write_all(&encoded_metadata));
+
+	// ...and the rest of the file from the buffer
+	perform_file_action!(file.write_all(&buffer));
+	
 	return Ok(());
 }
 
@@ -196,5 +238,55 @@ read_metadata
 )
 -> Result<Vec<u8>, std::io::Error>
 {
-	Ok(Vec::new())
+	let mut file_result = check_signature(path);
+
+	if file_result.is_err()
+	{
+		return Err(file_result.err().unwrap());
+	}
+
+	// Setup of variables necessary for going through the file
+	let mut file = file_result.unwrap();										// The struct for interacting with the file
+	let mut byte_buffer = [0u8; 1];												// A buffer for reading in a byte of data from the file
+	let mut previous_byte_was_marker_prefix = false;							// A boolean for remembering if the previous byte was a marker prefix (0xFF)
+
+	loop
+	{
+		// Read next byte into buffer
+		perform_file_action!(file.read(&mut byte_buffer));
+
+		if previous_byte_was_marker_prefix
+		{
+			match byte_buffer[0]
+			{
+				0xe1	=> {													// APP1 marker
+
+					// Read in the length of the segment
+					// (which follows immediately after the marker)
+					let mut length_buffer = [0u8; 2];
+					perform_file_action!(file.read(&mut length_buffer));
+
+					// Decode the length to determine how much more data there is
+					let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
+					let remaining_length = (length - 2) as usize;
+
+					// Read in the remaining data
+					let mut buffer = vec![0u8; remaining_length];
+					perform_file_action!(file.read(&mut buffer));
+
+					return Ok(buffer);
+				},
+				0xd9	=> break,												// EOI marker
+				_		=> (),													// Every other marker
+			}
+
+			previous_byte_was_marker_prefix = false;
+		}
+		else
+		{
+			previous_byte_was_marker_prefix = byte_buffer[0] == JPG_MARKER_PREFIX;
+		}
+	}
+
+	return io_error!(Other, "No EXIF data found!");
 }
