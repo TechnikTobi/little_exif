@@ -376,6 +376,7 @@ clear_metadata
 			if zTXt_chunk_data[i] != RAW_PROFILE_TYPE_EXIF[i]
 			{
 				correct_zTXt_chunk = false;
+				break;
 			}
 		}
 
@@ -435,6 +436,7 @@ read_metadata
 		if chunk.as_string() != String::from("zTXt")
 		{
 			perform_file_action!(file.seek(SeekFrom::Current(chunk.length() as i64 + 12)));
+			continue;
 		}
 
 		// We now have a zTXt chunk:
@@ -456,6 +458,7 @@ read_metadata
 			if zTXt_chunk_data[i] != RAW_PROFILE_TYPE_EXIF[i]
 			{
 				correct_zTXt_chunk = false;
+				break;
 			}
 		}
 
