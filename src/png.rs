@@ -187,7 +187,7 @@ check_signature
 {
 	if !path.exists()
 	{
-		return io_error!(NotFound, "Can't parse PNG file - File does not exist!");
+		return io_error!(NotFound, "Can't open PNG file - File does not exist!");
 	}
 
 	let mut file = OpenOptions::new()
@@ -205,7 +205,7 @@ check_signature
 
 	if !signature_is_valid
 	{
-		return io_error!(InvalidData, "Can't parse PNG file - Wrong signature!");
+		return io_error!(InvalidData, "Can't open PNG file - Wrong signature!");
 	}
 
 	// Signature is valid - can proceed using the file as PNG file
