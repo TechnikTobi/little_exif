@@ -68,7 +68,7 @@ Metadata
 			}
 		}
 
-		panic!("AHH");
+		Metadata { endian: Endian::Little, data: Vec::new() }
 	}
 	
 
