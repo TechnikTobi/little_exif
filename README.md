@@ -9,6 +9,8 @@ This section lists useful resources to be used during development.
 - [EXIF 2.32 Specifications](https://web.archive.org/web/20190624045241if_/http://www.cipa.jp:80/std/documents/e/DC-008-Translation-2019-E.pdf)
 - [EXIF Tags](https://exiftool.org/TagNames/EXIF.html)
 - [Understanding and Reading Exif Data](https://www.codeproject.com/Articles/47486/Understanding-and-Reading-Exif-Data)
+- [Exif explanation](http://gvsoft.no-ip.org/exif/exif-explanation.html#IFD)
+- [Metadata reference tables - Standard Exif Tags (exiv2)](https://exiv2.org/tags.html)
 
 ## PNG
 - [Structure of PNG files](https://dev.exiv2.org/projects/exiv2/wiki/The_Metadata_in_PNG_files)
