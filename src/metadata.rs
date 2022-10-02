@@ -14,7 +14,7 @@ const IFD_END: [u8; 4] = [0x00, 0x00, 0x00, 0x00];
 pub struct
 Metadata
 {
-	pub data: Vec<ExifTag>,
+	data: Vec<ExifTag>,
 	endian: Endian 
 }
 
@@ -29,6 +29,15 @@ Metadata
 		Metadata { endian: Endian::Little, data: Vec::new() }
 	}
 
+	pub fn
+	get_data
+	(
+		&self
+	)
+	-> &Vec<ExifTag>
+	{
+		&self.data
+	}
 
 	pub fn
 	new_from_path
