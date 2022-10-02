@@ -16,6 +16,10 @@ This section lists useful resources to be used during development.
 - [PNG Specifications V1.2](http://www.libpng.org/pub/png/spec/1.2/PNG-Contents.html)
 - [PNG - The Definitive Guide](http://www.vias.org/pngguide/)
 - [PNG Tags](https://exiftool.org/TagNames/PNG.html#TextualData)
+- [CRC example implementations (including Rust)](https://rosettacode.org/wiki/CRC-32#Rust)
+
+## JPEG
+- [Format description](https://github.com/corkami/formats/blob/master/image/jpeg.md)
 
 ## Compression
 - [DEFLATE/INFLATE](https://www.w3.org/TR/PNG-Compression.html)
@@ -24,3 +28,6 @@ This section lists useful resources to be used during development.
 - [An Explanation of the Deflate Algorithm](https://zlib.net/feldspar.html)
 - [PNG specifications referencing zlib](http://www.libpng.org/pub/png/spec/1.2/PNG-Compression.html)
 
+## Related projects
+- [exifsd](https://github.com/vadixidav/exifsd)
+- [exif-rs](https://github.com/kamadak/exif-rs/blob/master/src/tag.rs) 
