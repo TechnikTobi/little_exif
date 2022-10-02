@@ -39,7 +39,7 @@ main()
 	);
 
 	// Write the metadata to the copy
-	if let Err(error) = data.write_to_file(Path::new("examples/copy.jpg"))
+	if let Err(error) = data.write_to_file(Path::new("examples/copy.png"))
 	{
 		println!("{}", error);
 	}
@@ -48,13 +48,13 @@ main()
 		let png_data = Metadata::new_from_path(Path::new("examples/copy.png"));
 		println!("PNG read result:");
 		
-		for tag in png_data.data
+		for tag in png_data.get_data()
 		{
 			println!("{:?}", tag);
 		}
 	}
 
-	if let Err(error) = data.write_to_file(Path::new("examples/copy.png"))
+	if let Err(error) = data.write_to_file(Path::new("examples/copy.jpg"))
 	{
 		println!("{}", error);
 	}
@@ -63,7 +63,7 @@ main()
 		let jpg_data = Metadata::new_from_path(Path::new("examples/copy.jpg"));
 		println!("JPG read result:");
 
-		for tag in jpg_data.data
+		for tag in jpg_data.get_data()
 		{
 			println!("{:?}", tag);
 		}
