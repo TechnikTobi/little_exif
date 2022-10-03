@@ -6,8 +6,6 @@ use std::io::SeekFrom;
 use std::fs::File;
 use std::fs::OpenOptions;
 
-use crc::{Crc, CRC_32_ISO_HDLC};
-
 use crate::endian::*;
 use crate::general_file_io::*;
 
@@ -108,7 +106,7 @@ clear_metadata
 )
 -> Result<u8, std::io::Error>
 {
-	let mut file_result = check_signature(path);
+	let file_result = check_signature(path);
 
 	if file_result.is_err()
 	{
@@ -242,7 +240,7 @@ read_metadata
 )
 -> Result<Vec<u8>, std::io::Error>
 {
-	let mut file_result = check_signature(path);
+	let file_result = check_signature(path);
 
 	if file_result.is_err()
 	{
