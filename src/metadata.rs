@@ -467,6 +467,7 @@ Metadata
 		return Some((next_offset, ifd_vec));
 	}
 
+	#[allow(unused_assignments)]
 	fn
 	encode_metadata_general
 	(
