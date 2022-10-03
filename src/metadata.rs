@@ -21,6 +21,14 @@ Metadata
 impl
 Metadata
 {
+	/// Constructs a new, empty `Metadata` object.
+	/// 
+	/// This uses little endian notation by default.
+	/// 
+	/// # Examples
+	/// ```
+	/// let mut metadata: Metadata = Metadata::new();
+	/// ```
 	pub fn
 	new
 	()
