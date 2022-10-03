@@ -1,6 +1,8 @@
 //! # little_exif
 //! A small crate for reading and writing (at least some) EXIF data written entirely in Rust.
 //! 
+//! Interaction is done via the [`Metadata`](metadata/struct.Metadata.html) struct and the [`ExifTag`](exif_tag/enum.ExifTag.html) enum.
+//!
 //! # Usage
 //! ## Write EXIF data
 //! ```rust
