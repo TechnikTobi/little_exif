@@ -21,6 +21,7 @@ Metadata
 impl
 Metadata
 {
+
 	/// Constructs a new, empty `Metadata` object.
 	/// 
 	/// This uses little endian notation by default.
@@ -37,16 +38,14 @@ Metadata
 		Metadata { endian: Endian::Little, data: Vec::new() }
 	}
 
-	pub fn
-	get_data
-	(
-		&self
-	)
-	-> &Vec<ExifTag>
-	{
-		&self.data
-	}
-
+	/// Constructs a new `Metadata` object with the metadata from the image at the specified path.
+	/// - If unable to read the file (e.g. does not exist, unsupported file type, etc.), this (currently) panics.
+	/// - If unable to decode the metadata, a new, empty object gets created and returned.
+	///
+	/// # Examples
+	/// ```
+	/// let mut metadata: Metadata = Metadata::new_from_path(Path::new("image.png"));
+	/// ```
 	pub fn
 	new_from_path
 	(
@@ -85,9 +84,28 @@ Metadata
 			}
 		}
 
-		Metadata { endian: Endian::Little, data: Vec::new() }
+		Metadata::new()
 	}
 	
+	/// Gets a shared reference to the list of all tags currently stored in the object.
+	///
+	/// # Examples
+	/// ```
+	/// let metadata = Metadata::new_from_path(Path::new("image.png"));
+	/// for tag in metadata.get_data()
+	/// {
+	///     // do something with the tags	
+	/// }
+	/// ```
+	pub fn
+	get_data
+	(
+		&self
+	)
+	-> &Vec<ExifTag>
+	{
+		&self.data
+	}
 
 	pub fn
 	get_tag

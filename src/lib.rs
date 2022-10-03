@@ -1,5 +1,5 @@
 //! # little_exif
-//! A small crate for reading and writing (at least some) EXIF data written entirely in Rust.
+//! A small crate for reading and writing (at least some) EXIF data written entirely in Rust. Currently supports only .png and .jp(e)g files and a few dozen tags in IFD0 and ExifIFD.
 //! 
 //! Interaction is done via the [`Metadata`](metadata/struct.Metadata.html) struct and the [`ExifTag`](exif_tag/enum.ExifTag.html) enum.
 //!
