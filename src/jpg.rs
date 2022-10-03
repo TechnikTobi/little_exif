@@ -39,32 +39,6 @@ encode_metadata_jpg
 }
 
 fn
-decode_metadata_jpg
-(
-	encoded_data: &Vec<u8>
-)
--> Result<Vec<u8>, std::io::Error>
-{
-	// Get the marker and length from the encoded data
-	let marker = from_u8_vec_macro!(u16, &encoded_data[0..2].to_vec(), &Endian::Big);
-	let length = from_u8_vec_macro!(u16, &encoded_data[2..4].to_vec(), &Endian::Big);
-
-	// Check that the marker is the correct one
-	if marker != JPG_APP1_MARKER
-	{
-		return io_error!(InvalidData, "Wrong marker for EXIF data!");
-	}
-
-	// Compare lengths - Add 2 for the two bytes of the marker
-	if encoded_data.len() != (length + 2).into()
-	{
-		return io_error!(InvalidData, "Wrong length for EXIF segment!");
-	}
-
-	return Ok(encoded_data[4..].to_vec());
-}
-
-fn
 check_signature
 (
 	path: &Path
