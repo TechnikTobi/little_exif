@@ -32,7 +32,7 @@ macro_rules! build_tag_enum {
 	) 
 	=>
 	{
-		// #[derive(Eq, PartialEq, Hash, Debug)]
+		
 		#[derive(PartialEq, Debug)]
 		pub enum 
 		ExifTag
@@ -56,7 +56,7 @@ macro_rules! build_tag_enum {
 
 		impl ExifTag
 		{
-			// Gets the hex value of an EXIF tag
+			/// Gets the hex value of an EXIF tag
 			pub fn
 			as_u16
 			(
@@ -190,6 +190,9 @@ macro_rules! build_tag_enum {
 				}
 			}
 
+			/// Checks if the tag is known to little_exif or not
+			/// Note that in the future the value returned by this function for a specific tag might change
+			/// as the number of known tags is increased
 			pub fn
 			is_unknown
 			(
@@ -214,6 +217,7 @@ macro_rules! build_tag_enum {
 					_ => false
 				}
 			}
+
 
 			pub fn
 			unknown_is_justified
@@ -259,6 +263,7 @@ macro_rules! build_tag_enum {
 				}
 			}
 
+			/// Gets the format of the data for a tag
 			pub fn
 			format
 			(
