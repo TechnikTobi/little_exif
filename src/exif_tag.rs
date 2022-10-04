@@ -90,7 +90,7 @@ macro_rules! build_tag_enum {
 			/// 
 			/// # Examples
 			/// ```
-			/// let tag = ExifTag::from_u16(0x010e).expect("Unknown hex value");
+			/// let tag = ExifTag::from_u16(0x010e).unwrap();
 			/// ```
 			pub fn
 			from_u16
