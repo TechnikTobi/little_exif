@@ -122,9 +122,29 @@ Metadata
 	)
 	-> Option<&ExifTag> 
 	{
+		self.get_tag_by_hex(input_tag.as_u16())
+	}
+
+	/// Gets the sored tag in the metadata by its hex value.
+	/// Returns `None`if the tag is not present in the metadata struct.
+	/// 
+	/// # Examples
+	/// ```
+	/// # Note that the tag identifier of course does not need to be written in hex format
+	/// # Hex notation only used in this example for more clarity
+	/// let tag = metadata.get_tag_by_hex(0x010e);
+	/// ```
+	pub fn
+	get_tag_by_hex
+	(
+		&self,
+		input_tag_hex: u16
+	)
+	-> Option<&ExifTag>
+	{
 		for tag in &self.data
 		{
-			if tag.as_u16() == input_tag.as_u16()
+			if tag.as_u16() == input_tag_hex
 			{
 				return Some(tag);
 			}
