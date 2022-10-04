@@ -107,6 +107,13 @@ Metadata
 		&self.data
 	}
 
+	/// Gets the stored tag in the metadata for the given tag. 
+	/// Returns `None` if the tag is not present in the metadata struct.
+	///
+	/// # Examples
+	/// ```
+	/// let tag = metadata.get_tag(&ExifTag::ImageDescription(String::new()));
+	/// ```
 	pub fn
 	get_tag
 	(
@@ -124,7 +131,6 @@ Metadata
 		}
 		return None;
 	}
-
 
 	pub fn
 	set_tag
@@ -176,6 +182,11 @@ Metadata
 		}
 	}
 
+	/// Writes the metadata to the specified file.
+	/// This could return an error for multiple reasons:
+	/// - The file does not exist at the given path
+	/// - Interpreting the given path fails
+	/// - The file type is not supported
 	pub fn
 	write_to_file
 	(
