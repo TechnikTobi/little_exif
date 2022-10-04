@@ -132,6 +132,14 @@ Metadata
 		return None;
 	}
 
+	/// Sets the tag in the metadata struct. If the tag is already in there it gets replaced
+	///
+	/// # Examples
+	/// ```
+	/// data.set_tag(
+	///     ExifTag::ISO(vec![1234])
+	/// );
+	/// ```
 	pub fn
 	set_tag
 	(
