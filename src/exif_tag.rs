@@ -84,7 +84,14 @@ macro_rules! build_tag_enum {
 				}
 			}
 
-			// Gets the EXIF tag for a given hex value
+			/// Gets the tag for a given hex value. 
+			/// The tag is initialized with new, empty data.
+			/// If the hex value is unknown, an error is returned.
+			/// 
+			/// # Examples
+			/// ```
+			/// let tag = ExifTag::from_u16(0x010e).expect("Unknown hex value");
+			/// ```
 			pub fn
 			from_u16
 			(
@@ -102,6 +109,20 @@ macro_rules! build_tag_enum {
 				}
 			}
 
+			/// Gets the tag for a given hex value. 
+			/// The tag is initalized using the given raw data by converting it to the appropriate format.
+			/// If the hex value is unknown, the other parameters are used to generate an appropriate unkown tag for the specified format.
+			/// 
+			/// # Examples
+			/// ```
+			/// let tag = ExifTag::from_u16(
+			///     0x0113,
+			///     ExifTagFormat::INT8U,
+			///     vec![1u8],
+			///     Endian::Little,
+			///     ExifTagGroup::NO_GROUP
+			/// );
+			/// ```
 			pub fn
 			from_u16_with_data
 			(
@@ -142,6 +163,17 @@ macro_rules! build_tag_enum {
 				}
 			}
 
+			/// Gives information about whether the data stored in the tag can be written to file.
+			/// Needed e.g. for Offset tags where the given value is useless and needs to be computed during the write process.
+			/// 
+			/// # Examples
+			/// ```
+			/// let writable = ExifTag::ImageDescription(String::new());
+			/// let not_writable = ExifTag::ExifOffset(vec![1u32]);
+			///
+			/// asssert_eq(writable.is_writable(), true);
+			/// asssert_eq(not_writable.is_writable(), false);
+			/// ```
 			pub fn
 			is_writable
 			(
