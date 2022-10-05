@@ -10,7 +10,7 @@ Endian
 
 impl Endian
 {
-	pub fn
+	pub(crate) fn
 	header
 	(
 		&self
@@ -25,7 +25,7 @@ impl Endian
 	}
 }
 
-pub trait
+pub(crate) trait
 U8conversion<T>
 {
 	fn
