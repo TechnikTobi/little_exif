@@ -19,15 +19,14 @@
 #![crate_type = "lib"]
 #![crate_name = "little_exif"]
 
-mod endian;
-mod exif_tag_format;
 mod general_file_io;
-
 mod png;
 mod png_chunk;
 mod jpg;
 
+pub mod endian;
 pub mod exif_tag;
+pub mod exif_tag_format;
 pub mod metadata;
 
 #[cfg(test)]
