@@ -9,7 +9,7 @@ use std::fs::OpenOptions;
 use crate::endian::*;
 use crate::general_file_io::*;
 
-pub const JPG_SIGNATURE: [u8; 2] = [0xff, 0xd8];
+pub(crate) const JPG_SIGNATURE: [u8; 2] = [0xff, 0xd8];
 
 const JPG_MARKER_PREFIX: u8 = 0xff;
 const JPG_APP1_MARKER: u16 = 0xffe1;
@@ -73,7 +73,7 @@ check_signature
 	return Ok(file);
 }
 
-pub fn
+pub(crate) fn
 clear_metadata
 (
 	path: &Path
@@ -163,7 +163,7 @@ clear_metadata
 	return Ok(cleared_segments);
 }
 
-pub fn
+pub(crate) fn
 write_metadata
 (
 	path: &Path,
@@ -207,7 +207,7 @@ write_metadata
 	return Ok(());
 }
 
-pub fn
+pub(crate) fn
 read_metadata
 (
 	path: &Path

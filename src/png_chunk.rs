@@ -1,5 +1,5 @@
 #[allow(non_camel_case_types)]
-pub enum
+pub(crate) enum
 PngChunkOrdering
 {
 	FIRST,
@@ -23,7 +23,7 @@ macro_rules! build_png_chunk_type_enum {
 	=>
 	{
 		#[allow(non_camel_case_types)]
-		pub enum
+		pub(crate) enum
 		PngChunk
 		{
 			$(
@@ -80,7 +80,7 @@ macro_rules! build_png_chunk_type_enum {
 			}
 			*/
 
-			pub fn
+			pub(crate) fn
 			length
 			(
 				&self
@@ -95,7 +95,7 @@ macro_rules! build_png_chunk_type_enum {
 				}
 			}
 
-			pub fn
+			pub(crate) fn
 			as_string
 			(
 				&self
@@ -110,7 +110,7 @@ macro_rules! build_png_chunk_type_enum {
 				}
 			}
 
-			pub fn
+			pub(crate) fn
 			from_string
 			(
 				string_name: &String,
