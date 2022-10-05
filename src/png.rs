@@ -14,8 +14,8 @@ use miniz_oxide::inflate::decompress_to_vec_zlib;
 use crate::png_chunk::PngChunk;
 use crate::general_file_io::*;
 
-pub const PNG_SIGNATURE: [u8; 8] = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-pub const RAW_PROFILE_TYPE_EXIF: [u8; 23] = [
+pub(crate) const PNG_SIGNATURE: [u8; 8] = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+pub(crate) const RAW_PROFILE_TYPE_EXIF: [u8; 23] = [
 	0x52, 0x61, 0x77, 0x20,								// Raw
 	0x70, 0x72, 0x6F, 0x66, 0x69, 0x6C, 0x65, 0x20,		// profile
 	0x74, 0x79, 0x70, 0x65, 0x20,						// type
@@ -286,7 +286,7 @@ get_next_chunk_descriptor
 	}
 }
 
-pub fn
+pub(crate) fn
 parse_png
 (
 	path: &Path
@@ -325,7 +325,7 @@ parse_png
 // Clears existing metadata chunk from a png file
 // Gets called before writing any new metadata
 #[allow(non_snake_case)]
-pub fn
+pub(crate) fn
 clear_metadata
 (
 	path: &Path
@@ -414,7 +414,7 @@ clear_metadata
 }
 
 #[allow(non_snake_case)]
-pub fn
+pub(crate) fn
 read_metadata
 (
 	path: &Path
@@ -486,7 +486,7 @@ read_metadata
 }
 
 #[allow(non_snake_case)]
-pub fn
+pub(crate) fn
 write_metadata
 (
 	path: &Path,
