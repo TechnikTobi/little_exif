@@ -563,6 +563,10 @@ build_tag_enum![
 
 impl ExifTag
 {
+	/// Checks if a tag is for representing the offset to a SubIFD (e.g. ExifIFD).
+	/// Needed for generating the exif data for writing, as the value stored in 
+	/// the tag variables is useless because it needs to be computed during
+	/// the writing process.
 	pub fn
 	is_offset_tag
 	(
@@ -580,12 +584,3 @@ impl ExifTag
 		}
 	}
 }
-
-/*
-pub const OFFSET_TAGS = [
-	ExifTag::ExifOffset,
-	ExifTag::GPSInfo,
-	ExifTag::MakerNote,
-	ExifTag::InteropOffset
-]
-*/
