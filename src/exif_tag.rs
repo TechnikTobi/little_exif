@@ -110,8 +110,10 @@ macro_rules! build_tag_enum {
 			}
 
 			/// Gets the tag for a given hex value. 
-			/// The tag is initalized using the given raw data by converting it to the appropriate format.
-			/// If the hex value is unknown, the other parameters are used to generate an appropriate unkown tag for the specified format.
+			/// The tag is initalized using the given raw data by converting it
+			/// to the appropriate format.
+			/// If the hex value is unknown, the other parameters are used to
+			/// generate an appropriate unkown tag for the specified format.
 			/// 
 			/// # Examples
 			/// ```
@@ -163,8 +165,10 @@ macro_rules! build_tag_enum {
 				}
 			}
 
-			/// Gives information about whether the data stored in the tag can be written to file.
-			/// Needed e.g. for Offset tags where the given value is useless and needs to be computed during the write process.
+			/// Gives information about whether the data stored in the tag can
+			/// be written to file.
+			/// Needed e.g. for Offset tags where the given value is useless
+			/// and needs to be computed during the write process.
 			/// 
 			/// # Examples
 			/// ```
@@ -191,8 +195,9 @@ macro_rules! build_tag_enum {
 			}
 
 			/// Checks if the tag is known to little_exif or not
-			/// Note that in the future the value returned by this function for a specific tag might change
-			/// as the number of known tags is increased
+			/// Note that in the future the value returned by this function 
+			/// for a specific tag might change as the number of known tags
+			/// gets increased
 			pub fn
 			is_unknown
 			(
@@ -218,7 +223,8 @@ macro_rules! build_tag_enum {
 				}
 			}
 
-
+			/// Checks if the usage of an unknown tag for the tags hex value is
+			/// justified or not
 			pub fn
 			unknown_is_justified
 			(
@@ -236,6 +242,9 @@ macro_rules! build_tag_enum {
 				return true;
 			}
 
+			/// Gets the group (i.e. IFD) the tag belongs to.
+			/// Note that this is still somewhat problematic, as for some tags
+			/// the value of this function is hard to determine.
 			pub fn
 			get_group
 			(
@@ -263,7 +272,7 @@ macro_rules! build_tag_enum {
 				}
 			}
 
-			/// Gets the format of the data for a tag
+			/// Gets the format of the data for a tag (e.g. `STRING`, `INT8U`, ...)
 			pub fn
 			format
 			(
@@ -291,6 +300,14 @@ macro_rules! build_tag_enum {
 				}
 			}
 
+			/// Gets the number of components for the tag. This might be
+			/// predefined by the specifications for some tags (e.g.
+			/// `BitsPerSample` has to have 3 components of type `INT16U`), for
+			/// other tags this depends on the actual data (e.g. most - but not
+			/// all - `STRING` format type tags).
+			/// Note that for `STRING` format type tags this includes the NUL
+			/// terminator (which gets written automatically and should not be
+			/// provided by the user). 
 			pub fn
 			number_of_components
 			(
@@ -329,6 +346,9 @@ macro_rules! build_tag_enum {
 				}
 			}
 
+			/// Checks if the format type of the tag is `STRING`.
+			/// Needed for generating the EXIF data to know wheter to add a 
+			/// NUL terminator at the end
 			pub fn
 			is_string
 			(
@@ -346,6 +366,8 @@ macro_rules! build_tag_enum {
 				}
 			}
 
+			/// Gets the value stored in the tag as an u8 vector, using the 
+			/// given endianness for conversion.
 			pub fn
 			value_as_u8_vec
 			(
