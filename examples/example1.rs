@@ -9,19 +9,20 @@ use little_exif::exif_tag::ExifTagGroup;
 
 fn
 main()
+-> Result<(), std::io::Error>
 {
 
 	// Remove old copy and create new one for writing EXIF data to
-	remove_file("examples/copy.png");
-	remove_file("examples/copy.jpg");
-	copy("examples/image.png", "examples/copy.png");
-	copy("examples/image.jpg", "examples/copy.jpg");
+	remove_file("examples/copy.png")?;
+	remove_file("examples/copy.jpg")?;
+	copy("examples/image.png", "examples/copy.png")?;
+	copy("examples/image.jpg", "examples/copy.jpg")?;
 
 	// Create a new Metadata struct
 	let mut data = Metadata::new();
 
 	// Set the ImageDescription (IFD0) an ISO (ExifIFD) tag as examples
-
+	// as well as two (to little_exif) unknown tags
 	data.set_tag(
 		ExifTag::UnknownSTRING("test".to_string(), 0x010d, ExifTagGroup::IFD0)
 	);
@@ -38,34 +39,24 @@ main()
 		ExifTag::UnknownSTRING("test".to_string(), 0x010c, ExifTagGroup::IFD0)
 	);
 
-	// Write the metadata to the copy
-	if let Err(error) = data.write_to_file(Path::new("examples/copy.png"))
+	// Write the metadata to the copies
+	data.write_to_file(Path::new("examples/copy.png"))?;
+	let png_data = Metadata::new_from_path(Path::new("examples/copy.png"));
+	println!("PNG read result:");
+	
+	for tag in png_data.get_data()
 	{
-		println!("{}", error);
-	}
-	else
-	{
-		let png_data = Metadata::new_from_path(Path::new("examples/copy.png"));
-		println!("PNG read result:");
-		
-		for tag in png_data.get_data()
-		{
-			println!("{:?}", tag);
-		}
+		println!("{:?}", tag);
 	}
 
-	if let Err(error) = data.write_to_file(Path::new("examples/copy.jpg"))
-	{
-		println!("{}", error);
-	}
-	else
-	{
-		let jpg_data = Metadata::new_from_path(Path::new("examples/copy.jpg"));
-		println!("JPG read result:");
+	data.write_to_file(Path::new("examples/copy.jpg"))?;
+	let jpg_data = Metadata::new_from_path(Path::new("examples/copy.jpg"));
+	println!("JPG read result:");
 
-		for tag in jpg_data.get_data()
-		{
-			println!("{:?}", tag);
-		}
+	for tag in jpg_data.get_data()
+	{
+		println!("{:?}", tag);
 	}
+
+	Ok(())
 }
