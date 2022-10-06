@@ -163,6 +163,10 @@ clear_metadata
 	return Ok(cleared_segments);
 }
 
+/// Writes the given generally encoded metadata to the JP(E)G image file at 
+/// the specified path. 
+/// Note that any previously stored metadata under the APP1 marker gets removed
+/// first before writing the "new" metadata. 
 pub(crate) fn
 write_metadata
 (

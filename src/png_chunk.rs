@@ -22,6 +22,8 @@ macro_rules! build_png_chunk_type_enum {
 	)
 	=>
 	{
+		/// These are the different PNG chunk types currently known to
+		/// little_exif. These might be expanded in the future if necessary.
 		#[allow(non_camel_case_types)]
 		pub(crate) enum
 		PngChunk
@@ -33,53 +35,6 @@ macro_rules! build_png_chunk_type_enum {
 
 		impl PngChunk
 		{
-			/*
-			pub fn
-			is_critical
-			(
-				&self
-			)
-			-> bool
-			{
-				match *self
-				{
-					$(
-						PngChunk::$tag(_) => $critical,
-					)*
-				}
-			}
-
-			pub fn
-			allows_multiple
-			(
-				&self
-			)
-			-> bool
-			{
-				match *self
-				{
-					$(
-						PngChunk::$tag(_) => $multiple,
-					)*
-				}
-			}
-
-			pub fn
-			ordering
-			(
-				&self
-			)
-			-> PngChunkOrdering
-			{
-				match *self
-				{
-					$(
-						PngChunk::$tag(_) => PngChunkOrdering::$ordering,
-					)*
-				}
-			}
-			*/
-
 			pub(crate) fn
 			length
 			(
