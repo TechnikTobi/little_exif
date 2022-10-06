@@ -120,7 +120,7 @@ macro_rules! build_tag_enum {
 			/// # Examples
 			/// ```
 			/// let tag = ExifTag::from_u16(
-			///     0x0113,
+			///     0x0113,                   // An unknown tag hex value
 			///     ExifTagFormat::INT8U,
 			///     vec![1u8],
 			///     Endian::Little,
