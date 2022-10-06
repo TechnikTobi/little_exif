@@ -286,6 +286,9 @@ get_next_chunk_descriptor
 	}
 }
 
+/// "Parses" the PNG by checking various properties:
+/// - Can the file be opened and is the signature valid?
+/// - Are the various chunks OK or not? For this, the subroutine `get_next_chunk_descriptor` is used
 pub(crate) fn
 parse_png
 (
