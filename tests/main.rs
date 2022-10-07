@@ -11,5 +11,36 @@ use little_exif::exif_tag::ExifTagGroup;
 fn
 new()
 {
-	let metadata = Metadata::new();
+	let _ = Metadata::new();
+}
+
+#[test]
+fn
+new_from_path()
+{
+	let _ = Metadata::new_from_path(Path::new("tests/sample2.png"));
+}
+
+#[test]
+#[should_panic(expected = "Can't read Metadata - File does not exist!")]
+fn
+new_from_path_panic_not_existant()
+{
+	let _ = Metadata::new_from_path(Path::new("sample2.png"));
+}
+
+#[test]
+#[should_panic(expected = "Can't get extension from given path!")]
+fn
+new_from_path_panic_no_extension()
+{
+	let _ = Metadata::new_from_path(Path::new("tests/sample0"));
+}
+
+#[test]
+#[should_panic(expected = "Can't read Metadata - Unsupported file type!")]
+fn
+new_from_path_panic_not_supported()
+{
+	let _ = Metadata::new_from_path(Path::new("tests/sample1.txt"));
 }
