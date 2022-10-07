@@ -82,12 +82,18 @@ Metadata
 			_		=> panic!("Can't read Metadata - Unsupported file type!"),
 		}
 		{
-			if let Ok((endian, data)) = Self::decode_metadata_general(&pre_decode_general)
+			let decoding_result = Self::decode_metadata_general(&pre_decode_general);
+			if let Ok((endian, data)) = decoding_result
 			{
 				return Metadata { endian, data };
 			}
+			else
+			{
+				println!("{}", decoding_result.err().unwrap());
+			}
 		}
 
+		println!("WARNING: Can't read metadata from file - Create new & empty struct");
 		Metadata::new()
 	}
 	
