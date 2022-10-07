@@ -91,7 +91,9 @@ macro_rules! build_tag_enum {
 			/// If the hex value is unknown, an error is returned.
 			/// 
 			/// # Examples
-			/// ```
+			/// ```no_run
+			/// use little_exif::exif_tag::ExifTag;
+			/// 
 			/// let tag = ExifTag::from_u16(0x010e).unwrap();
 			/// ```
 			pub fn
@@ -118,13 +120,18 @@ macro_rules! build_tag_enum {
 			/// generate an appropriate unkown tag for the specified format.
 			/// 
 			/// # Examples
-			/// ```
-			/// let tag = ExifTag::from_u16(
+			/// ```no_run
+			/// use little_exif::endian::Endian;
+			/// use little_exif::exif_tag::ExifTag;
+			/// use little_exif::exif_tag::ExifTagGroup;
+			/// use little_exif::exif_tag_format::ExifTagFormat;
+			/// 
+			/// let tag = ExifTag::from_u16_with_data(
 			///     0x0113,                   // An unknown tag hex value
-			///     ExifTagFormat::INT8U,
-			///     vec![1u8],
-			///     Endian::Little,
-			///     ExifTagGroup::NO_GROUP
+			///     &ExifTagFormat::INT8U,
+			///     &vec![1u8],
+			///     &Endian::Little,
+			///     &ExifTagGroup::NO_GROUP
 			/// );
 			/// ```
 			pub fn
@@ -173,12 +180,14 @@ macro_rules! build_tag_enum {
 			/// and needs to be computed during the write process.
 			/// 
 			/// # Examples
-			/// ```
+			/// ```no_run
+			/// use little_exif::exif_tag::ExifTag;
+			/// 
 			/// let writable = ExifTag::ImageDescription(String::new());
 			/// let not_writable = ExifTag::ExifOffset(vec![1u32]);
 			///
-			/// asssert_eq(writable.is_writable(), true);
-			/// asssert_eq(not_writable.is_writable(), false);
+			/// assert_eq!(writable.is_writable(), true);
+			/// assert_eq!(not_writable.is_writable(), false);
 			/// ```
 			pub fn
 			is_writable
