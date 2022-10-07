@@ -20,15 +20,12 @@ readme = "README.md"
 keywords = ["metadata", "exif", "photo", "image"]
 categories = ["multimedia::images"]
 
-include = [
-    "Cargo.toml",
-    "src/**/*",
-    "LICENSE-MIT",
-    "LICENSE-APACHE",
-    "README.md",
-    "examples/example1.rs",
-    "examples/image.png",
-    "examples/image.jpg",
+exclude = [
+    ".DS_Store",
+    "**/.DS_Store",
+    ".gitignore",
+    "additional-documentation/*",
+    "tests/*",
 ]
 
 [dependencies]
