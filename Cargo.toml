@@ -1,9 +1,35 @@
 [package]
-name = "little-exif"
+name = "little_exif"
+
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = """
+This little library implements simple functionality for basic reading and 
+writing of EXIF (related) metadata for PNG and JP(E)G image files (other file 
+types - e.g. TIFF or HEIC - are planned for the future), with the advantage of 
+being solely written in Rust & not relying on any 3rd party (C-)library for 
+accessing the data (there are dependencies e.g. for calculating checksums or 
+(de)compressing - however, they are also written in Rust). 
+"""
+
+authors = ["Tobias Prisching"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/TechnikTobi/little_exif"
+readme = "README.md"
+keywords = ["metadata", "exif", "photo", "image"]
+categories = ["multimedia::images"]
+
+include = [
+    "Cargo.toml",
+    "src/**/*",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+    "README.md",
+    "examples/example1.rs",
+    "examples/image.png",
+    "examples/image.jpg",
+]
 
 [dependencies]
 crc = "3.0.0"
