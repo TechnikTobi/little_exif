@@ -44,3 +44,35 @@ new_from_path_panic_not_supported()
 {
 	let _ = Metadata::new_from_path(Path::new("tests/sample1.txt"));
 }
+
+
+#[test]
+fn 
+write_to_file() {
+
+	// Remove file from previous run and replace it with fresh copy
+	remove_file("tests/sample2_copy.png");
+	copy("tests/sample2.png", "tests/sample2_copy.png");
+
+	// Create new metadata struct and fill it
+	let mut metadata = Metadata::new();
+	assert_eq!(metadata.get_data().len(), 0);
+
+	metadata.set_tag(
+		ExifTag::ImageDescription("Hello World!".to_string())
+	);
+	metadata.set_tag(
+		ExifTag::ExposureProgram(vec![1])
+	);
+	metadata.set_tag(
+		ExifTag::ISO(vec![2706])
+	);
+	metadata.set_tag(
+		ExifTag::Model("Testcam(1)".to_string())
+	);
+	assert_eq!(metadata.get_data().len(), 4);
+	
+	// Write metadata to file
+	assert!(metadata.write_to_file(Path::new("tests/sample2_copy.png")).is_ok());
+
+}

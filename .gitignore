@@ -21,3 +21,4 @@ Cargo.lock
 *.swp
 copy.png
 examples/copy.jpg
+tests/sample2_copy.png
