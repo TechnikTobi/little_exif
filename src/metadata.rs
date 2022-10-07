@@ -59,7 +59,7 @@ Metadata
 	{
 		if !path.exists()
 		{
-			panic!("Can't write Metadata - File does not exist!");
+			panic!("Can't read Metadata - File does not exist!");
 		}
 
 		let file_type = path.extension();
@@ -79,7 +79,7 @@ Metadata
 			"jpg"	=> jpg::read_metadata(&path),
 			"jpeg"	=> jpg::read_metadata(&path),
 			"png"	=> png::read_metadata(&path),
-			_		=> panic!("Unsupported file type!"),
+			_		=> panic!("Can't read Metadata - Unsupported file type!"),
 		}
 		{
 			if let Ok((endian, data)) = Self::decode_metadata_general(&pre_decode_general)
