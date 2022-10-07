@@ -27,7 +27,9 @@ Metadata
 	/// This uses little endian notation by default.
 	/// 
 	/// # Examples
-	/// ```
+	/// ```no_run
+	/// use little_exif::metadata::Metadata;
+	///
 	/// let mut metadata: Metadata = Metadata::new();
 	/// ```
 	pub fn
@@ -43,8 +45,10 @@ Metadata
 	/// - If unable to decode the metadata, a new, empty object gets created and returned.
 	///
 	/// # Examples
-	/// ```
-	/// let mut metadata: Metadata = Metadata::new_from_path(Path::new("image.png"));
+	/// ```no_run
+	/// use little_exif::metadata::Metadata;
+	/// 
+	/// let mut metadata: Metadata = Metadata::new_from_path(std::path::Path::new("image.png"));
 	/// ```
 	pub fn
 	new_from_path
@@ -90,8 +94,10 @@ Metadata
 	/// Gets a shared reference to the list of all tags currently stored in the object.
 	///
 	/// # Examples
-	/// ```
-	/// let metadata = Metadata::new_from_path(Path::new("image.png"));
+	/// ```no_run
+	/// use little_exif::metadata::Metadata;
+	/// 
+	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png"));
 	/// for tag in metadata.get_data()
 	/// {
 	///     // do something with the tags	
@@ -111,7 +117,11 @@ Metadata
 	/// Returns `None` if the tag is not present in the metadata struct.
 	///
 	/// # Examples
-	/// ```
+	/// ```no_run
+	/// use little_exif::metadata::Metadata;
+	/// use little_exif::exif_tag::ExifTag;
+	/// 
+	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png"));
 	/// let tag = metadata.get_tag(&ExifTag::ImageDescription(String::new()));
 	/// ```
 	pub fn
@@ -129,9 +139,12 @@ Metadata
 	/// Returns `None`if the tag is not present in the metadata struct.
 	/// 
 	/// # Examples
-	/// ```
-	/// # Note that the tag identifier of course does not need to be written in hex format
-	/// # Hex notation only used in this example for more clarity
+	/// ```no_run
+	/// // Note that the tag identifier of course does not need to be written in hex format
+	/// // Hex notation only used in this example for more clarity
+	/// use little_exif::metadata::Metadata;
+	/// 
+	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png"));
 	/// let tag = metadata.get_tag_by_hex(0x010e);
 	/// ```
 	pub fn
@@ -155,8 +168,12 @@ Metadata
 	/// Sets the tag in the metadata struct. If the tag is already in there it gets replaced
 	///
 	/// # Examples
-	/// ```
-	/// data.set_tag(
+	/// ```no_run
+	/// use little_exif::metadata::Metadata;
+	/// use little_exif::exif_tag::ExifTag;
+	/// 
+	/// let mut metadata = Metadata::new();
+	/// metadata.set_tag(
 	///     ExifTag::ISO(vec![1234])
 	/// );
 	/// ```
