@@ -18,45 +18,53 @@ main()
 	copy("examples/image.png", "examples/copy.png")?;
 	copy("examples/image.jpg", "examples/copy.jpg")?;
 
-	// Create a new Metadata struct
-	let mut data = Metadata::new();
-
-	// Set the ImageDescription (IFD0) an ISO (ExifIFD) tag as examples
-	// as well as two (to little_exif) unknown tags
-	data.set_tag(
-		ExifTag::UnknownSTRING("test".to_string(), 0x010d, ExifTagGroup::IFD0)
-	);
-
-	data.set_tag(
-		ExifTag::ImageDescription("-w 1000 -h 1000 --x_mid=0 --y_mid=0 -z 0.5 -i 1000 -c 8".to_string())
-	);
-
-	data.set_tag(
-		ExifTag::ISO(vec![2022])
-	);
-
-	data.set_tag(
-		ExifTag::UnknownSTRING("test".to_string(), 0x010c, ExifTagGroup::IFD0)
-	);
+	// Create metadata structs & fill them
+	let mut png_data = Metadata::new();
+	let mut jpg_data = Metadata::new_from_path(Path::new("examples/copy.jpg"));
+	fill_metadata(&mut png_data);
+	fill_metadata(&mut jpg_data);
 
 	// Write the metadata to the copies
-	data.write_to_file(Path::new("examples/copy.png"))?;
-	let png_data = Metadata::new_from_path(Path::new("examples/copy.png"));
-	println!("PNG read result:");
+	png_data.write_to_file(Path::new("examples/copy.png"))?;
+	jpg_data.write_to_file(Path::new("examples/copy.jpg"))?;
 	
-	for tag in png_data.get_data()
+	// Read in the metadata again & print it
+	println!("PNG read result:");
+	for tag in Metadata::new_from_path(Path::new("examples/copy.png")).get_data()
 	{
 		println!("{:?}", tag);
 	}
 
-	data.write_to_file(Path::new("examples/copy.jpg"))?;
-	let jpg_data = Metadata::new_from_path(Path::new("examples/copy.jpg"));
 	println!("JPG read result:");
-
-	for tag in jpg_data.get_data()
+	for tag in Metadata::new_from_path(Path::new("examples/copy.jpg")).get_data()
 	{
 		println!("{:?}", tag);
 	}
 
 	Ok(())
+}
+
+fn
+fill_metadata
+(
+	metadata: &mut Metadata
+)
+{
+	// Set the ImageDescription (IFD0) an ISO (ExifIFD) tag as examples
+	// as well as two (to little_exif) unknown tags
+	metadata.set_tag(
+		ExifTag::UnknownSTRING("test".to_string(), 0x010d, ExifTagGroup::IFD0)
+	);
+
+	metadata.set_tag(
+		ExifTag::ImageDescription("-w 1000 -h 1000 --x_mid=0 --y_mid=0 -z 0.5 -i 1000 -c 8".to_string())
+	);
+
+	metadata.set_tag(
+		ExifTag::ISO(vec![2022])
+	);
+
+	metadata.set_tag(
+		ExifTag::UnknownSTRING("test".to_string(), 0x010c, ExifTagGroup::IFD0)
+	);
 }
