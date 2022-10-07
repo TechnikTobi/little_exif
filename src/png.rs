@@ -557,3 +557,18 @@ write_metadata
 
 	return Ok(());
 }
+
+#[cfg(test)]
+mod tests {
+
+	#[test]
+	fn
+	parsing_test() 
+	{
+		let chunks = crate::png::parse_png(
+			std::path::Path::new("tests/png_parse_test_image.png")
+		).unwrap();
+		assert_eq!(chunks.len(), 3);
+	}
+	
+}
