@@ -437,7 +437,7 @@ build_tag_enum![
 	(Make,						0x010f,	STRING,			None::<u32>,		true,		IFD0),
 	(Model,						0x0110,	STRING,			None::<u32>,		true,		IFD0),
 	(StripOffsets,				0x0111,	INT32U,			None::<u32>,		false,		NO_GROUP),	// IFD1?
-	(Orientation,				0x0112,	INT32U,			Some::<u32>(1),		true,		IFD0),
+	(Orientation,				0x0112,	INT16U,			Some::<u32>(1),		true,		IFD0),
 
 	(SamplesPerPixel,			0x0115,	INT16U,			Some::<u32>(1),		true,		IFD0),		// IFD1?
 	(RowsPerStrip,				0x0116,	INT32U,			Some::<u32>(1),		true,		IFD0),		// IFD1?
