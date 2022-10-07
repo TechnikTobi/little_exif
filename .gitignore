@@ -16,6 +16,9 @@ Cargo.lock
 /Cargo.lock
 
 # Ignore macOS files
+.DS_Store
+**/.DS_Store
+*/.DS_Store
 *.swp
 copy.png
 examples/copy.jpg
