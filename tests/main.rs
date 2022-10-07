@@ -5,7 +5,6 @@ use std::path::Path;
 extern crate little_exif;
 use little_exif::metadata::Metadata;
 use little_exif::exif_tag::ExifTag;
-use little_exif::exif_tag::ExifTagGroup;
 
 #[test]
 fn
@@ -48,15 +47,17 @@ new_from_path_panic_not_supported()
 
 #[test]
 fn 
-write_to_file() {
+write_to_file() 
+-> Result<(), std::io::Error>
+{
 
 	// Remove file from previous run and replace it with fresh copy
-	remove_file("tests/sample2_copy.png");
-	copy("tests/sample2.png", "tests/sample2_copy.png");
+	remove_file("tests/sample2_copy.png")?;
+	copy("tests/sample2.png", "tests/sample2_copy.png")?;
 
 	// Create new metadata struct and fill it
 	let mut metadata = Metadata::new();
-	assert_eq!(metadata.get_data().len(), 0);
+	assert_eq!(metadata.data().len(), 0);
 
 	metadata.set_tag(
 		ExifTag::ImageDescription("Hello World!".to_string())
@@ -70,9 +71,10 @@ write_to_file() {
 	metadata.set_tag(
 		ExifTag::Model("Testcam(1)".to_string())
 	);
-	assert_eq!(metadata.get_data().len(), 4);
+	assert_eq!(metadata.data().len(), 4);
 	
 	// Write metadata to file
 	assert!(metadata.write_to_file(Path::new("tests/sample2_copy.png")).is_ok());
 
+	Ok(())
 }
