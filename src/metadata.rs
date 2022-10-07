@@ -104,13 +104,13 @@ Metadata
 	/// use little_exif::metadata::Metadata;
 	/// 
 	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png"));
-	/// for tag in metadata.get_data()
+	/// for tag in metadata.data()
 	/// {
 	///     // do something with the tags	
 	/// }
 	/// ```
 	pub fn
-	get_data
+	data
 	(
 		&self
 	)

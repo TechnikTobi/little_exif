@@ -30,13 +30,13 @@ main()
 	
 	// Read in the metadata again & print it
 	println!("PNG read result:");
-	for tag in Metadata::new_from_path(Path::new("examples/copy.png")).get_data()
+	for tag in Metadata::new_from_path(Path::new("examples/copy.png")).data()
 	{
 		println!("{:?}", tag);
 	}
 
 	println!("JPG read result:");
-	for tag in Metadata::new_from_path(Path::new("examples/copy.jpg")).get_data()
+	for tag in Metadata::new_from_path(Path::new("examples/copy.jpg")).data()
 	{
 		println!("{:?}", tag);
 	}
