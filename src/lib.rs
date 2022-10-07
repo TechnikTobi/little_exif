@@ -5,14 +5,15 @@
 //!
 //! # Usage
 //! ## Write EXIF data
-//! ```rust
-//! // what use statements are needed here?
+//! ```no_run
+//! use little_exif::metadata::Metadata;
+//! use little_exif::exif_tag::ExifTag;
 //! 
-//! let mut exif_data = Metadata::new();
-//! data.set_tag(
+//! let mut metadata = Metadata::new();
+//! metadata.set_tag(
 //!     ExifTag::ImageDescription("Hello World!".to_string())
 //! );
-//! exif_data.write_to_file(Path::new("image.png"));
+//! metadata.write_to_file(std::path::Path::new("image.png"));
 //! ```
 
 #![forbid(unsafe_code)]
