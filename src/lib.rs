@@ -29,6 +29,7 @@ pub mod exif_tag;
 pub mod exif_tag_format;
 pub mod metadata;
 
+/*
 #[cfg(test)]
 mod tests {
 
@@ -88,3 +89,4 @@ mod tests {
 
 	}
 }
+*/
