@@ -98,7 +98,6 @@ clear_metadata
 	{
 		// Read next byte into buffer
 		perform_file_action!(file.read(&mut byte_buffer));
-		// println!("{} {:#04x}", seek_counter, byte_buffer[0]);
 
 		if previous_byte_was_marker_prefix
 		{
@@ -175,15 +174,9 @@ write_metadata
 )
 -> Result<(), std::io::Error>
 {
-	let clearing_result = clear_metadata(path);
-	if let Err(error) = clearing_result
+	if let Err(error) = clear_metadata(path)
 	{
-		println!("{}", error);
 		return Err(error);
-	}
-	else
-	{
-		println!("Cleared {} segments!", clearing_result.unwrap());
 	}
 
 	// Encode the data specifically for JPG and open the file...
