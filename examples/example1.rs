@@ -20,7 +20,7 @@ main()
 
 	// Create metadata structs & fill them
 	let mut png_data = Metadata::new();
-	let mut jpg_data = Metadata::new_from_path(Path::new("examples/copy.jpg"));
+	let mut jpg_data = Metadata::new_from_path(Path::new("examples/copy.jpg")).unwrap();
 	fill_metadata(&mut png_data);
 	fill_metadata(&mut jpg_data);
 
@@ -30,13 +30,13 @@ main()
 	
 	// Read in the metadata again & print it
 	println!("PNG read result:");
-	for tag in Metadata::new_from_path(Path::new("examples/copy.png")).data()
+	for tag in Metadata::new_from_path(Path::new("examples/copy.png")).unwrap().data()
 	{
 		println!("{:?}", tag);
 	}
 
 	println!("JPG read result:");
-	for tag in Metadata::new_from_path(Path::new("examples/copy.jpg")).data()
+	for tag in Metadata::new_from_path(Path::new("examples/copy.jpg")).unwrap().data()
 	{
 		println!("{:?}", tag);
 	}
