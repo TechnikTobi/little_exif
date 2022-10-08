@@ -1,3 +1,6 @@
+// Copyright © 2022 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// See https://github.com/TechnikTobi/little_exif#license for licensing details
+
 //! # little_exif
 //! A small crate for reading and writing (at least some) EXIF data written entirely in Rust. Currently supports only .png and .jp(e)g files and a few dozen tags in IFD0 and ExifIFD.
 //! 
