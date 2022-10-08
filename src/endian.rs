@@ -1,6 +1,6 @@
 use paste::paste;
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum
 Endian
 {
