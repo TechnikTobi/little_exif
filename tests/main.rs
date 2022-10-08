@@ -25,7 +25,7 @@ new_from_path()
 fn
 new_from_path_panic_not_existant()
 {
-	let _ = Metadata::new_from_path(Path::new("sample2.png"));
+	let _ = Metadata::new_from_path(Path::new("sample2.png")).unwrap();
 }
 
 #[test]
@@ -33,7 +33,7 @@ new_from_path_panic_not_existant()
 fn
 new_from_path_panic_no_extension()
 {
-	let _ = Metadata::new_from_path(Path::new("tests/sample0"));
+	let _ = Metadata::new_from_path(Path::new("tests/sample0")).unwrap();
 }
 
 #[test]
@@ -41,7 +41,7 @@ new_from_path_panic_no_extension()
 fn
 new_from_path_panic_not_supported()
 {
-	let _ = Metadata::new_from_path(Path::new("tests/sample1.txt"));
+	let _ = Metadata::new_from_path(Path::new("tests/sample1.txt")).unwrap();
 }
 
 
