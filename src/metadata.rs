@@ -55,23 +55,23 @@ Metadata
 	(
 		path: &Path
 	)
-	-> Metadata
+	-> Result<Metadata, std::io::Error>
 	{
 		if !path.exists()
 		{
-			panic!("Can't read Metadata - File does not exist!");
+			return io_error!(Other, "Can't write Metadata - File does not exist!");
 		}
 
 		let file_type = path.extension();
 		if file_type.is_none()
 		{
-			panic!("Can't get extension from given path!");
+			return io_error!(Other, "Can't get extension from given path!");
 		}
 
 		let file_type_str = file_type.unwrap().to_str();
 		if file_type_str.is_none()
 		{
-			panic!("Can't convert file type to string!");
+			return io_error!(Other, "Can't convert file type to string!");
 		}
 		
 		if let Ok(pre_decode_general) = match file_type_str.unwrap().to_lowercase().as_str()
@@ -79,22 +79,22 @@ Metadata
 			"jpg"	=> jpg::read_metadata(&path),
 			"jpeg"	=> jpg::read_metadata(&path),
 			"png"	=> png::read_metadata(&path),
-			_		=> panic!("Can't read Metadata - Unsupported file type!"),
+			_		=> io_error!(Unsupported, "Can't read Metadata - Unsupported file type!"),
 		}
 		{
 			let decoding_result = Self::decode_metadata_general(&pre_decode_general);
 			if let Ok((endian, data)) = decoding_result
 			{
-				return Metadata { endian, data };
+				return Ok(Metadata { endian, data });
 			}
 			else
 			{
-				println!("{}", decoding_result.err().unwrap());
+				eprintln!("{}", decoding_result.err().unwrap());
 			}
 		}
 
-		println!("WARNING: Can't read metadata from file - Create new & empty struct");
-		Metadata::new()
+		eprintln!("WARNING: Can't read metadata from file - Create new & empty struct");
+		return Ok(Metadata::new());
 	}
 	
 	/// Gets a shared reference to the list of all tags currently stored in the object.
@@ -226,10 +226,13 @@ Metadata
 			}
 		);
 
-		println!("Output after set_tag");
-		for value in &self.data
+		if cfg!(debug_assertions)
 		{
-			println!("{:?} {}", value.get_group(), value.is_unknown());
+			println!("Output after set_tag:");
+			for value in &self.data
+			{
+				println!("{:?} {}", value.get_group(), value.is_unknown());
+			}
 		}
 	}
 
