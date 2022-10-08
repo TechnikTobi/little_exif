@@ -18,25 +18,28 @@ main()
 	copy("examples/image.png", "examples/copy.png")?;
 	copy("examples/image.jpg", "examples/copy.jpg")?;
 
+	let png_path = Path::new("examples/copy.png");
+	let jpg_path = Path::new("examples/copy.jpg");
+
 	// Create metadata structs & fill them
 	let mut png_data = Metadata::new();
-	let mut jpg_data = Metadata::new_from_path(Path::new("examples/copy.jpg")).unwrap();
+	let mut jpg_data = Metadata::new_from_path(&jpg_path).unwrap();
 	fill_metadata(&mut png_data);
 	fill_metadata(&mut jpg_data);
 
 	// Write the metadata to the copies
-	png_data.write_to_file(Path::new("examples/copy.png"))?;
-	jpg_data.write_to_file(Path::new("examples/copy.jpg"))?;
+	png_data.write_to_file(&png_path)?;
+	jpg_data.write_to_file(&jpg_path)?;
 	
 	// Read in the metadata again & print it
 	println!("PNG read result:");
-	for tag in Metadata::new_from_path(Path::new("examples/copy.png")).unwrap().data()
+	for tag in Metadata::new_from_path(png_path).unwrap().data()
 	{
 		println!("{:?}", tag);
 	}
 
 	println!("JPG read result:");
-	for tag in Metadata::new_from_path(Path::new("examples/copy.jpg")).unwrap().data()
+	for tag in Metadata::new_from_path(jpg_path).unwrap().data()
 	{
 		println!("{:?}", tag);
 	}
