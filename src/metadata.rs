@@ -225,15 +225,6 @@ Metadata
 				}
 			}
 		);
-
-		if cfg!(debug_assertions)
-		{
-			println!("Output after set_tag:");
-			for value in &self.data
-			{
-				println!("{:?} {}", value.get_group(), value.is_unknown());
-			}
-		}
 	}
 
 	/// Writes the metadata to the specified file.
