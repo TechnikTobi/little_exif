@@ -48,7 +48,7 @@ Metadata
 	/// ```no_run
 	/// use little_exif::metadata::Metadata;
 	/// 
-	/// let mut metadata: Metadata = Metadata::new_from_path(std::path::Path::new("image.png"));
+	/// let mut metadata: Metadata = Metadata::new_from_path(std::path::Path::new("image.png")).unwrap();
 	/// ```
 	pub fn
 	new_from_path
@@ -59,7 +59,7 @@ Metadata
 	{
 		if !path.exists()
 		{
-			return io_error!(Other, "Can't write Metadata - File does not exist!");
+			return io_error!(Other, "Can't read Metadata - File does not exist!");
 		}
 
 		let file_type = path.extension();
@@ -79,7 +79,7 @@ Metadata
 			"jpg"	=> jpg::read_metadata(&path),
 			"jpeg"	=> jpg::read_metadata(&path),
 			"png"	=> png::read_metadata(&path),
-			_		=> io_error!(Unsupported, "Can't read Metadata - Unsupported file type!"),
+			_		=> return io_error!(Unsupported, "Can't read Metadata - Unsupported file type!"),
 		}
 		{
 			let decoding_result = Self::decode_metadata_general(&pre_decode_general);
@@ -103,7 +103,7 @@ Metadata
 	/// ```no_run
 	/// use little_exif::metadata::Metadata;
 	/// 
-	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png"));
+	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png")).unwrap();
 	/// for tag in metadata.data()
 	/// {
 	///     // do something with the tags	
@@ -127,7 +127,7 @@ Metadata
 	/// use little_exif::metadata::Metadata;
 	/// use little_exif::exif_tag::ExifTag;
 	/// 
-	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png"));
+	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png")).unwrap();
 	/// let tag = metadata.get_tag(&ExifTag::ImageDescription(String::new()));
 	/// ```
 	pub fn
@@ -150,7 +150,7 @@ Metadata
 	/// // Hex notation only used in this example for more clarity
 	/// use little_exif::metadata::Metadata;
 	/// 
-	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png"));
+	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png")).unwrap();
 	/// let tag = metadata.get_tag_by_hex(0x010e);
 	/// ```
 	pub fn
