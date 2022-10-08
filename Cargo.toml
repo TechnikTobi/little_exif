@@ -26,6 +26,7 @@ exclude = [
     ".gitignore",
     "additional-documentation/*",
     "tests/*",
+    ".cargo_vcs_info.json",
 ]
 
 [dependencies]
