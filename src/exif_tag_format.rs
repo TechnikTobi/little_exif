@@ -1,3 +1,6 @@
+// Copyright © 2022 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// See https://github.com/TechnikTobi/little_exif#license for licensing details
+
 pub type INT8U			= Vec<u8>;
 pub type STRING			= String;
 pub type INT16U			= Vec<u16>;
