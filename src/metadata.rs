@@ -10,6 +10,7 @@ use crate::general_file_io::*;
 
 use crate::jpg;
 use crate::png;
+use crate::webp;
 
 const IFD_ENTRY_LENGTH: u32     = 12;
 const IFD_END:          [u8; 4] = [0x00, 0x00, 0x00, 0x00];
@@ -76,14 +77,19 @@ Metadata
 		{
 			return io_error!(Other, "Can't convert file type to string!");
 		}
-		
-		if let Ok(pre_decode_general) = match file_type_str.unwrap().to_lowercase().as_str()
+
+		// Call the file specific decoders as a starting point for obtaining
+		// the raw EXIF data that gets further processed
+		let raw_pre_decode_general = match file_type_str.unwrap().to_lowercase().as_str()
 		{
-			"jpg"	=> jpg::read_metadata(&path),
-			"jpeg"	=> jpg::read_metadata(&path),
-			"png"	=> png::read_metadata(&path),
-			_		=> return io_error!(Unsupported, "Can't read Metadata - Unsupported file type!"),
-		}
+			"jpg"   =>  jpg::read_metadata(&path),
+			"jpeg"  =>  jpg::read_metadata(&path),
+			"png"   =>  png::read_metadata(&path),
+			"webp"  => webp::read_metadata(&path),
+			_       => return io_error!(Unsupported, "Can't read Metadata - Unsupported file type!"),
+		};
+
+		if let Ok(pre_decode_general) = raw_pre_decode_general
 		{
 			let decoding_result = Self::decode_metadata_general(&pre_decode_general);
 			if let Ok((endian, data)) = decoding_result
@@ -94,6 +100,10 @@ Metadata
 			{
 				eprintln!("{}", decoding_result.err().unwrap());
 			}
+		}
+		else
+		{
+			eprintln!("Error during decoding: {:?}", raw_pre_decode_general.err().unwrap());
 		}
 
 		eprintln!("WARNING: Can't read metadata from file - Create new & empty struct");

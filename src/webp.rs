@@ -13,10 +13,10 @@ use crate::endian::*;
 use crate::general_file_io::*;
 use crate::riff_chunk::RiffChunkDescriptor;
 
-pub(crate) const RIFF_SIGNATURE: [u8; 4] = [0x52, 0x49, 0x46, 0x46];
-pub(crate) const WEBP_SIGNATURE: [u8; 4] = [0x57, 0x45, 0x42, 0x50];
-pub(crate) const VP8X_HEADER:    &str    = "VP8X";
-pub(crate) const EXIF_HEADER:    &str    = "EXIF";
+pub(crate) const RIFF_SIGNATURE:       [u8; 4] = [0x52, 0x49, 0x46, 0x46];
+pub(crate) const WEBP_SIGNATURE:       [u8; 4] = [0x57, 0x45, 0x42, 0x50];
+pub(crate) const VP8X_HEADER:          &str    = "VP8X";
+pub(crate) const EXIF_CHUNK_HEADER:    &str    = "EXIF";
 
 /*
 fn
@@ -121,7 +121,7 @@ get_next_chunk_descriptor
 	// Check that indeed 8 bytes were read
 	if bytes_read != 8
 	{
-		return io_error!(Other, "Could not read start of chunk");
+		return io_error!(UnexpectedEof, "Could not read start of chunk");
 	}
 
 	// Construct name of chunk and its length
@@ -205,7 +205,14 @@ parse_webp
 		}
 		else
 		{
-			return Err(next_chunk_descriptor_result.err().unwrap());
+			if next_chunk_descriptor_result.as_ref().err().unwrap().kind() == std::io::ErrorKind::UnexpectedEof
+			{
+				break;
+			}
+			else
+			{
+				return Err(next_chunk_descriptor_result.err().unwrap());
+			}
 		}
 	}
 
@@ -269,7 +276,7 @@ read_metadata
 
 	// At this point we have established that the file has to contain an EXIF
 	// chunk at some point. So, now we need to find & return it
-	perform_file_action!(file.seek(SeekFrom::Start(12u64 + 4u64 + 4u64)));
+	perform_file_action!(file.seek(SeekFrom::Start(12u64)));
 	let mut header_buffer = vec![0u8; 4usize];
 	let mut chunk_index = 0usize;
 	loop
@@ -298,13 +305,16 @@ read_metadata
 		let chunk_size = parse_webp_result.as_ref().unwrap().iter().nth(chunk_index).unwrap().len();
 		perform_file_action!(file.seek(SeekFrom::Current(4)));
 
-		if chunk_type.to_lowercase() == EXIF_HEADER.to_lowercase()
+		if chunk_type.to_lowercase() == EXIF_CHUNK_HEADER.to_lowercase()
 		{
 			// Read the EXIF chunk's data into a buffer
-			let mut buffer = vec![0u8; chunk_size];
-			perform_file_action!(file.read(&mut buffer));
+			let mut payload_buffer = vec![0u8; chunk_size];
+			perform_file_action!(file.read(&mut payload_buffer));
 
-			return Ok(buffer);
+			let mut raw_exif_data = EXIF_HEADER.to_vec();
+			raw_exif_data.append(&mut payload_buffer);
+
+			return Ok(raw_exif_data);
 		}
 		else
 		{

@@ -48,6 +48,49 @@ new_from_path_panic_not_supported()
 }
 
 
+
+fn
+from_u8_vec_to_u32_le
+(
+	data: &Vec<u8>
+)
+-> u32
+{
+	let mut result = 0;
+	for i in 0..std::cmp::min(4, data.len())
+	{
+		result = result + (data[i] as u32) * 256u32.pow(i as u32);
+	}
+	return result;
+}
+
+#[test]
+fn
+read_from_file_webp()
+-> Result<(), std::io::Error>
+{
+	let raw_metadata = Metadata::new_from_path(Path::new("tests/read_sample.webp"));
+	if raw_metadata.is_err()
+	{
+		panic!();
+	}
+
+	let metadata = raw_metadata.unwrap();
+
+	if let Some(iso_tag) = metadata.get_tag(&ExifTag::ISO(vec![0]))
+	{
+		assert_eq!(from_u8_vec_to_u32_le(&iso_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)), 2706);
+	}
+	else
+	{
+		panic!("Could not read ISO tag!")
+	}
+
+	Ok(())
+}
+
+
+
 #[test]
 fn 
 write_to_file() 
@@ -55,7 +98,10 @@ write_to_file()
 {
 
 	// Remove file from previous run and replace it with fresh copy
-	remove_file("tests/sample2_copy.png")?;
+	if let Err(error) = remove_file("tests/sample2_copy.png")
+	{
+		println!("{}", error);
+	}
 	copy("tests/sample2.png", "tests/sample2_copy.png")?;
 
 	// Create new metadata struct and fill it
