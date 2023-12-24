@@ -1,4 +1,4 @@
-// Copyright © 2022 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2023 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::path::Path;
@@ -11,13 +11,13 @@ use crate::general_file_io::*;
 use crate::jpg;
 use crate::png;
 
-const IFD_ENTRY_LENGTH: u32 = 12;
-const IFD_END: [u8; 4] = [0x00, 0x00, 0x00, 0x00];
+const IFD_ENTRY_LENGTH: u32     = 12;
+const IFD_END:          [u8; 4] = [0x00, 0x00, 0x00, 0x00];
 
 pub struct
 Metadata
 {
-	data: Vec<ExifTag>,
+	data:   Vec<ExifTag>,
 	endian: Endian 
 }
 
@@ -218,7 +218,7 @@ Metadata
 			}
 			else
 			{
-				if a.get_group() < b.get_group() // e.g. IFD0 < ExifIFD
+				if a.get_group() < b.get_group()                                // e.g. IFD0 < ExifIFD
 				{
 					std::cmp::Ordering::Less
 				}
@@ -295,11 +295,11 @@ Metadata
 
 		// Determine endian
 		let endian;
-		if encoded_data[6] == 0x49 && encoded_data[7] == 0x49					// "II"
+		if encoded_data[6] == 0x49 && encoded_data[7] == 0x49                   // "II"
 		{
 			endian = Endian::Little;
 		}
-		else if encoded_data[6] == 0x4d && encoded_data[7] == 0x4d				// "MM"
+		else if encoded_data[6] == 0x4d && encoded_data[7] == 0x4d              // "MM"
 		{
 			endian = Endian::Big;
 		}
@@ -431,11 +431,11 @@ Metadata
 	fn
 	encode_ifd
 	(
-		&self,																	// The metadata struct, containing the tags
-		group: ExifTagGroup,													// The group the specific tags need to belong to (e.g. IFD0, ExifIFD, ...)
-		given_offset: u32,														// How much offset already exists
-		next_ifd_link: &[u8; 4],												// A link to the next IFD (e.g. IFD1 for IFD0) or 4 bytes of 0x00 to signal "no next IFD"
-		subifd_tag: Option<ExifTag>												// An optional ExifTag signaling that a SubIFD will follow
+		&self,                                                                  // The metadata struct, containing the tags
+		group: ExifTagGroup,                                                    // The group the specific tags need to belong to (e.g. IFD0, ExifIFD, ...)
+		given_offset: u32,                                                      // How much offset already exists
+		next_ifd_link: &[u8; 4],                                                // A link to the next IFD (e.g. IFD1 for IFD0) or 4 bytes of 0x00 to signal "no next IFD"
+		subifd_tag: Option<ExifTag>                                             // An optional ExifTag signaling that a SubIFD will follow
 	)
 	-> Option<(u32, Vec<u8>)>
 	{
@@ -461,11 +461,11 @@ Metadata
 		assert_eq!(ifd_vec.len(), 2);
 
 		// Compute first offset value and provide offset area in case its needed
-		let mut next_offset: u32 = 0						as u32
-		+ given_offset										as u32
-		+ ifd_vec.len()										as u32
-		+ IFD_ENTRY_LENGTH * count_entries 					as u32
-		+ next_ifd_link.len()								as u32;
+		let mut next_offset: u32 = 0                    as u32
+		+ given_offset                                  as u32
+		+ ifd_vec.len()                                 as u32
+		+ IFD_ENTRY_LENGTH * count_entries              as u32
+		+ next_ifd_link.len()                           as u32;
 		let mut ifd_offset_area: Vec<u8> = Vec::new();
 
 		// Write directory entries to the vector
@@ -479,11 +479,11 @@ Metadata
 
 			let value = tag.value_as_u8_vec(&self.endian);
 			
-			// Add Tag & Data Format /										2 + 2 bytes
+			// Add Tag & Data Format /                                          2 + 2 bytes
 			ifd_vec.extend(to_u8_vec_macro!(u16, &tag.as_u16(), &self.endian).iter());
 			ifd_vec.extend(to_u8_vec_macro!(u16, &tag.format().as_u16(), &self.endian).iter());
 
-			// Add number of components /									4 bytes
+			// Add number of components /                                       4 bytes
 			let number_of_components: u32 = tag.number_of_components();
 			ifd_vec.extend(to_u8_vec_macro!(u32, &number_of_components, &self.endian).iter());
 
@@ -497,7 +497,7 @@ Metadata
 				}	
 			}
 
-			// Add offset or value /										4 bytes
+			// Add offset or value /                                            4 bytes
 			// Depending on the amount of data, either put it directly into
 			// next 4 bytes or write an offset where the data can be found 
 			let byte_count: u32 = number_of_components * tag.format().bytes_per_component();
@@ -530,14 +530,14 @@ Metadata
 		// Do NOT mix this up with link to next IFD (like e.g. IFD1)
 		if let Some(tag) = subifd_tag
 		{
-			// Write the offset tag & data format /								2 + 2 bytes
+			// Write the offset tag & data format /                             2 + 2 bytes
 			ifd_vec.extend(to_u8_vec_macro!(u16, &tag.as_u16(), &self.endian).iter());
 			ifd_vec.extend(to_u8_vec_macro!(u16, &tag.format().as_u16(), &self.endian).iter());
 
-			// Add number of components /										4 bytes
+			// Add number of components /                                       4 bytes
 			ifd_vec.extend(to_u8_vec_macro!(u32, &tag.number_of_components(), &self.endian).iter());
 
-			// Add the offset /													4 bytes
+			// Add the offset /                                                 4 bytes
 			// We assume (know) that this is one component which has exactly
 			// 4 bytes, thus fitting perfectly into the directory entry
 			ifd_vec.extend(to_u8_vec_macro!(u32, &next_offset, &self.endian).iter());
@@ -567,8 +567,8 @@ Metadata
 		// IFD0
 		if let Some((offset_post_ifd0, ifd0_data)) = self.encode_ifd(
 			ExifTagGroup::IFD0,
-			current_offset,																	// For the TIFF header
-			&[0x00, 0x00, 0x00, 0x00],											// For now no link to IFD1
+			current_offset,                                                     // For the TIFF header
+			&[0x00, 0x00, 0x00, 0x00],                                          // For now no link to IFD1
 			Some(ExifTag::ExifOffset(vec![0]))
 		)
 		{
@@ -579,7 +579,7 @@ Metadata
 		// ExifIFD
 		if let Some((offset_post_exififd, exififd_data)) = self.encode_ifd(
 			ExifTagGroup::ExifIFD,
-			current_offset,													// Don't need +8 as already accounted for in this value due to previous function call
+			current_offset,                                                     // Don't need +8 as already accounted for in this value due to previous function call
 			&[0x00, 0x00, 0x00, 0x00],
 			None
 		)

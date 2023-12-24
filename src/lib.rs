@@ -1,4 +1,4 @@
-// Copyright © 2022 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2023 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 //! # little_exif
@@ -27,6 +27,8 @@ mod general_file_io;
 mod png;
 mod png_chunk;
 mod jpg;
+mod webp;
+mod riff_chunk;
 
 pub mod endian;
 pub mod exif_tag;

@@ -1,4 +1,4 @@
-// Copyright © 2022 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2023 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::path::Path;
@@ -19,10 +19,10 @@ use crate::general_file_io::*;
 
 pub(crate) const PNG_SIGNATURE: [u8; 8] = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 pub(crate) const RAW_PROFILE_TYPE_EXIF: [u8; 23] = [
-	0x52, 0x61, 0x77, 0x20,								// Raw
-	0x70, 0x72, 0x6F, 0x66, 0x69, 0x6C, 0x65, 0x20,		// profile
-	0x74, 0x79, 0x70, 0x65, 0x20,						// type
-	0x65, 0x78, 0x69, 0x66, 0x00, 0x00					// exif NUL NUL
+	0x52, 0x61, 0x77, 0x20,                             // Raw
+	0x70, 0x72, 0x6F, 0x66, 0x69, 0x6C, 0x65, 0x20,     // profile
+	0x74, 0x79, 0x70, 0x65, 0x20,                       // type
+	0x65, 0x78, 0x69, 0x66, 0x00, 0x00                  // exif NUL NUL
 ];
 
 // The bytes during encoding need to be encoded themselves:
@@ -291,7 +291,7 @@ get_next_chunk_descriptor
 
 /// "Parses" the PNG by checking various properties:
 /// - Can the file be opened and is the signature valid?
-/// - Are the various chunks OK or not? For this, the subroutine `get_next_chunk_descriptor` is used
+/// - Are the various chunks OK or not? For this, the local subroutine `get_next_chunk_descriptor` is used
 pub(crate) fn
 parse_png
 (
@@ -562,7 +562,8 @@ write_metadata
 }
 
 #[cfg(test)]
-mod tests {
+mod tests 
+{
 
 	#[test]
 	fn
