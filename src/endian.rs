@@ -1,4 +1,4 @@
-// Copyright © 2022 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2023 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use paste::paste;
@@ -85,7 +85,7 @@ macro_rules! build_u8conversion
 				match *endian
 				{
 					Endian::Little => <paste!{[<$type>]}>::from_le_bytes(u8_vec[0..$number_of_bytes].try_into().unwrap()),
-					Endian::Big => <paste!{[<$type>]}>::from_be_bytes(u8_vec[0..$number_of_bytes].try_into().unwrap()),
+					Endian::Big    => <paste!{[<$type>]}>::from_be_bytes(u8_vec[0..$number_of_bytes].try_into().unwrap()),
 				}
 			}
 		}

@@ -1,4 +1,4 @@
-// Copyright © 2022 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2023 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::path::Path;
@@ -14,8 +14,8 @@ use crate::general_file_io::*;
 
 pub(crate) const JPG_SIGNATURE: [u8; 2] = [0xff, 0xd8];
 
-const JPG_MARKER_PREFIX: u8 = 0xff;
-const JPG_APP1_MARKER: u16 = 0xffe1;
+const JPG_MARKER_PREFIX: u8  = 0xff;
+const JPG_APP1_MARKER:   u16 = 0xffe1;
 
 fn
 encode_metadata_jpg
@@ -91,11 +91,11 @@ clear_metadata
 	}
 
 	// Setup of variables necessary for going through the file
-	let mut file = file_result.unwrap();										// The struct for interacting with the file
-	let mut seek_counter = 2u64;												// A counter for keeping track of where in the file we currently are
-	let mut byte_buffer = [0u8; 1];												// A buffer for reading in a byte of data from the file
-	let mut previous_byte_was_marker_prefix = false;							// A boolean for remembering if the previous byte was a marker prefix (0xFF)
-	let mut cleared_segments: u8 = 0;											// A counter for keeping track of how many segements were cleared
+	let mut file = file_result.unwrap();                                        // The struct for interacting with the file
+	let mut seek_counter = 2u64;                                                // A counter for keeping track of where in the file we currently are
+	let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
+	let mut previous_byte_was_marker_prefix = false;                            // A boolean for remembering if the previous byte was a marker prefix (0xFF)
+	let mut cleared_segments: u8 = 0;                                           // A counter for keeping track of how many segements were cleared
 
 	loop
 	{
@@ -106,7 +106,7 @@ clear_metadata
 		{
 			match byte_buffer[0]
 			{
-				0xe1	=> {													// APP1 marker
+				0xe1	=> {                                                    // APP1 marker
 
 					// Read in the length of the segment
 					// (which follows immediately after the marker)
@@ -147,8 +147,8 @@ clear_metadata
 					// duplicate bytes at the end!
 					perform_file_action!(file.set_len(new_file_length));
 				},
-				0xd9	=> break,												// EOI marker
-				_		=> (),													// Every other marker
+				0xd9	=> break,                                               // EOI marker
+				_		=> (),                                                  // Every other marker
 			}
 
 			previous_byte_was_marker_prefix = false;
@@ -222,9 +222,9 @@ read_metadata
 	}
 
 	// Setup of variables necessary for going through the file
-	let mut file = file_result.unwrap();										// The struct for interacting with the file
-	let mut byte_buffer = [0u8; 1];												// A buffer for reading in a byte of data from the file
-	let mut previous_byte_was_marker_prefix = false;							// A boolean for remembering if the previous byte was a marker prefix (0xFF)
+	let mut file = file_result.unwrap();                                        // The struct for interacting with the file
+	let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
+	let mut previous_byte_was_marker_prefix = false;                            // A boolean for remembering if the previous byte was a marker prefix (0xFF)
 
 	loop
 	{
@@ -235,7 +235,7 @@ read_metadata
 		{
 			match byte_buffer[0]
 			{
-				0xe1	=> {													// APP1 marker
+				0xe1	=> {                                                    // APP1 marker
 
 					// Read in the length of the segment
 					// (which follows immediately after the marker)
@@ -252,8 +252,8 @@ read_metadata
 
 					return Ok(buffer);
 				},
-				0xd9	=> break,												// EOI marker
-				_		=> (),													// Every other marker
+				0xd9	=> break,                                               // EOI marker
+				_		=> (),                                                  // Every other marker
 			}
 
 			previous_byte_was_marker_prefix = false;

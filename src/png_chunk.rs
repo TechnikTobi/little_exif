@@ -1,4 +1,4 @@
-// Copyright © 2022 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2023 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 #[allow(non_camel_case_types, dead_code)]
@@ -90,9 +90,9 @@ macro_rules! build_png_chunk_type_enum {
 
 build_png_chunk_type_enum![
 	// Tag	Critical	Multiple	Ordering
-	(IHDR,	true,		false,		FIRST),
-	(PLTE,	true,		false,		BEFORE_IDAT),
-	(IDAT,	true,		true,		NONE),
-	(IEND,	true,		false,		LAST),
-	(zTXt,	false,		true,		NONE)
+	(IHDR,  true,       false,      FIRST),
+	(PLTE,  true,       false,      BEFORE_IDAT),
+	(IDAT,  true,       true,       NONE),
+	(IEND,  true,       false,      LAST),
+	(zTXt,  false,      true,       NONE)
 ];
