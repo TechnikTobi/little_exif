@@ -15,6 +15,8 @@ use crate::riff_chunk::RiffChunkDescriptor;
 
 pub(crate) const RIFF_SIGNATURE: [u8; 4] = [0x52, 0x49, 0x46, 0x46];
 pub(crate) const WEBP_SIGNATURE: [u8; 4] = [0x57, 0x45, 0x42, 0x50];
+pub(crate) const VP8X_HEADER:    &str    = "VP8X";
+pub(crate) const EXIF_HEADER:    &str    = "EXIF";
 
 /*
 fn
@@ -42,6 +44,8 @@ encode_metadata_webp
 }
 */
 
+
+
 fn
 check_signature
 (
@@ -62,7 +66,7 @@ check_signature
 	
 	// Check the RIFF signature
 	let mut riff_signature_buffer = [0u8; 4];
-	file.read(&mut riff_signature_buffer).unwrap();
+	perform_file_action!(file.read(&mut riff_signature_buffer));
 	if !riff_signature_buffer.iter()
 		.zip(RIFF_SIGNATURE.iter())
 		.filter(|&(read, constant)| read == constant)
@@ -100,6 +104,8 @@ check_signature
 	// Signature is valid - can proceed using the file as WEBP file
 	return Ok(file);
 }
+
+
 
 fn
 get_next_chunk_descriptor
@@ -145,6 +151,8 @@ get_next_chunk_descriptor
 		return io_error!(Other, "Could not parse RIFF fourCC chunk name!");
 	}
 }
+
+
 
 /// "Parses" the WebP file by checking various properties:
 /// - Can the file be opened and is the signature valid, including the file size?
@@ -204,6 +212,8 @@ parse_webp
 	return Ok(chunks);
 }
 
+
+
 pub(crate) fn
 read_metadata
 (
@@ -222,10 +232,10 @@ read_metadata
 	// In this case, the first Chunk SHOULD have the type "VP8X"
 	// Otherwise, the file is either invalid ("VP8X" at wrong location) or a 
 	// Simple File Format WebP file which don't contain any EXIF metadata.
-	if let Some(first_chunk) = parse_webp_result.unwrap().first()
+	if let Some(first_chunk) = parse_webp_result.as_ref().unwrap().first()
 	{
 		// Compare the chunk descriptor header.
-		if first_chunk.header().to_lowercase() != "vp8x"
+		if first_chunk.header().to_lowercase() != VP8X_HEADER.to_lowercase()
 		{
 			return io_error!(
 				Other, 
@@ -238,7 +248,73 @@ read_metadata
 		return io_error!(Other, "Could not read first chunk descriptor of WebP file!");
 	}
 
-	todo!()
+	// Finally, check the flag by opening up the file and reading the data of
+	// the VP8X chunk
+	// Regarding the seek:
+	// - RIFF + file size + WEBP -> 12 byte
+	// - VP8X header             ->  4 byte
+	// - VP8X chunk size         ->  4 byte
+	let mut file = check_signature(path).unwrap();
+	let mut flag_buffer = vec![0u8; 4usize];
+	perform_file_action!(file.seek(SeekFrom::Start(12u64 + 4u64 + 4u64)));
+	if file.read(&mut flag_buffer).unwrap() != 4
+	{
+		return io_error!(Other, "Could not read flags of VP8X chunk!");
+	}
+
+	if flag_buffer[0] & 0x08 != 0x08
+	{
+		return io_error!(Other, "No EXIF chunk according to VP8X flags!");
+	}
+
+	// At this point we have established that the file has to contain an EXIF
+	// chunk at some point. So, now we need to find & return it
+	perform_file_action!(file.seek(SeekFrom::Start(12u64 + 4u64 + 4u64)));
+	let mut header_buffer = vec![0u8; 4usize];
+	let mut chunk_index = 0usize;
+	loop
+	{
+		// Read the chunk type into the buffer
+		if file.read(&mut header_buffer).unwrap() != 4
+		{
+			return io_error!(Other, "Could not read chunk type while traversing WebP file!");
+		}
+		let chunk_type = String::from_u8_vec(&header_buffer.to_vec(), &Endian::Little);
+
+		// Check that this is still the type that we expect from the previous
+		// parsing over the file
+		// TODO: Maybe remove this part?
+		let expected_chunk_type = parse_webp_result.as_ref().unwrap().iter().nth(chunk_index).unwrap().header();
+		if chunk_type != expected_chunk_type
+		{
+			return io_error!(
+				Other, 
+				format!("Got unexpected chunk type! Exprected {} but got {}", expected_chunk_type, chunk_type)
+			);
+		}
+
+		// Get the size of this chunk from the previous parsing process and skip
+		// the 4 bytes regarding the size
+		let chunk_size = parse_webp_result.as_ref().unwrap().iter().nth(chunk_index).unwrap().len();
+		perform_file_action!(file.seek(SeekFrom::Current(4)));
+
+		if chunk_type.to_lowercase() == EXIF_HEADER.to_lowercase()
+		{
+			// Read the EXIF chunk's data into a buffer
+			let mut buffer = vec![0u8; chunk_size];
+			perform_file_action!(file.read(&mut buffer));
+
+			return Ok(buffer);
+		}
+		else
+		{
+			// Skip the entire chunk
+			perform_file_action!(file.seek(SeekFrom::Current(chunk_size as i64)));
+		}
+
+		// Update for next loop iteration
+		chunk_index += 1;
+	}
 }
 
 /*
@@ -352,15 +428,5 @@ write_metadata
 -> Result<(), std::io::Error>
 {
 	return Ok(());
-}
-
-pub(crate) fn
-read_metadata
-(
-	path: &Path
-)
--> Result<Vec<u8>, std::io::Error>
-{
-	return io_error!(Other, "No EXIF data found!");
 }
 */
