@@ -139,10 +139,10 @@ macro_rules! build_tag_enum {
 			from_u16_with_data
 			(
 				hex_value: u16,
-				format: &ExifTagFormat,
-				raw_data: &Vec<u8>,
-				endian: &Endian,
-				group: &ExifTagGroup,
+				format:    &ExifTagFormat,
+				raw_data:  &Vec<u8>,
+				endian:    &Endian,
+				group:     &ExifTagGroup,
 			)
 			-> Result<ExifTag, String>
 			{
