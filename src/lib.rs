@@ -27,7 +27,7 @@ mod general_file_io;
 mod png;
 mod png_chunk;
 mod jpg;
-mod webp;
+pub mod webp;
 mod riff_chunk;
 
 pub mod endian;

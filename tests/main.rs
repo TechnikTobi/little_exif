@@ -92,6 +92,26 @@ read_from_file_webp()
 
 
 #[test]
+fn
+clear_metadata_webp()
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/read_sample_no_exif.webp")
+	{
+		println!("{}", error);
+	}
+	copy("tests/read_sample.webp", "tests/read_sample_no_exif.webp")?;
+
+	// Clear the metadata
+	little_exif::webp::clear_metadata(Path::new("tests/read_sample_no_exif.webp"))?;
+
+	Ok(())
+}
+
+
+
+#[test]
 fn 
 write_to_file() 
 -> Result<(), std::io::Error>
@@ -127,3 +147,4 @@ write_to_file()
 
 	Ok(())
 }
+
