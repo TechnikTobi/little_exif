@@ -18,32 +18,6 @@ pub(crate) const WEBP_SIGNATURE:       [u8; 4] = [0x57, 0x45, 0x42, 0x50];
 pub(crate) const VP8X_HEADER:          &str    = "VP8X";
 pub(crate) const EXIF_CHUNK_HEADER:    &str    = "EXIF";
 
-/*
-fn
-encode_metadata_webp
-(
-	exif_vec: &Vec<u8>
-)
--> Vec<u8>
-{
-	// vector storing the data that will be returned
-	let mut webp_exif: Vec<u8> = Vec::new();
-
-	// Compute the length of the exif data (includes the two bytes of the
-	// actual length field)
-	let length = 2u16 + (EXIF_HEADER.len() as u16) + (exif_vec.len() as u16);
-
-	// Start with the APP1 marker and the length of the data
-	// Then copy the previously encoded EXIF data 
-	webp_exif.extend(to_u8_vec_macro!(u16, &JPG_APP1_MARKER, &Endian::Big));
-	webp_exif.extend(to_u8_vec_macro!(u16, &length, &Endian::Big));
-	webp_exif.extend(EXIF_HEADER.iter());
-	webp_exif.extend(exif_vec.iter());
-
-	return webp_exif;
-}
-*/
-
 
 
 fn
@@ -55,7 +29,7 @@ check_signature
 {
 	if !path.exists()
 	{
-		return io_error!(NotFound, "Can't open JPG file - File does not exist!");
+		return io_error!(NotFound, "Can't open WebP file - File does not exist!");
 	}
 
 	let mut file = OpenOptions::new()
@@ -74,7 +48,7 @@ check_signature
 	{
 		return io_error!(
 			InvalidData, 
-			format!("Can't open WEBP file - Expected RIFF signature but found {}!", from_u8_vec_macro!(String, &riff_signature_buffer.to_vec(), &Endian::Big))
+			format!("Can't open WebP file - Expected RIFF signature but found {}!", from_u8_vec_macro!(String, &riff_signature_buffer.to_vec(), &Endian::Big))
 		);
 	}
 
@@ -84,7 +58,7 @@ check_signature
 	let byte_count = from_u8_vec_macro!(u32, &size_buffer.to_vec(), &Endian::Little);
 	if file.metadata().unwrap().len() != (byte_count + 8) as u64
 	{
-		return io_error!(InvalidData, "Can't open WEBP file - Promised byte count does not correspond with file size!");
+		return io_error!(InvalidData, "Can't open WebP file - Promised byte count does not correspond with file size!");
 	}
 
 	// Check the WEBP signature
@@ -97,11 +71,11 @@ check_signature
 	{
 		return io_error!(
 			InvalidData, 
-			format!("Can't open WEBP file - Expected WEBP signature but found {}!", from_u8_vec_macro!(String, &webp_signature_buffer.to_vec(), &Endian::Big))
+			format!("Can't open WebP file - Expected WEBP signature but found {}!", from_u8_vec_macro!(String, &webp_signature_buffer.to_vec(), &Endian::Big))
 		);
 	}
 
-	// Signature is valid - can proceed using the file as WEBP file
+	// Signature is valid - can proceed using the file as WebP file
 	return Ok(file);
 }
 
@@ -205,6 +179,12 @@ parse_webp
 		}
 		else
 		{
+			// This is the case when the read of the next chunk descriptor 
+			// fails due to not being able to fetch 8 bytes for the header and
+			// chunk size information, indicating that there is no further data
+			// in the file and we are done with parsing.
+			// If the subroutine fails due to other reasons, the error gets
+			// propagated further.
 			if next_chunk_descriptor_result.as_ref().err().unwrap().kind() == std::io::ErrorKind::UnexpectedEof
 			{
 				break;
@@ -221,16 +201,16 @@ parse_webp
 
 
 
-pub(crate) fn
-read_metadata
+fn
+check_exif_in_file
 (
 	path: &Path
 )
--> Result<Vec<u8>, std::io::Error>
+-> Result<(File, Vec<RiffChunkDescriptor>), std::io::Error>
 {
 	// Parse the WebP file - if this fails, we surely can't read any metadata
-	let parse_webp_result = parse_webp(path);
-	if let Err(error) = parse_webp_result
+	let parsed_webp_result = parse_webp(path);
+	if let Err(error) = parsed_webp_result
 	{
 		return Err(error);
 	}
@@ -239,7 +219,7 @@ read_metadata
 	// In this case, the first Chunk SHOULD have the type "VP8X"
 	// Otherwise, the file is either invalid ("VP8X" at wrong location) or a 
 	// Simple File Format WebP file which don't contain any EXIF metadata.
-	if let Some(first_chunk) = parse_webp_result.as_ref().unwrap().first()
+	if let Some(first_chunk) = parsed_webp_result.as_ref().unwrap().first()
 	{
 		// Compare the chunk descriptor header.
 		if first_chunk.header().to_lowercase() != VP8X_HEADER.to_lowercase()
@@ -269,13 +249,35 @@ read_metadata
 		return io_error!(Other, "Could not read flags of VP8X chunk!");
 	}
 
+	// Check the 5th bit of the 32 bit flag_buffer. 
+	// For further details see the Extended File Format section at
+	// https://developers.google.com/speed/webp/docs/riff_container#extended_file_format
 	if flag_buffer[0] & 0x08 != 0x08
 	{
 		return io_error!(Other, "No EXIF chunk according to VP8X flags!");
 	}
 
+	return Ok((file, parsed_webp_result.unwrap()));
+}
+
+
+
+pub(crate) fn
+read_metadata
+(
+	path: &Path
+)
+-> Result<Vec<u8>, std::io::Error>
+{
+	// Check the file signature, parse it, check that it has a VP8X chunk and
+	// the EXIF flag is set there
+	let (mut file, parse_webp_result) = check_exif_in_file(path).unwrap();
+
 	// At this point we have established that the file has to contain an EXIF
 	// chunk at some point. So, now we need to find & return it
+	// Start by seeking to the start of the first chunk and visiting chunk after
+	// chunk via checking the type and seeking again to the next chunk via the
+	// size information
 	perform_file_action!(file.seek(SeekFrom::Start(12u64)));
 	let mut header_buffer = vec![0u8; 4usize];
 	let mut chunk_index = 0usize;
@@ -291,7 +293,7 @@ read_metadata
 		// Check that this is still the type that we expect from the previous
 		// parsing over the file
 		// TODO: Maybe remove this part?
-		let expected_chunk_type = parse_webp_result.as_ref().unwrap().iter().nth(chunk_index).unwrap().header();
+		let expected_chunk_type = parse_webp_result.iter().nth(chunk_index).unwrap().header();
 		if chunk_type != expected_chunk_type
 		{
 			return io_error!(
@@ -302,7 +304,7 @@ read_metadata
 
 		// Get the size of this chunk from the previous parsing process and skip
 		// the 4 bytes regarding the size
-		let chunk_size = parse_webp_result.as_ref().unwrap().iter().nth(chunk_index).unwrap().len();
+		let chunk_size = parse_webp_result.iter().nth(chunk_index).unwrap().len();
 		perform_file_action!(file.seek(SeekFrom::Current(4)));
 
 		if chunk_type.to_lowercase() == EXIF_CHUNK_HEADER.to_lowercase()
@@ -311,6 +313,11 @@ read_metadata
 			let mut payload_buffer = vec![0u8; chunk_size];
 			perform_file_action!(file.read(&mut payload_buffer));
 
+			// Add the 6 bytes of the EXIF_HEADER as Prefix for the generic EXIF
+			// data parser that is called on the result of this read function
+			// Otherwise the result would directly start with the Endianness
+			// information, leading to a failed EXIF header signature check in 
+			// the function `decode_metadata_general`
 			let mut raw_exif_data = EXIF_HEADER.to_vec();
 			raw_exif_data.append(&mut payload_buffer);
 
@@ -327,7 +334,8 @@ read_metadata
 	}
 }
 
-/*
+
+
 pub(crate) fn
 clear_metadata
 (
@@ -335,95 +343,47 @@ clear_metadata
 )
 -> Result<u8, std::io::Error>
 {
-	let file_result = check_signature(path);
-
-	if file_result.is_err()
-	{
-		return Err(file_result.err().unwrap());
-	}
-
-	// Setup of variables necessary for going through the file
-	let mut file = file_result.unwrap();                                        // The struct for interacting with the file
-	let mut seek_counter = 2u64;                                                // A counter for keeping track of where in the file we currently are
-	let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
-	let mut previous_byte_was_marker_prefix = false;                            // A boolean for remembering if the previous byte was a marker prefix (0xFF)
-	let mut cleared_segments: u8 = 0;                                           // A counter for keeping track of how many segements were cleared
-
+	// Check the file signature, parse it, check that it has a VP8X chunk and
+	// the EXIF flag is set there
+	let (mut file, parse_webp_result) = check_exif_in_file(path).unwrap();
 
 	// This needs to perform the following
-	// Remove the EXIF chunk
+	// Remove the EXIF chunk(s) (may contain more than one but only first is used when reading)
 	// Compute the new size
 	// Reset the flag in the VP8X header
 	// Re-Write everything back to the file
 
-
-	loop
-	{
-		// Read next byte into buffer
-		perform_file_action!(file.read(&mut byte_buffer));
-
-		if previous_byte_was_marker_prefix
-		{
-			match byte_buffer[0]
-			{
-				0xe1	=> {                                                    // APP1 marker
-
-					// Read in the length of the segment
-					// (which follows immediately after the marker)
-					let mut length_buffer = [0u8; 2];
-					perform_file_action!(file.read(&mut length_buffer));
-
-					// Decode the length to determine how much more data there is
-					let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
-					let remaining_length = length - 2;
-
-					// Get to the next section
-					perform_file_action!(file.seek(SeekFrom::Current(remaining_length as i64)));
-
-					// ...copy data from there onwards into a buffer...
-					let mut buffer = Vec::new();
-					perform_file_action!(file.read_to_end(&mut buffer));
-
-					// ...compute the new file length while we are at it...
-					let new_file_length = (seek_counter-1) + buffer.len() as u64;
-
-					// ...go back to the chunk to be removed...
-					// Note on why -1: This has to do with "previous_byte_was_marker_prefix"
-					// We need to overwrite this byte as well - however, it was 
-					// read in the *previous* iteration, not this one
-					perform_file_action!(file.seek(SeekFrom::Start(seek_counter-1)));
-
-					// ...and overwrite it using the data from the buffer
-					perform_file_action!(file.write_all(&buffer));
-
-					// Seek back to where we started (-1 for same reason as above) 
-					// and decrement the seek_counter by 2 (= length of marker)
-					// as it will be incremented at the end of the loop again
-					perform_file_action!(file.seek(SeekFrom::Start(seek_counter-1)));
-					seek_counter -= 2;
-					cleared_segments += 1;
-
-					// Update the size of the file - otherwise there will be
-					// duplicate bytes at the end!
-					perform_file_action!(file.set_len(new_file_length));
-				},
-				0xd9	=> break,                                               // EOI marker
-				_		=> (),                                                  // Every other marker
-			}
-
-			previous_byte_was_marker_prefix = false;
-		}
-		else
-		{
-			previous_byte_was_marker_prefix = byte_buffer[0] == JPG_MARKER_PREFIX;
-		}
-
-		seek_counter += 1;
-
-	}
-
-	return Ok(cleared_segments);
+	return Ok(0);
 }
+
+
+/*
+fn
+encode_metadata_webp
+(
+	exif_vec: &Vec<u8>
+)
+-> Vec<u8>
+{
+	// vector storing the data that will be returned
+	let mut webp_exif: Vec<u8> = Vec::new();
+
+	// Compute the length of the exif data (includes the two bytes of the
+	// actual length field)
+	let length = 2u16 + (EXIF_HEADER.len() as u16) + (exif_vec.len() as u16);
+
+	// Start with the APP1 marker and the length of the data
+	// Then copy the previously encoded EXIF data 
+	webp_exif.extend(to_u8_vec_macro!(u16, &JPG_APP1_MARKER, &Endian::Big));
+	webp_exif.extend(to_u8_vec_macro!(u16, &length, &Endian::Big));
+	webp_exif.extend(EXIF_HEADER.iter());
+	webp_exif.extend(exif_vec.iter());
+
+	return webp_exif;
+}
+*/
+
+
 
 /// Writes the given generally encoded metadata to the WebP image file at 
 /// the specified path. 
@@ -439,4 +399,3 @@ write_metadata
 {
 	return Ok(());
 }
-*/
