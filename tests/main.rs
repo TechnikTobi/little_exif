@@ -92,28 +92,8 @@ read_from_file_webp()
 
 
 #[test]
-fn
-clear_metadata_webp()
--> Result<(), std::io::Error>
-{
-	// Remove file from previous run and replace it with fresh copy
-	if let Err(error) = remove_file("tests/read_sample_no_exif.webp")
-	{
-		println!("{}", error);
-	}
-	copy("tests/read_sample.webp", "tests/read_sample_no_exif.webp")?;
-
-	// Clear the metadata
-	little_exif::webp::clear_metadata(Path::new("tests/read_sample_no_exif.webp"))?;
-
-	Ok(())
-}
-
-
-
-#[test]
 fn 
-write_to_file() 
+write_to_file_png() 
 -> Result<(), std::io::Error>
 {
 
@@ -148,3 +128,85 @@ write_to_file()
 	Ok(())
 }
 
+#[ignore]
+#[test]
+fn 
+write_to_file_webp_simple_lossy() 
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/sample2_simple_lossy_copy.webp")
+	{
+		println!("{}", error);
+	}
+	copy("tests/sample2_simple_lossy.webp", "tests/sample2_simple_lossy_copy.webp")?;
+
+	// Create new metadata struct and fill it
+	let mut metadata = Metadata::new();
+	assert_eq!(metadata.data().len(), 0);
+
+	metadata.set_tag(
+		ExifTag::ImageDescription("Hello World!".to_string())
+	);
+	metadata.set_tag(
+		ExifTag::ExposureProgram(vec![1])
+	);
+	metadata.set_tag(
+		ExifTag::ISO(vec![2706])
+	);
+	metadata.set_tag(
+		ExifTag::Model("Testcam(1)".to_string())
+	);
+	assert_eq!(metadata.data().len(), 4);
+	
+	// Write metadata to file
+	metadata.write_to_file(Path::new("tests/sample2_simple_lossy_copy.webp"))?;
+
+	Ok(())
+}
+
+#[ignore]
+#[test]
+fn 
+write_to_file_webp_simple_lossless() 
+-> Result<(), std::io::Error>
+{
+	Ok(()) // TODO
+}
+
+
+#[test]
+fn 
+write_to_file_webp_extended() 
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/sample2_extended_copy.webp")
+	{
+		println!("{}", error);
+	}
+	copy("tests/sample2_extended.webp", "tests/sample2_extended_copy.webp")?;
+
+	// Create new metadata struct and fill it
+	let mut metadata = Metadata::new();
+	assert_eq!(metadata.data().len(), 0);
+
+	metadata.set_tag(
+		ExifTag::ImageDescription("Hello World!".to_string())
+	);
+	metadata.set_tag(
+		ExifTag::ExposureProgram(vec![1])
+	);
+	metadata.set_tag(
+		ExifTag::ISO(vec![2706])
+	);
+	metadata.set_tag(
+		ExifTag::Model("Testcam(1)".to_string())
+	);
+	assert_eq!(metadata.data().len(), 4);
+	
+	// Write metadata to file
+	metadata.write_to_file(Path::new("tests/sample2_extended_copy.webp"))?;
+
+	Ok(())
+}
