@@ -272,10 +272,11 @@ Metadata
 		
 		match file_type_str.unwrap().to_lowercase().as_str()
 		{
-			"jpg"	=> jpg::write_metadata(&path, &self.encode_metadata_general()),
-			"jpeg"	=> jpg::write_metadata(&path, &self.encode_metadata_general()),
-			"png"	=> png::write_metadata(&path, &self.encode_metadata_general()),
-			_		=> io_error!(Unsupported, "Unsupported file type!"),
+			"jpg"   =>  jpg::write_metadata(&path, &self.encode_metadata_general()),
+			"jpeg"  =>  jpg::write_metadata(&path, &self.encode_metadata_general()),
+			"png"   =>  png::write_metadata(&path, &self.encode_metadata_general()),
+			"webp"  => webp::write_metadata(&path, &self.encode_metadata_general()),
+			_       => io_error!(Unsupported, "Unsupported file type!"),
 		}
 
 	}

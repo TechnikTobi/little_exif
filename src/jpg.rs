@@ -177,10 +177,7 @@ write_metadata
 )
 -> Result<(), std::io::Error>
 {
-	if let Err(error) = clear_metadata(path)
-	{
-		return Err(error);
-	}
+	clear_metadata(path)?;
 
 	// Encode the data specifically for JPG and open the file...
 	let encoded_metadata = encode_metadata_jpg(general_encoded_metadata);
