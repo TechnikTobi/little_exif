@@ -17,7 +17,7 @@ authors = ["Tobias Prisching"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/TechnikTobi/little_exif"
 readme = "README.md"
-keywords = ["metadata", "exif", "photo", "image", "png", "jpg", "jpeg", "webp"]
+keywords = ["metadata", "exif", "photo", "image"]
 categories = ["multimedia::images"]
 
 exclude = [
