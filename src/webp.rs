@@ -11,6 +11,7 @@ use std::path::Path;
 
 use crate::endian::*;
 use crate::general_file_io::*;
+use crate::riff_chunk::RiffChunk;
 use crate::riff_chunk::RiffChunkDescriptor;
 
 pub(crate) const RIFF_SIGNATURE:       [u8; 4] = [0x52, 0x49, 0x46, 0x46];
@@ -86,14 +87,12 @@ check_signature
 
 
 
-/// Gets a descriptor of the next RIFF chunk, starting at the current file
-/// cursor position. Advances the cursor to the start of the next chunk
 fn
-get_next_chunk_descriptor
+get_next_chunk
 (
 	file: &mut File
 )
--> Result<RiffChunkDescriptor, std::io::Error>
+-> Result<RiffChunk, std::io::Error>
 {
 	// Read the start of the chunk
 	let mut chunk_start = [0u8; 8];
@@ -125,14 +124,38 @@ get_next_chunk_descriptor
 
 	if let Ok(parsed_chunk_name) = chunk_name
 	{
-		return Ok(RiffChunkDescriptor::new(
+		return Ok(RiffChunk::new(
 			parsed_chunk_name as String, 
-			chunk_length      as usize
+			chunk_length      as usize,
+			chunk_data_buffer as Vec<u8>
 		));
 	}
 	else
 	{
 		return io_error!(Other, "Could not parse RIFF fourCC chunk name!");
+	}
+}
+
+
+
+/// Gets a descriptor of the next RIFF chunk, starting at the current file
+/// cursor position. Advances the cursor to the start of the next chunk
+fn
+get_next_chunk_descriptor
+(
+	file: &mut File
+)
+-> Result<RiffChunkDescriptor, std::io::Error>
+{
+	let next_chunk_result = get_next_chunk(file);
+
+	if let Ok(next_chunk) = next_chunk_result
+	{
+		return Ok(next_chunk.descriptor());
+	}
+	else
+	{
+		return Err(next_chunk_result.err().unwrap());
 	}
 }
 
@@ -356,6 +379,44 @@ read_metadata
 
 
 fn
+convert_to_extended_format
+(
+	file: &mut File
+)
+-> Result<(), std::io::Error>
+{
+	/*
+	// Start by getting the first chunk of the WebP file
+	perform_file_action!(file.seek(SeekFrom::Start(12)));
+	let first_chunk_result = get_next_chunk(file);
+
+	// Check that this get operation was successful
+	if first_chunk_result.is_err()
+	{
+		return Err(first_chunk_result.err().unwrap());
+	}
+
+	let first_chunk = first_chunk_result.unwrap();
+
+	// Find out what simple type of WebP file we are dealing with
+	match first_chunk.descriptor().header().as_str()
+	{
+		"VP8" 
+			=> println!("VP8!"),
+		"VP8L"
+			=> println!("VP8L!"),
+		_ 
+			=> return io_error!(Other, "Expected either 'VP8 ' or 'VP8L' chunk for conversion!")
+	}
+	
+	Ok(())
+	*/
+	io_error!(Other, "Converting still on ToDo List!")
+}
+
+
+
+fn
 set_exif_flag
 (
 	path:  &Path,
@@ -370,6 +431,9 @@ set_exif_flag
 		return Err(error);
 	}
 
+	// Open the file for further processing
+	let mut file = check_signature(path).unwrap();
+
 	// Next, check if this is an Extended File Format WebP file
 	// In this case, the first Chunk SHOULD have the type "VP8X"
 	// Otherwise we have to create the VP8X chunk!
@@ -378,7 +442,7 @@ set_exif_flag
 		// Compare the chunk descriptor header and call chunk creator if required
 		if first_chunk.header().to_lowercase() != VP8X_HEADER.to_lowercase()
 		{
-			todo!();
+			convert_to_extended_format(&mut file)?;
 		}
 	}
 	else
@@ -388,7 +452,6 @@ set_exif_flag
 
 	// At this point we know that we have a VP8X chunk at the expected location
 	// So, read in the flags and set the EXIF flag accoring to the given bool
-	let mut file = check_signature(path).unwrap();
 	let mut flag_buffer = vec![0u8; 4usize];
 	perform_file_action!(file.seek(SeekFrom::Start(12u64 + 4u64 + 4u64)));
 	if file.read(&mut flag_buffer).unwrap() != 4
@@ -516,7 +579,6 @@ clear_metadata
 
 
 
-
 fn
 encode_metadata_webp
 (
@@ -612,7 +674,6 @@ write_metadata
 				_
 					=> return Err(chunk_descriptor_result.err().unwrap())
 			}
-			
 		}
 	}
 

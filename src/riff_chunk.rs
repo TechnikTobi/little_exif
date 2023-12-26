@@ -2,6 +2,7 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 #[allow(non_snake_case)]
+#[derive(Clone)]
 pub(crate) struct
 RiffChunkDescriptor
 {
@@ -49,7 +50,7 @@ RiffChunkDescriptor
 	}
 }
 
-/*
+
 pub(crate) struct
 RiffChunk
 {
@@ -60,6 +61,7 @@ RiffChunk
 impl
 RiffChunk
 {
+	#[allow(non_snake_case)]
 	pub fn
 	new
 	(
@@ -75,5 +77,14 @@ RiffChunk
 			payload:    payload
 		}
 	}
+
+	pub fn
+	descriptor
+	(
+		&self
+	)
+	-> RiffChunkDescriptor
+	{
+		self.descriptor.clone()
+	}
 }
-*/
