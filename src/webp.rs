@@ -9,6 +9,8 @@ use std::io::Seek;
 use std::io::SeekFrom;
 use std::path::Path;
 
+use crc::Width;
+
 use crate::endian::*;
 use crate::general_file_io::*;
 use crate::riff_chunk::RiffChunk;
@@ -385,7 +387,6 @@ convert_to_extended_format
 )
 -> Result<(), std::io::Error>
 {
-	/*
 	// Start by getting the first chunk of the WebP file
 	perform_file_action!(file.seek(SeekFrom::Start(12)));
 	let first_chunk_result = get_next_chunk(file);
@@ -404,14 +405,63 @@ convert_to_extended_format
 		"VP8" 
 			=> println!("VP8!"),
 		"VP8L"
-			=> println!("VP8L!"),
+			=> return convert_VP8L_to_VP8X(file),
 		_ 
 			=> return io_error!(Other, "Expected either 'VP8 ' or 'VP8L' chunk for conversion!")
 	}
 	
-	Ok(())
-	*/
+	// Ok(())
+	
 	io_error!(Other, "Converting still on ToDo List!")
+}
+
+
+
+#[allow(non_snake_case)]
+fn
+convert_VP8L_to_VP8X
+(
+	file: &mut File
+)
+-> Result<(), std::io::Error>
+{
+	// Seek to size information of the file
+	perform_file_action!(file.seek(SeekFrom::Start(0u64
+		+ 4u64 // "RIFF"
+		+ 4u64 // file size
+		+ 4u64 // "WEBP"
+		+ 4u64 // "VP8L"
+		+ 4u64 // VP8L chunk size information
+		+ 1u64 // 0x2F - See: https://developers.google.com/speed/webp/docs/webp_lossless_bitstream_specification#3_riff_header
+	)));
+
+	// Get the next 4 bytes (although we only need the next 28 bits)
+	let mut width_height_info_buffer = [0u8; 4];
+	if file.read(&mut width_height_info_buffer).unwrap() != 4
+	{
+		return io_error!(Other, "Could not read start of VP8L chunk that has width/height info!");
+	}
+
+	let width_height_info = from_u8_vec_macro!(u32, &width_height_info_buffer.to_vec(), &Endian::Little);
+	println!("{:#028b}", width_height_info);
+	
+	let mut width  = 0;
+	let mut height = 0;
+
+	for bit_index in 0..14
+	{
+		width  |= ((width_height_info >> (27 - bit_index)) & 0x01) << (13 - (bit_index % 14));
+	}
+
+	for bit_index in 14..28
+	{
+		height |= ((width_height_info >> (27 - bit_index)) & 0x01) << (13 - (bit_index % 14));
+	}
+
+	println!("width:  {}", width);
+	println!("height: {}", height);
+
+	todo!()
 }
 
 
@@ -485,7 +535,7 @@ clear_metadata
 (
 	path: &Path
 )
--> Result<u8, std::io::Error>
+-> Result<(), std::io::Error>
 {
 	// This needs to perform the following
 	// Remove the EXIF chunk(s) (may contain more than one but only first is used when reading)
@@ -500,8 +550,12 @@ clear_metadata
 	{
 		match exif_check_result.as_ref().err().unwrap().to_string().as_str()
 		{
-			"No EXIF chunk according to VP8X flags!" => return Ok(0),
-			_                                        => return Err(exif_check_result.err().unwrap())
+			"No EXIF chunk according to VP8X flags!"
+				=> return Ok(()),
+			"Expected first chunk of WebP file to be of type 'VP8X' but instead got VP8L!"
+				=> return Ok(()),
+			_
+				=> return Err(exif_check_result.err().unwrap())
 		}
 	}
 
@@ -574,7 +628,7 @@ clear_metadata
 	// Set the flags in the VP8X chunk. First, read in the current flags
 	perform_file_action!(set_exif_flag(path, false));
 
-	return Ok(0);
+	return Ok(());
 }
 
 
