@@ -165,13 +165,40 @@ write_to_file_webp_simple_lossy()
 	Ok(())
 }
 
-#[ignore]
 #[test]
 fn 
 write_to_file_webp_simple_lossless() 
 -> Result<(), std::io::Error>
 {
-	Ok(()) // TODO
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/sample2_simple_loseless_copy.webp")
+	{
+		println!("{}", error);
+	}
+	copy("tests/sample2_simple_loseless.webp", "tests/sample2_simple_loseless_copy.webp")?;
+
+	// Create new metadata struct and fill it
+	let mut metadata = Metadata::new();
+	assert_eq!(metadata.data().len(), 0);
+
+	metadata.set_tag(
+		ExifTag::ImageDescription("Hello World!".to_string())
+	);
+	metadata.set_tag(
+		ExifTag::ExposureProgram(vec![1])
+	);
+	metadata.set_tag(
+		ExifTag::ISO(vec![2706])
+	);
+	metadata.set_tag(
+		ExifTag::Model("Testcam(1)".to_string())
+	);
+	assert_eq!(metadata.data().len(), 4);
+	
+	// Write metadata to file
+	metadata.write_to_file(Path::new("tests/sample2_simple_loseless_copy.webp"))?;
+
+	Ok(())
 }
 
 
