@@ -438,7 +438,7 @@ convert_to_extended_format
 		"VP8" 
 			=> {println!("VP8 !"); todo!()},
 		"VP8L"
-			=> convert_VP8L_to_VP8X(file),
+			=> get_dimension_info_from_vp8l_chunk(first_chunk.payload()),
 		_ 
 			=> io_error!(Other, "Expected either 'VP8 ' or 'VP8L' chunk for conversion!")
 	}?;
@@ -479,42 +479,32 @@ convert_to_extended_format
 
 
 
-#[allow(non_snake_case)]
 fn
-convert_VP8L_to_VP8X
+get_dimension_info_from_vp8l_chunk
 (
-	file: &mut File
+	payload: &Vec<u8>
 )
 -> Result<(u32, u32), std::io::Error>
 {
-	// Seek to size information of the file
-	perform_file_action!(file.seek(SeekFrom::Start(0u64
-		+ 4u64 // "RIFF"
-		+ 4u64 // file size
-		+ 4u64 // "WEBP"
-		+ 4u64 // "VP8L"
-		+ 4u64 // VP8L chunk size information
-		+ 1u64 // 0x2F - See: https://developers.google.com/speed/webp/docs/webp_lossless_bitstream_specification#3_riff_header
-	)));
-
-	// Get the next 4 bytes (although we only need the next 28 bits)
-	let mut width_height_info_buffer = [0u8; 4];
-	if file.read(&mut width_height_info_buffer).unwrap() != 4
-	{
-		return io_error!(Other, "Could not read start of VP8L chunk that has width/height info!");
-	}
-
-	let width_height_info = from_u8_vec_macro!(u32, &width_height_info_buffer.to_vec(), &Endian::Little);
-	println!("{:#028b}", width_height_info);
+	// Get the 4 bytes containing the dimension information
+	// (although we only need 28 bits)
+	// Starting at byte 1 instead of 0 due to the 0x2F byte
+	// See: https://developers.google.com/speed/webp/docs/webp_lossless_bitstream_specification#3_riff_header
+	let width_height_info_buffer = payload[1..5].to_vec();
+	
+	// Convert to a single u32 number for bit-mask operations
+	let width_height_info = from_u8_vec_macro!(u32, &width_height_info_buffer, &Endian::Little);
 	
 	let mut width  = 0;
 	let mut height = 0;
 
+	// Get the first 14 bit to construct the width
 	for bit_index in 0..14
 	{
 		width  |= ((width_height_info >> (27 - bit_index)) & 0x01) << (13 - (bit_index % 14));
 	}
 
+	// Get the next 14 bit to construct the height
 	for bit_index in 14..28
 	{
 		height |= ((width_height_info >> (27 - bit_index)) & 0x01) << (13 - (bit_index % 14));
