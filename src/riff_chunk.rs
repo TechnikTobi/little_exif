@@ -87,4 +87,14 @@ RiffChunk
 	{
 		self.descriptor.clone()
 	}
+
+	pub fn
+	payload
+	(
+		&self
+	)
+	-> &Vec<u8>
+	{
+		&self.payload
+	}
 }
