@@ -1,4 +1,4 @@
-// Copyright © 2022 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2023 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::fs::copy;
@@ -90,6 +90,31 @@ read_from_file_webp()
 }
 
 
+fn
+get_test_metadata()
+-> Result<Metadata, std::io::Error>
+{
+	// Create new metadata struct and fill it
+	let mut metadata = Metadata::new();
+	assert_eq!(metadata.data().len(), 0);
+
+	metadata.set_tag(
+		ExifTag::ImageDescription("Hello World!".to_string())
+	);
+	metadata.set_tag(
+		ExifTag::ExposureProgram(vec![1])
+	);
+	metadata.set_tag(
+		ExifTag::ISO(vec![2706])
+	);
+	metadata.set_tag(
+		ExifTag::Model("Testcam(1)".to_string())
+	);
+	assert_eq!(metadata.data().len(), 4);
+
+	return Ok(metadata);
+}
+
 
 #[test]
 fn 
@@ -104,26 +129,11 @@ write_to_file_png()
 	}
 	copy("tests/sample2.png", "tests/sample2_copy.png")?;
 
-	// Create new metadata struct and fill it
-	let mut metadata = Metadata::new();
-	assert_eq!(metadata.data().len(), 0);
-
-	metadata.set_tag(
-		ExifTag::ImageDescription("Hello World!".to_string())
-	);
-	metadata.set_tag(
-		ExifTag::ExposureProgram(vec![1])
-	);
-	metadata.set_tag(
-		ExifTag::ISO(vec![2706])
-	);
-	metadata.set_tag(
-		ExifTag::Model("Testcam(1)".to_string())
-	);
-	assert_eq!(metadata.data().len(), 4);
+	// Create newly created & filled metadata struct
+	let metadata = get_test_metadata()?;
 	
 	// Write metadata to file
-	assert!(metadata.write_to_file(Path::new("tests/sample2_copy.png")).is_ok());
+	metadata.write_to_file(Path::new("tests/sample2_copy.png"))?;
 
 	Ok(())
 }
@@ -134,6 +144,8 @@ fn
 write_to_file_webp_simple_lossy() 
 -> Result<(), std::io::Error>
 {
+	// Currently not active as the "VP8 " converter does not exist yet!
+
 	// Remove file from previous run and replace it with fresh copy
 	if let Err(error) = remove_file("tests/sample2_simple_lossy_copy.webp")
 	{
@@ -141,23 +153,8 @@ write_to_file_webp_simple_lossy()
 	}
 	copy("tests/sample2_simple_lossy.webp", "tests/sample2_simple_lossy_copy.webp")?;
 
-	// Create new metadata struct and fill it
-	let mut metadata = Metadata::new();
-	assert_eq!(metadata.data().len(), 0);
-
-	metadata.set_tag(
-		ExifTag::ImageDescription("Hello World!".to_string())
-	);
-	metadata.set_tag(
-		ExifTag::ExposureProgram(vec![1])
-	);
-	metadata.set_tag(
-		ExifTag::ISO(vec![2706])
-	);
-	metadata.set_tag(
-		ExifTag::Model("Testcam(1)".to_string())
-	);
-	assert_eq!(metadata.data().len(), 4);
+	// Create newly created & filled metadata struct
+	let metadata = get_test_metadata()?;
 	
 	// Write metadata to file
 	metadata.write_to_file(Path::new("tests/sample2_simple_lossy_copy.webp"))?;
@@ -177,24 +174,9 @@ write_to_file_webp_simple_lossless()
 	}
 	copy("tests/sample2_simple_loseless.webp", "tests/sample2_simple_loseless_copy.webp")?;
 
-	// Create new metadata struct and fill it
-	let mut metadata = Metadata::new();
-	assert_eq!(metadata.data().len(), 0);
-
-	metadata.set_tag(
-		ExifTag::ImageDescription("Hello World!".to_string())
-	);
-	metadata.set_tag(
-		ExifTag::ExposureProgram(vec![1])
-	);
-	metadata.set_tag(
-		ExifTag::ISO(vec![2706])
-	);
-	metadata.set_tag(
-		ExifTag::Model("Testcam(1)".to_string())
-	);
-	assert_eq!(metadata.data().len(), 4);
-	
+	// Create newly created & filled metadata struct
+	let metadata = get_test_metadata()?;
+		
 	// Write metadata to file
 	metadata.write_to_file(Path::new("tests/sample2_simple_loseless_copy.webp"))?;
 
@@ -214,24 +196,9 @@ write_to_file_webp_extended()
 	}
 	copy("tests/sample2_extended.webp", "tests/sample2_extended_copy.webp")?;
 
-	// Create new metadata struct and fill it
-	let mut metadata = Metadata::new();
-	assert_eq!(metadata.data().len(), 0);
+	// Create newly created & filled metadata struct
+	let metadata = get_test_metadata()?;
 
-	metadata.set_tag(
-		ExifTag::ImageDescription("Hello World!".to_string())
-	);
-	metadata.set_tag(
-		ExifTag::ExposureProgram(vec![1])
-	);
-	metadata.set_tag(
-		ExifTag::ISO(vec![2706])
-	);
-	metadata.set_tag(
-		ExifTag::Model("Testcam(1)".to_string())
-	);
-	assert_eq!(metadata.data().len(), 4);
-	
 	// Write metadata to file
 	metadata.write_to_file(Path::new("tests/sample2_extended_copy.webp"))?;
 
