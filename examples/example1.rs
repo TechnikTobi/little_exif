@@ -59,7 +59,7 @@ fill_metadata
 	// Set the ImageDescription (IFD0) an ISO (ExifIFD) tag as examples
 	// as well as two (to little_exif) unknown tags
 	metadata.set_tag(
-		ExifTag::UnknownSTRING("test".to_string(), 0x010d, ExifTagGroup::IFD0)
+		ExifTag::UnknownSTRING("test1".to_string(), 0x010d, ExifTagGroup::IFD0)
 	);
 
 	metadata.set_tag(
@@ -71,6 +71,6 @@ fill_metadata
 	);
 
 	metadata.set_tag(
-		ExifTag::UnknownSTRING("test".to_string(), 0x010c, ExifTagGroup::IFD0)
+		ExifTag::UnknownSTRING("test2".to_string(), 0x010c, ExifTagGroup::IFD0)
 	);
 }
