@@ -9,8 +9,6 @@ use std::io::Seek;
 use std::io::SeekFrom;
 use std::path::Path;
 
-use crc::Width;
-
 use crate::endian::*;
 use crate::general_file_io::*;
 use crate::riff_chunk::RiffChunk;
@@ -89,6 +87,8 @@ check_signature
 
 
 
+/// Gets the next RIFF chunk, starting at the current file cursor
+/// Advances the cursor to the start of the next chunk
 fn
 get_next_chunk
 (
@@ -142,6 +142,8 @@ get_next_chunk
 
 /// Gets a descriptor of the next RIFF chunk, starting at the current file
 /// cursor position. Advances the cursor to the start of the next chunk
+/// Relies on `get_next_chunk` by basically calling that function and throwing
+/// away the actual payload
 fn
 get_next_chunk_descriptor
 (
@@ -149,16 +151,8 @@ get_next_chunk_descriptor
 )
 -> Result<RiffChunkDescriptor, std::io::Error>
 {
-	let next_chunk_result = get_next_chunk(file);
-
-	if let Ok(next_chunk) = next_chunk_result
-	{
-		return Ok(next_chunk.descriptor());
-	}
-	else
-	{
-		return Err(next_chunk_result.err().unwrap());
-	}
+	let next_chunk_result = get_next_chunk(file)?;
+	return Ok(next_chunk_result.descriptor());
 }
 
 
@@ -209,6 +203,7 @@ parse_webp
 			
 			if parsed_length == expected_length
 			{
+				// In this case we don't expect any more data to be in the file
 				break;
 			}			
 		}
@@ -381,6 +376,44 @@ read_metadata
 
 
 fn
+update_file_size_information
+(
+	file:  &mut File,
+	delta: i32
+)
+-> Result<(), std::io::Error>
+{
+	// Note from the documentation:
+	// As the size of any chunk is even, the size given by the RIFF header is also even.
+
+	// Update the file size information, first by reading in the current value...
+	perform_file_action!(file.seek(SeekFrom::Start(4)));
+	let mut file_size_buffer = [0u8; 4];
+
+	// ...converting it to u32 representation...
+	perform_file_action!(file.read(&mut file_size_buffer));
+	let old_file_size = from_u8_vec_macro!(u32, &file_size_buffer.to_vec(), &Endian::Little);
+
+	// ...adding the delta byte count (and performing some checks)...
+	if delta < 0
+	{
+		assert!(old_file_size as i32 > delta);
+	}
+	let new_file_size = (old_file_size as i32 + delta) as u32;
+
+	assert!(old_file_size % 2 == 0);
+	assert!(new_file_size % 2 == 0);
+
+	// ...and writing back to file...
+	perform_file_action!(file.seek(SeekFrom::Start(4)));
+	perform_file_action!(file.write_all(&to_u8_vec_macro!(u32, &new_file_size, &Endian::Little)));
+
+	Ok(())
+}
+
+
+
+fn
 convert_to_extended_format
 (
 	file: &mut File
@@ -400,19 +433,48 @@ convert_to_extended_format
 	let first_chunk = first_chunk_result.unwrap();
 
 	// Find out what simple type of WebP file we are dealing with
-	match first_chunk.descriptor().header().as_str()
+	let (width, height) = match first_chunk.descriptor().header().as_str()
 	{
 		"VP8" 
-			=> println!("VP8!"),
+			=> {println!("VP8 !"); todo!()},
 		"VP8L"
-			=> return convert_VP8L_to_VP8X(file),
+			=> convert_VP8L_to_VP8X(file),
 		_ 
-			=> return io_error!(Other, "Expected either 'VP8 ' or 'VP8L' chunk for conversion!")
-	}
-	
-	// Ok(())
-	
-	io_error!(Other, "Converting still on ToDo List!")
+			=> io_error!(Other, "Expected either 'VP8 ' or 'VP8L' chunk for conversion!")
+	}?;
+
+	println!("{} {}", width, height);
+
+	let width_vec  = to_u8_vec_macro!(u32, &width,  &Endian::Little);
+	let height_vec = to_u8_vec_macro!(u32, &height, &Endian::Little);
+
+	let mut vp8x_chunk = vec![
+		0x56, 0x50, 0x38, 0x58, // ASCII chars "V", "P", "8", "X"                  -> 4 byte
+		0x0A, 0x00, 0x00, 0x00, // size of this chunk (32 + 24 + 24 bit = 10 byte) -> 4 byte
+		0x00, 0x00, 0x00, 0x00, // Flags and reserved area                         -> 4 byte
+	];
+
+	// Add the two 24 bits for width and height information
+	for i in 0..3 { vp8x_chunk.push(width_vec[i]); }
+	for i in 0..3 { vp8x_chunk.push(height_vec[i]); }
+
+	// Write the VP8X chunk, first by reading the file (except for the header)
+	// into a buffer...
+	let mut buffer = Vec::new();
+	perform_file_action!(file.seek(SeekFrom::Start(12u64)));
+	perform_file_action!(file.read_to_end(&mut buffer));
+
+	// ...actually writing the VP8X chunk data...
+	perform_file_action!(file.seek(SeekFrom::Start(12u64)));
+	perform_file_action!(file.write(&vp8x_chunk));
+
+	// ...and writing back the file contents
+	perform_file_action!(file.write(&buffer));
+
+	// Finally, update the file size information
+	update_file_size_information(file, 18)?;
+
+	Ok(())
 }
 
 
@@ -423,7 +485,7 @@ convert_VP8L_to_VP8X
 (
 	file: &mut File
 )
--> Result<(), std::io::Error>
+-> Result<(u32, u32), std::io::Error>
 {
 	// Seek to size information of the file
 	perform_file_action!(file.seek(SeekFrom::Start(0u64
@@ -458,10 +520,7 @@ convert_VP8L_to_VP8X
 		height |= ((width_height_info >> (27 - bit_index)) & 0x01) << (13 - (bit_index % 14));
 	}
 
-	println!("width:  {}", width);
-	println!("height: {}", height);
-
-	todo!()
+	return Ok((width, height));
 }
 
 
@@ -537,12 +596,6 @@ clear_metadata
 )
 -> Result<(), std::io::Error>
 {
-	// This needs to perform the following
-	// Remove the EXIF chunk(s) (may contain more than one but only first is used when reading)
-	// Compute the new size
-	// Reset the flag in the VP8X header
-	// Re-Write everything back to the file
-
 	// Check the file signature, parse it, check that it has a VP8X chunk and
 	// the EXIF flag is set there
 	let exif_check_result = check_exif_in_file(path);
@@ -561,13 +614,8 @@ clear_metadata
 
 	let (mut file, parse_webp_result) = exif_check_result.unwrap();
 
-	// Get the old size as starting point for computing the new value
-	// NOTE from the documentation:
-	// As the size of any chunk is even, the size given by the RIFF header is also even.
-	perform_file_action!(file.seek(SeekFrom::Start(4u64)));
-	let mut size_buffer = [0u8; 4];
-	file.read(&mut size_buffer).unwrap();
-	let mut new_size = from_u8_vec_macro!(u32, &size_buffer.to_vec(), &Endian::Little);
+	// Compute a delta of how much the file size information has to change
+	let mut delta = 0i32;
 
 	// Skip the WEBP signature
 	perform_file_action!(file.seek(SeekFrom::Current(4i64)));
@@ -616,15 +664,12 @@ clear_metadata
 
 		// Additionally, update the size information that gets written to the 
 		// file header after this loop
-		new_size -= parsed_chunk_byte_count as u32;
+		delta -= parsed_chunk_byte_count as i32;
 	}
 
-	// Seek to the head of the file and update the file size information there
-	perform_file_action!(file.seek(SeekFrom::Start(4)));
-	perform_file_action!(file.write_all(
-		&to_u8_vec_macro!(u32, &new_size, &Endian::Little)
-	));
-
+	// Update file size information
+	update_file_size_information(&mut file, delta)?;
+	
 	// Set the flags in the VP8X chunk. First, read in the current flags
 	perform_file_action!(set_exif_flag(path, false));
 
@@ -743,30 +788,21 @@ write_metadata
 	// ...and writing back the remaining file content
 	perform_file_action!(file.write_all(&read_buffer));
 
-
-	// Update the file size information, first by reading in the current value...
-	perform_file_action!(file.seek(SeekFrom::Start(4)));
-	let mut file_size_buffer = [0u8; 4];
-	perform_file_action!(file.read(&mut file_size_buffer));
-	let mut file_size = from_u8_vec_macro!(u32, &file_size_buffer.to_vec(), &Endian::Little);
-
-	// ...adding the byte count of the EXIF chunk...
+	// Update the file size information by adding the byte count of the EXIF chunk
 	// (Note: Due to  the WebP specific encoding function, this vector already
 	// contains the EXIF header characters and size information, as well as the
 	// possible padding byte. Therefore, simply taking the length of this
 	// vector takes their byte count also into account and no further values
 	// need to be added)
-	file_size += encoded_metadata.len() as u32;
+	update_file_size_information(&mut file, encoded_metadata.len() as i32)?;
 
-	// ...and writing back to file...
-	perform_file_action!(file.seek(SeekFrom::Start(4)));
-	perform_file_action!(file.write_all(&to_u8_vec_macro!(u32, &file_size, &Endian::Little)));
-
-	// ...and finally, set the EXIF flag
+	// Finally, set the EXIF flag
 	perform_file_action!(set_exif_flag(path, true));
 
 	return Ok(());
 }
+
+
 
 
 
