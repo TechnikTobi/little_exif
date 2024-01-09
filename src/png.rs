@@ -522,10 +522,10 @@ write_metadata
 		.read(true)
 		.open(path)
 		.expect("Could not open file");
-	let seek_start = 0u64			// Skip ...
-	+ PNG_SIGNATURE.len()	as u64	//	PNG Signature
-	+ IHDR_length			as u64	//	IHDR data section
-	+ 12					as u64;	//	rest of IHDR chunk (length, type, CRC)
+	let seek_start = 0u64         // Skip ...
+	+ PNG_SIGNATURE.len() as u64  // PNG Signature
+	+ IHDR_length         as u64  // IHDR data section
+	+ 12                  as u64; // rest of IHDR chunk (length, type, CRC)
 
 	// Get to first chunk after IHDR, copy all the data starting from there
 	let mut buffer = Vec::new();
