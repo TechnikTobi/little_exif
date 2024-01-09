@@ -50,9 +50,9 @@ encode_metadata_png
 	// - length of exif_vec
 	// - 1 for ssss itself (why not 4? idk)
 	let ssss = (
-		EXIF_HEADER.len()	as u32 
-		+ exif_vec.len()	as u32 
-		+ 1					as u32
+		EXIF_HEADER.len() as u32 
+		+ exif_vec.len()  as u32 
+		+ 1               as u32
 	).to_string();
 
 	// Construct final vector with the bytes as they will be sent to the encoder
