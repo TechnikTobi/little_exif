@@ -1,4 +1,4 @@
-// Copyright © 2023 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::path::Path;
@@ -163,6 +163,18 @@ clear_metadata
 	}
 
 	return Ok(cleared_segments);
+}
+
+/// Provides the JPEG specific encoding result as vector of bytes to be used
+/// by the user (e.g. in combination with another library)
+pub(crate) fn
+as_u8_vec
+(
+	general_encoded_metadata: &Vec<u8>
+)
+-> Vec<u8>
+{
+	encode_metadata_jpg(general_encoded_metadata)
 }
 
 /// Writes the given generally encoded metadata to the JP(E)G image file at 

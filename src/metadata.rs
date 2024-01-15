@@ -1,11 +1,14 @@
-// Copyright © 2023 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::path::Path;
+use std::str::FromStr;
 
 use crate::endian::*;
-use crate::exif_tag::{ExifTag, ExifTagGroup};
+use crate::exif_tag::ExifTag;
+use crate::exif_tag::ExifTagGroup;
 use crate::exif_tag_format::ExifTagFormat;
+use crate::filetype::FileExtension;
 use crate::general_file_io::*;
 
 use crate::jpg;
@@ -66,27 +69,34 @@ Metadata
 			return io_error!(Other, "Can't read Metadata - File does not exist!");
 		}
 
-		let file_type = path.extension();
-		if file_type.is_none()
+		let raw_file_type_str = path.extension();
+		if raw_file_type_str.is_none()
 		{
 			return io_error!(Other, "Can't get extension from given path!");
 		}
 
-		let file_type_str = file_type.unwrap().to_str();
+		let file_type_str = raw_file_type_str.unwrap().to_str();
 		if file_type_str.is_none()
 		{
 			return io_error!(Other, "Can't convert file type to string!");
 		}
 
+		let raw_file_type = FileExtension::from_str(file_type_str.unwrap().to_lowercase().as_str());
+		if raw_file_type.is_err()
+		{
+			return io_error!(Unsupported, "Can't read Metadata - Unsupported file type!");
+		}
+
 		// Call the file specific decoders as a starting point for obtaining
 		// the raw EXIF data that gets further processed
-		let raw_pre_decode_general = match file_type_str.unwrap().to_lowercase().as_str()
+		let raw_pre_decode_general = match raw_file_type.unwrap()
 		{
-			"jpg"   =>  jpg::read_metadata(&path),
-			"jpeg"  =>  jpg::read_metadata(&path),
-			"png"   =>  png::read_metadata(&path),
-			"webp"  => webp::read_metadata(&path),
-			_       => return io_error!(Unsupported, "Can't read Metadata - Unsupported file type!"),
+			FileExtension::JPEG 
+				=>  jpg::read_metadata(&path),
+			FileExtension::PNG {as_zTXt_chunk: _} 
+				=>  png::read_metadata(&path),
+			FileExtension::WEBP 
+				=> webp::read_metadata(&path),
 		};
 
 		if let Ok(pre_decode_general) = raw_pre_decode_general
@@ -240,6 +250,34 @@ Metadata
 		);
 	}
 
+	/// Converts the metadata into a file specific vector of bytes
+	/// Only to be used in combination with some other library/code that is
+	/// able to handle the specific file type.
+	/// Simply writing this to a file often is not enough, e.g. with WebP you
+	/// have to determine where to write this, update the file size information
+	/// and so on - check file type specific implementations or documentation
+	/// for further details
+	pub fn
+	as_u8_vec
+	(
+		&self,
+		for_file_type: FileExtension
+	)
+	-> Vec<u8>
+	{
+		let general_encoded_metadata = self.encode_metadata_general();
+
+		match for_file_type
+		{
+			FileExtension::PNG {as_zTXt_chunk} 
+				=>  png::as_u8_vec(&general_encoded_metadata, as_zTXt_chunk),
+			FileExtension::JPEG 
+				=>  jpg::as_u8_vec(&general_encoded_metadata),
+			FileExtension::WEBP 
+				=> webp::as_u8_vec(&general_encoded_metadata),
+		}
+	}
+
 	/// Writes the metadata to the specified file.
 	/// This could return an error for multiple reasons:
 	/// - The file does not exist at the given path
@@ -258,27 +296,32 @@ Metadata
 			return io_error!(Other, "Can't write Metadata - File does not exist!");
 		}
 
-		let file_type = path.extension();
-		if file_type.is_none()
+		let raw_file_type_str = path.extension();
+		if raw_file_type_str.is_none()
 		{
 			return io_error!(Other, "Can't get extension from given path!");
 		}
-
-		let file_type_str = file_type.unwrap().to_str();
+		let file_type_str = raw_file_type_str.unwrap().to_str();
 		if file_type_str.is_none()
 		{
 			return io_error!(Other, "Can't convert file type to string!");
 		}
-		
-		match file_type_str.unwrap().to_lowercase().as_str()
+
+		let raw_file_type = FileExtension::from_str(file_type_str.unwrap().to_lowercase().as_str());
+		if raw_file_type.is_err()
 		{
-			"jpg"   =>  jpg::write_metadata(&path, &self.encode_metadata_general()),
-			"jpeg"  =>  jpg::write_metadata(&path, &self.encode_metadata_general()),
-			"png"   =>  png::write_metadata(&path, &self.encode_metadata_general()),
-			"webp"  => webp::write_metadata(&path, &self.encode_metadata_general()),
-			_       => io_error!(Unsupported, "Unsupported file type!"),
+			return io_error!(Unsupported, "Can't read Metadata - Unsupported file type!");
 		}
 
+		match raw_file_type.unwrap()
+		{
+			FileExtension::JPEG 
+				=>  jpg::write_metadata(&path, &self.encode_metadata_general()),
+			FileExtension::PNG {as_zTXt_chunk: _}
+				=>  png::write_metadata(&path, &self.encode_metadata_general()),
+			FileExtension::WEBP 
+				=> webp::write_metadata(&path, &self.encode_metadata_general()),
+		}
 	}
 
 	fn

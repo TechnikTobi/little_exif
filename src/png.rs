@@ -1,4 +1,4 @@
-// Copyright © 2023 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::path::Path;
@@ -10,7 +10,8 @@ use std::fs::File;
 use std::fs::OpenOptions;
 use std::collections::VecDeque;
 
-use crc::{Crc, CRC_32_ISO_HDLC};
+use crc::Crc;
+use crc::CRC_32_ISO_HDLC;
 use miniz_oxide::deflate::compress_to_vec_zlib;
 use miniz_oxide::inflate::decompress_to_vec_zlib;
 
@@ -118,6 +119,7 @@ decode_metadata_png
 		let value_string = "".to_owned()
 			+ &(other_byte.unwrap() as char).to_string()
 			+ &(*byte as char).to_string();
+			
 		if let Ok(value) = u8::from_str_radix(value_string.trim(), 16)
 		{
 			exif_all.push_back(value);
@@ -299,29 +301,17 @@ parse_png
 )
 -> Result<Vec<PngChunk>, std::io::Error>
 {
-	let mut file = check_signature(path);
+	let mut file = check_signature(path)?;
 	let mut chunks = Vec::new();
-
-	if file.is_err()
-	{
-		return Err(file.err().unwrap());
-	}
 
 	loop
 	{
-		let next_chunk_descriptor_result = get_next_chunk_descriptor(file.as_mut().unwrap());
-		if let Ok(chunk_descriptor) = next_chunk_descriptor_result
-		{
-			chunks.push(chunk_descriptor);
+		let chunk_descriptor = get_next_chunk_descriptor(&mut file)?;
+		chunks.push(chunk_descriptor);
 
-			if chunks.last().unwrap().as_string() == "IEND".to_string()
-			{
-				break;
-			}
-		}
-		else
+		if chunks.last().unwrap().as_string() == "IEND".to_string()
 		{
-			return Err(next_chunk_descriptor_result.err().unwrap());
+			break;
 		}
 	}
 
@@ -340,11 +330,7 @@ clear_metadata
 {
 
 	// Parse the PNG - if this fails, the clear operation fails as well
-	let parse_png_result = parse_png(path);
-	if let Err(error) = parse_png_result
-	{
-		return Err(error);
-	}
+	let parse_png_result = parse_png(path)?;
 
 	// Parsed PNG is Ok to use - Open the file and go through the chunks
 	let mut file = OpenOptions::new()
@@ -354,7 +340,7 @@ clear_metadata
 		.expect("Could not open file");
 	let mut seek_counter = 8u64;
 
-	for chunk in &parse_png_result.unwrap()
+	for chunk in &parse_png_result
 	{
 		// If this is not a zTXt chunk, jump to the next chunk
 		if chunk.as_string() != String::from("zTXt")
@@ -428,15 +414,11 @@ read_metadata
 -> Result<Vec<u8>, std::io::Error>
 {
 	// Parse the PNG - if this fails, the read fails as well
-	let parse_png_result = parse_png(path);
-	if let Err(error) = parse_png_result
-	{
-		return Err(error);
-	}
+	let parse_png_result = parse_png(path)?;
 
 	// Parsed PNG is Ok to use - Open the file and go through the chunks
 	let mut file = check_signature(path).unwrap();
-	for chunk in &parse_png_result.unwrap()
+	for chunk in &parse_png_result
 	{
 		// Wrong chunk? Seek to the next one
 		if chunk.as_string() != String::from("zTXt")
@@ -491,6 +473,32 @@ read_metadata
 
 }
 
+/// Provides the WebP specific encoding result as vector of bytes to be used
+/// by the user (e.g. in combination with another library)
+#[allow(non_snake_case)]
+pub(crate) fn
+as_u8_vec
+(
+	general_encoded_metadata: &Vec<u8>,
+	as_zTXt_chunk:            bool
+)
+-> Vec<u8>
+{
+	let basic_png_encode_result = encode_metadata_png(general_encoded_metadata);
+
+	if !as_zTXt_chunk
+	{
+		return basic_png_encode_result;
+	}
+
+	// Build data of new chunk using zlib compression (level=8 -> default)
+	let mut zTXt_chunk_data: Vec<u8> = vec![0x7a, 0x54, 0x58, 0x74];
+	zTXt_chunk_data.extend(RAW_PROFILE_TYPE_EXIF.iter());
+	zTXt_chunk_data.extend(compress_to_vec_zlib(&basic_png_encode_result, 8).iter());
+
+	return zTXt_chunk_data;
+}
+
 #[allow(non_snake_case)]
 pub(crate) fn
 write_metadata
@@ -504,10 +512,7 @@ write_metadata
 	// First clear the existing metadata
 	// This also parses the PNG and checks its validity, so it is safe to
 	// assume that is, in fact, a usable PNG file
-	if let Err(error) = clear_metadata(path)
-	{
-		return Err(error);
-	}
+	let _ = clear_metadata(path)?;
 
 	let mut IHDR_length = 0u32;
 	if let Ok(chunks) = parse_png(path)
