@@ -1,4 +1,4 @@
-// Copyright © 2023 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::fs::File;
@@ -675,7 +675,7 @@ encode_metadata_webp
 )
 -> Vec<u8>
 {
-	// vector storing the data that will be returned
+	// Vector storing the data that will be returned
 	let mut webp_exif: Vec<u8> = Vec::new();
 
 	// Compute the length of the exif data chunk 
@@ -696,6 +696,20 @@ encode_metadata_webp
 	}
 
 	return webp_exif;
+}
+
+
+
+/// Provides the WebP specific encoding result as vector of bytes to be used
+/// by the user (e.g. in combination with another library)
+pub(crate) fn
+as_u8_vec
+(
+	general_encoded_metadata: &Vec<u8>
+)
+-> Vec<u8>
+{
+	encode_metadata_webp(general_encoded_metadata)
 }
 
 
@@ -734,8 +748,8 @@ write_metadata
 
 	loop
 	{
-		// Request a chunk descriptor. If this fails, this is fails, check the
-		// error - depending on its type, either continue normally or return it
+		// Request a chunk descriptor. If this fails, check the error 
+		// Depending on its type, either continue normally or return it
 		let chunk_descriptor_result = get_next_chunk_descriptor(&mut file);
 
 		if let Ok(chunk_descriptor) = chunk_descriptor_result

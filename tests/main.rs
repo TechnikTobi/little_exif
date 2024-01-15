@@ -1,4 +1,4 @@
-// Copyright © 2023 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::fs::copy;
@@ -115,6 +115,60 @@ get_test_metadata()
 	return Ok(metadata);
 }
 
+#[test]
+fn 
+as_u8_vec_png()
+{
+	println!(
+		"as_u8_vec_png: {}", 
+		get_test_metadata()
+			.unwrap()
+			.as_u8_vec(little_exif::filetype::FileExtension::PNG { as_zTXt_chunk: false })
+			.iter()
+			.map(|char_value| *char_value as char)
+			.into_iter()
+			.collect::<String>()
+	);
+}
+
+#[test]
+#[allow(non_snake_case)]
+fn 
+as_u8_vec_png_zTXt()
+{
+	println!(
+		"as_u8_vec_png_zTXt:             {}", 
+		get_test_metadata()
+			.unwrap()
+			.as_u8_vec(little_exif::filetype::FileExtension::PNG { as_zTXt_chunk: true })
+			.iter()
+			.map(|char_value| *char_value as char)
+			.into_iter()
+			.collect::<String>()
+	);
+}
+
+#[test]
+fn 
+write_to_file_jpg() 
+-> Result<(), std::io::Error>
+{
+
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/sample2_copy.jpg")
+	{
+		println!("{}", error);
+	}
+	copy("tests/sample2.jpg", "tests/sample2_copy.jpg")?;
+
+	// Create newly created & filled metadata struct
+	let metadata = get_test_metadata()?;
+	
+	// Write metadata to file
+	metadata.write_to_file(Path::new("tests/sample2_copy.jpg"))?;
+
+	Ok(())
+}
 
 #[test]
 fn 
