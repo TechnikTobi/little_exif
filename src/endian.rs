@@ -22,13 +22,13 @@ impl Endian
 	{
 		match *self
 		{
-			Endian::Little	=> [0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00],
-			Endian::Big		=> [0x4d, 0x4d, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x08],
+			Endian::Little => [0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00],
+			Endian::Big    => [0x4d, 0x4d, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x08],
 		}
 	}
 }
 
-pub(crate) trait
+pub trait
 U8conversion<T>
 {
 	fn
@@ -69,7 +69,7 @@ macro_rules! build_u8conversion
 				match *endian
 				{
 					Endian::Little => self.to_le_bytes().to_vec(),
-					Endian::Big => self.to_be_bytes().to_vec(),
+					Endian::Big    => self.to_be_bytes().to_vec(),
 				}
 			}
 
