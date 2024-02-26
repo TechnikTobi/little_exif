@@ -9,6 +9,7 @@ extern crate little_exif;
 use little_exif::metadata::Metadata;
 use little_exif::exif_tag::ExifTag;
 use little_exif::exif_tag::ExifTagGroup;
+use little_exif::endian::U8conversion;
 
 fn
 main()
@@ -35,17 +36,32 @@ main()
 	jpg_data.write_to_file(&jpg_path)?;
 	
 	// Read in the metadata again & print it
-	println!("PNG read result:");
+	println!("\nPNG read result:");
 	for tag in Metadata::new_from_path(png_path).unwrap().data()
 	{
 		println!("{:?}", tag);
 	}
 
-	println!("JPG read result:");
+	println!("\nJPG read result:");
 	for tag in Metadata::new_from_path(jpg_path).unwrap().data()
 	{
 		println!("{:?}", tag);
 	}
+
+	// Explicitly read in the ImageDescription by tag or hex
+	let metadata = Metadata::new_from_path(jpg_path).unwrap();
+	let image_description_by_tag = metadata.get_tag(&ExifTag::ImageDescription(String::new())).unwrap();
+	let image_description_by_hex = metadata.get_tag_by_hex(0x010e).unwrap();
+
+	// Print it as String
+	let endian = metadata.get_endian();
+	let image_description_string = String::from_u8_vec(
+		&image_description_by_tag.value_as_u8_vec(metadata.get_endian()),
+		endian
+	);
+
+	println!("{:?}", image_description_by_hex);
+	println!("{}", image_description_string);
 
 	Ok(())
 }

@@ -142,6 +142,25 @@ Metadata
 		&self.data
 	}
 
+	/// Gets the endianess of the metadata
+	///
+	/// # Examples
+	/// ```no_run
+	/// use little_exif::metadata::Metadata;
+	/// 
+	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png")).unwrap();
+	/// let tag_data = metadata.get_tag_by_hex(0x010e).unwrap().value_as_u8_vec(metadata.get_endian());
+	/// ```
+	pub fn
+	get_endian
+	(
+		&self
+	)
+	-> &Endian
+	{
+		&self.endian
+	}
+
 	/// Gets the stored tag in the metadata for the given tag. 
 	/// Returns `None` if the tag is not present in the metadata struct.
 	///
