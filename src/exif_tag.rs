@@ -477,7 +477,7 @@ build_tag_enum![
 	(ExposureProgram,             0x8822, INT16U,        Some::<u32>(1),    true,      ExifIFD),
 	(SpectralSensitivity,         0x8824, STRING,        None::<u32>,       true,      ExifIFD),
 	(GPSInfo,                     0x8825, INT32U,        Some::<u32>(1),    true,      IFD0),       // -> GPS Tags: https://exiftool.org/TagNames/GPS.html
-	(ISO,                         0x8827, INT16U,        Some::<u32>(2),    true,      ExifIFD),
+	(ISO,                         0x8827, INT16U,        None::<u32>,       true,      ExifIFD),
 	(OECF,                        0x8828, UNDEF,         None::<u32>,       false,     NO_GROUP),
 	(SensitivityType,             0x8830, INT16U,        Some::<u32>(1),    true,      ExifIFD),
 	(StandardOutputSensitivity,   0x8831, INT32U,        Some::<u32>(1),    true,      ExifIFD),
