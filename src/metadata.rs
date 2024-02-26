@@ -142,7 +142,7 @@ Metadata
 		&self.data
 	}
 
-	/// Gets the endianess of the metadata
+	/// Gets the endianness of the metadata
 	///
 	/// # Examples
 	/// ```no_run
