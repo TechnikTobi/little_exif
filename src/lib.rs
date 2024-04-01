@@ -9,8 +9,8 @@
 //! # Usage
 //! ## Write EXIF data
 //! ```no_run
-//! use little_exif::metadata::Metadata;
-//! use little_exif::exif_tag::ExifTag;
+//! use little_exif_panic::metadata::Metadata;
+//! use little_exif_panic::exif_tag::ExifTag;
 //! 
 //! let mut metadata = Metadata::new();
 //! metadata.set_tag(
@@ -21,7 +21,7 @@
 
 #![forbid(unsafe_code)]
 #![crate_type = "lib"]
-#![crate_name = "little_exif"]
+#![crate_name = "little_exif_panic"]
 
 mod general_file_io;
 mod png;
