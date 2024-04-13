@@ -1,5 +1,5 @@
 [package]
-name = "little_exif_panic"
+name = "little_exif"
 
 version = "0.3.2"
 edition = "2021"
