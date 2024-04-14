@@ -25,6 +25,8 @@ examples/copy.jpg
 tests/sample2_copy.png
 tests/read_sample_no_exif.webp
 tests/sample2_simple_loseless_copy.webp
+tests/sample2_extended_copy.webp
 tests/sample2_copy.jpg
+tests/sample2_copy_no_metadata.jpg
 debug/*
 examples/copy Kopie.jpg

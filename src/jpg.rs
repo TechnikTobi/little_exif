@@ -81,38 +81,42 @@ clear_metadata
 (
 	path: &Path
 )
--> Result<u8, std::io::Error>
+-> Result<(), std::io::Error>
 {
-	let file_result = check_signature(path); // i honestly have no idea: it only removes app1
+	let file_result = check_signature(path);
 
 	if file_result.is_err()
 	{
 		return Err(file_result.err().unwrap());
 	}
 
-	let mut full_file_buf:Vec<u8> = Vec::new();
 	// Setup of variables necessary for going through the file
 	let mut file = file_result.unwrap();                                        // The struct for interacting with the file
-
-	file.read_to_end(&mut full_file_buf)?; // Here we load the file into memory instead
-
-	let mut seek_counter = 2u64;                                                // A counter for keeping track of where in the file we currently are
+	perform_file_action!(file.seek(SeekFrom::Start(0)));                        // Seek to file start (reason: signature check returns a file where the first two bytes have already been read)
+	let mut seek_counter = 0u64;                                                // A counter for keeping track of where in the file we currently are
 	let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
 	let mut previous_byte_was_marker_prefix = false;                            // A boolean for remembering if the previous byte was a marker prefix (0xFF)
-	let mut cleared_segments: u8 = 0;                                           // A counter for keeping track of how many segments were cleared
 
-	let mut iterator_file = full_file_buf.iter(); // We instantiate the iterator outside the loop scope to access it during the walk
+	// Load the entire file into memory instead of reading one byte at a time
+	// to improve the overall speed
+	// Thanks to Xuf3r for this improvement!
+	let mut file_buffer:Vec<u8> = Vec::new();
+	file.read_to_end(&mut file_buffer)?;
+
+	// Iterate for processing the bytes of the file
+	let mut iterator_file = file_buffer.iter();
 
 	loop
 	{
 		// Read next byte into buffer
-		if let Some(byte) = iterator_file.next() {
-				byte_buffer[0] = byte.clone()
-			}
+		if let Some(byte) = iterator_file.next() 
+		{
+			byte_buffer[0] = byte.clone();
+		}
 
 		if previous_byte_was_marker_prefix
 		{
-			println!("{:?}", &byte_buffer[0]);
+			
 			match byte_buffer[0]
 			{
 				0xe1	=> {
@@ -122,7 +126,8 @@ clear_metadata
 					// (which follows immediately after the marker)
 					let mut length_buffer = [0u8; 2];
 
-					if let (Some(&byte1), Some(&byte2)) = (iterator_file.next(), iterator_file.next()) {
+					if let (Some(&byte1), Some(&byte2)) = (iterator_file.next(), iterator_file.next()) 
+					{
 						length_buffer = [byte1, byte2];
 					}
 
@@ -130,32 +135,57 @@ clear_metadata
 					let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
 					let remaining_length = length - 2;
 
-
-					if remaining_length > 0 {
-						iterator_file.nth((remaining_length - 1) as usize); // What if it's not? surely it is
-					} else {
-						unreachable!("If rem_len is <= 0 then it's not a valid JPEG\
-						 - it must have at least a single SOS after APP1")
+					// Skip the segment
+					if remaining_length > 0 
+					{
+						if iterator_file.nth((remaining_length - 1) as usize).is_none()
+						{
+							panic!("Could not skip to end of APP1 segment!");
+						}
+					} 
+					else 
+					{
+						unreachable!("If rem_len is <= 0 then it's not a valid\
+						JPEG - it must have at least a single SOS after APP1")
 					}
 
-
 					// ...copy data from there onwards into a buffer...
-					let mut full_temp = full_file_buf.clone();
-					let (_, buffer) = full_temp.split_at_mut((seek_counter as usize) + (remaining_length as usize ) - 1);   // here we just copy the data
-
+					let mut file_buffer_clone = file_buffer.clone();
+					let (_, buffer) = file_buffer_clone.split_at_mut(
+						  (seek_counter     as usize)                           // Skip what has already been seeked
+						+ (remaining_length as usize)                           // Skip current segment
+						+ 2                                                     // Skip Marker Prefix and APP1 marker
+						+ 2                                                     // Skip the two length bytes
+					);
 					let buffer: Vec<u8> = buffer.to_vec();
 
-					// This essentially shits the right-most bytes n bytes to the left
-					full_file_buf[((seek_counter as usize)- 1)..][..buffer.len()].copy_from_slice(&buffer);
+					// This essentially shifts the right-most bytes n bytes to the left
+					// This seeks inside the file_buffer to the position 
+					// (seek_counter as usize), i.e. all bytes that have 
+					// previously been read. 
+					// Then a chunk of the length of the buffer vector is
+					// selected and replaced with the buffer contents, shifting
+					// the contents to the left
+					file_buffer
+						[(seek_counter as usize)..]
+						[..buffer.len()]
+						.copy_from_slice(&buffer);
 
+					// Cut off right-most bytes that are now duplicates due 
+					// to the previous shift-to-left operation
+					let cutoff_index = (seek_counter as usize) + buffer.len();
+					file_buffer = file_buffer[..cutoff_index].to_vec();
 
-					iterator_file = full_file_buf.iter(); // Here we reassign the iterator to represent the mutated bytestream
-					iterator_file.nth((seek_counter - 1) as usize); // We walk to the previous position immediately
-															// This allows to simply next()-walk bytes outside.
+					// Reassign iterator to the new file buffer and seek to the
+					// current position
+					iterator_file = file_buffer.iter();
+					iterator_file.nth(seek_counter as usize);
 
+					// Account for the fact that we stepped back the prefix
+					// marker and the marker itself (note the increment at the
+					// end of the iteration, which is why we remove two as one
+					// gets added back again there)
 					seek_counter -= 2;
-					cleared_segments += 1;
-
 				},
 				0xd9	=> break,                                               // EOI marker
 				_		=> (),                                                  // Every other marker
@@ -171,14 +201,13 @@ clear_metadata
 		seek_counter += 1;
 
 	}
-	// check if we can save the file
-	// probably possible to optimize further by returning the purged bytestream itself
-	if let Err(_) = file.write(&*full_file_buf) {
-		return io_error!(Other, "Couldn't save JPEG file!");
-	}
+	
+	// Write the file
+	// Possible to optimize further by returning the purged bytestream itself?
+	file = std::fs::OpenOptions::new().write(true).truncate(true).open(path)?;
+	perform_file_action!(file.write_all(&file_buffer));
 
-
-	return Ok(cleared_segments);
+	return Ok(());
 }
 
 /// Provides the JPEG specific encoding result as vector of bytes to be used
