@@ -149,6 +149,30 @@ as_u8_vec_png_zTXt()
 }
 
 #[test]
+fn
+clear_metadata_jpg()
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/sample2_copy_no_metadata.jpg")
+	{
+		println!("{}", error);
+	}
+	copy("tests/sample2.jpg", "tests/sample2_copy_no_metadata.jpg")?;
+
+	// Create newly created & filled metadata struct
+	let metadata = get_test_metadata()?;
+
+	// Write metadata to file
+	metadata.write_to_file(Path::new("tests/sample2_copy_no_metadata.jpg"))?;
+
+	// Clear metadata
+	Metadata::clear_metadata(Path::new("tests/sample2_copy_no_metadata.jpg"))?;
+
+	Ok(())
+}
+
+#[test]
 fn 
 write_to_file_jpg() 
 -> Result<(), std::io::Error>
