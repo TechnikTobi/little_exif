@@ -579,7 +579,7 @@ set_exif_flag
 
 
 
-fn
+pub(crate) fn
 clear_metadata
 (
 	path: &Path
