@@ -297,6 +297,46 @@ Metadata
 		}
 	}
 
+	pub fn
+	clear_metadata
+	(
+		path: &Path
+	)
+	-> Result<(), std::io::Error>
+	{
+		if !path.exists()
+		{
+			return io_error!(Other, "Can't clear Metadata - File does not exist!");
+		}
+
+		let raw_file_type_str = path.extension();
+		if raw_file_type_str.is_none()
+		{
+			return io_error!(Other, "Can't get extension from given path!");
+		}
+		let file_type_str = raw_file_type_str.unwrap().to_str();
+		if file_type_str.is_none()
+		{
+			return io_error!(Other, "Can't convert file type to string!");
+		}
+
+		let raw_file_type = FileExtension::from_str(file_type_str.unwrap().to_lowercase().as_str());
+		if raw_file_type.is_err()
+		{
+			return io_error!(Unsupported, "Can't clear Metadata - Unsupported file type!");
+		}
+
+		match raw_file_type.unwrap()
+		{
+			FileExtension::JPEG 
+				=>  jpg::clear_metadata(&path),
+			FileExtension::PNG {as_zTXt_chunk: _}
+				=>  png::clear_metadata(&path),
+			FileExtension::WEBP 
+				=> webp::clear_metadata(&path),
+		}
+	}
+
 	/// Writes the metadata to the specified file.
 	/// This could return an error for multiple reasons:
 	/// - The file does not exist at the given path
