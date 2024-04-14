@@ -81,9 +81,11 @@ macro_rules! build_u8conversion
 			)
 			-> $type
 			{
-				if u8_vec.len() != $number_of_bytes {
-					panic!("Mangled EXIF data encountered!")
+				if u8_vec.len() != $number_of_bytes 
+				{
+					panic!("from_u8_vec: Mangled EXIF data encountered!")
 				}
+
 				match *endian
 				{
 					Endian::Little => <paste!{[<$type>]}>::from_le_bytes(u8_vec[0..$number_of_bytes].try_into().unwrap()),
@@ -119,9 +121,10 @@ macro_rules! build_u8conversion
 			)
 			-> Vec<$type>
 			{
-				if u8_vec.len() % $number_of_bytes != 0 {
-    panic!("Mangled EXIF data encountered!")
-}
+				if u8_vec.len() % $number_of_bytes != 0 
+				{
+					panic!("from_u8_vec (Vec): Mangled EXIF data encountered!")
+				}
 
 				let mut result: Vec<$type> = Vec::new();
 
@@ -174,8 +177,9 @@ impl U8conversion<String> for String
 	)
 	-> String
 	{
-		if u8_vec.len() % 1 != 0 {
-			panic!("Mangled EXIF data encountered!")
+		if u8_vec.len() % 1 != 0 
+		{
+			panic!("from_u8_vec (String): Mangled EXIF data encountered!")
 		}
 
 		let mut result = String::new();
