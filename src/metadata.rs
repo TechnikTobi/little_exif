@@ -428,7 +428,7 @@ Metadata
 		if let Ok(ifd0_and_subifd_tags) = Self::decode_ifd(
 			&encoded_data[14..].to_vec(),
 			&ExifTagGroup::IFD0,
-			8,
+			8,                                                                  // TODO: What if IFD0 is at another offset? Can this even happen?
 			&endian
 		)
 		{
@@ -516,9 +516,11 @@ Metadata
 				if let Some(subifd_group) = tag.is_offset_tag()
 				{
 					// ...perform a recursive call
-					let offset = from_u8_vec_macro!(u32, &raw_data, endian) - given_offset;
+					let offset = from_u8_vec_macro!(u32, &raw_data, endian);
+					let relative_offset = (offset - given_offset) as usize;
+
 					if let Ok(subifd_result) = Self::decode_ifd(
-						&encoded_data[offset as usize..].to_vec(),
+						&encoded_data[relative_offset..].to_vec(),
 						&subifd_group,
 						offset,
 						endian
