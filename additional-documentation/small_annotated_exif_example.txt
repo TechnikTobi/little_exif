@@ -1,0 +1,60 @@
+This is a smaller example exif data section from a PNG file
+with notes on the different sections, divided by lines of '-'
+Also including the ASCII char (if possible/makes sense)
+
+--------------------------------------------------------------------------------
+Address     NEWLINE             This part here is only present in some
+Starting    0xex                file formats, e.g. PNGs but NOT in JPGs
+at          0xif
+TIFF        NEWLINE
+header      0x                  The size of EXIF data field in bytes
+            0x                  Note that 32 is the *decimal* representation
+            0x                  The missing numbers in the other 3 bytes are
+            0x32                spaces (due to encoding) - So the following is
+            NEWLINE             32 bytes (NOT including new lines which seem to
+                                have no syntactical meaning)
+--------------------------------------------------------------------------------
+            0x45        E       (Another) EXIF header
+            0x78        x
+            0x69        i
+            0x66        f
+            0x00
+            0x00
+--------------------------------------------------------------------------------
+0x0000      0x49        I       Start of TIFF header
+0x0001      0x49        I       The two 'I's indicate little endian format
+0x0002      0x2a        *       With 'I' standing for Intel
+0x0003      0x00                "MM" ("Motorola") would indicate big endian
+0x0004      0x08                0x002a is also part of the TIFF header
+0x0005      0x00                0x00000008 gives the offset to IFD0
+0x0006      0x00
+0x0007      0x00
+--------------------------------------------------------------------------------
+0x0008      0x01                Number of IFD(0) entries (2 bytes)
+0x0009      0x00                Only 1 entry
+--------------------------------------------------------------------------------
+0x000a      0x0e                Tag: 0x010e indicates "ImageDescription"
+0x000b      0x01
+--------------------------------------------------------------------------------
+0x000c      0x02                Data format: 0x0002 indicates ASCII String
+0x000d      0x00                (with 1 Byte/Component)
+--------------------------------------------------------------------------------
+0x000e      0x03                Number of components: 0x00000003 = 3 in decimal
+0x000f      0x00                Total data length:
+0x0010      0x00                3 Components * 1 Byte/Component = 3 Bytes
+0x0011      0x00                -> Less than 4 Bytes
+                                -> Next 4 Bytes contain actual data
+--------------------------------------------------------------------------------
+0x0012      0x68        h       The data itself
+0x0013      0x69        i       NOT AN OFFSET since
+0x0014      0x00                Components * Byte/Component <= 4 Bytes
+--------------------------------------------------------------------------------
+0x0015      0x00                End of ImageDescription String (?)
+--------------------------------------------------------------------------------
+0x0016      0x00                Link (=Offset) to next IFD (that is NOT a
+0x0017      0x00                SubIFD!) - this 4 byte field follows after last
+0x0018      0x00                IFD entry (SubIFD offsets are notated using
+0x0019      0x00                special tags). If the link is 0x00000000 (like
+                                here) it means that this is the last IFD and no
+                                other linked IFD exists
+            NEWLINE
