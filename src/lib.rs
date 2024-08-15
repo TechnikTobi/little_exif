@@ -24,6 +24,7 @@
 #![crate_name = "little_exif"]
 
 mod general_file_io;
+mod rational;
 mod png;
 mod png_chunk;
 mod jpg;
