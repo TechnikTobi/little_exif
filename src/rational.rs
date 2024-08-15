@@ -6,8 +6,10 @@ use std::u32;
 const MAX_TERM_COUNT:        usize = 42;
 const CONVERGENCE_TOLERANCE: f64   = 1e-9;
 
-type r64u = (u32, u32);
-type r64i = (i32, i32);
+#[allow(non_camel_case_types)]
+pub type r64u = (u32, u32);
+#[allow(non_camel_case_types)]
+pub type r64i = (i32, i32);
 
 fn add_next_fraction_term
 (
