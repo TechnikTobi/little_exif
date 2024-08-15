@@ -5,16 +5,6 @@ use paste::paste;
 
 use crate::endian::Endian;
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum
-RealNumberConversionType
-{
-	RATIONAL64S,
-	RATIONAL64U,
-	FLOAT,
-	DOUBLE
-}
-
 pub trait
 U8conversion<T>
 {
@@ -23,7 +13,6 @@ U8conversion<T>
 	(
 		&self,
 		endian: &Endian,
-		conversion_type: Option<RealNumberConversionType>
 	)
 	-> Vec<u8>;
 
@@ -31,8 +20,7 @@ U8conversion<T>
 	from_u8_vec
 	(
 		u8_vec: &Vec<u8>,
-		endian: &Endian,
-		conversion_type: Option<RealNumberConversionType>
+		endian: &Endian
 	)
 	-> T;
 }
@@ -51,37 +39,14 @@ macro_rules! build_u8conversion
 			to_u8_vec
 			(
 				&self,
-				endian: &Endian,
-				conversion_type: Option<RealNumberConversionType>
+				endian: &Endian
 			)
 			-> Vec<u8>
 			{
-				if conversion_type.is_none()
+				match *endian
 				{
-					match *endian
-					{
-						Endian::Little => self.to_le_bytes().to_vec(),
-						Endian::Big    => self.to_be_bytes().to_vec(),
-					}
-				}
-				else
-				{
-					match conversion_type.unwrap()
-					{
-						RealNumberConversionType::RATIONAL64S => {
-							todo!()
-						},
-						RealNumberConversionType::RATIONAL64U => {
-							todo!()
-						},
-						RealNumberConversionType::FLOAT => {
-							todo!()
-						},
-						RealNumberConversionType::DOUBLE => {
-							todo!()
-						},
-
-					}
+					Endian::Little => self.to_le_bytes().to_vec(),
+					Endian::Big    => self.to_be_bytes().to_vec(),
 				}
 			}
 
@@ -89,8 +54,7 @@ macro_rules! build_u8conversion
 			from_u8_vec
 			(
 				u8_vec: &Vec<u8>,
-				endian: &Endian,
-				conversion_type: Option<RealNumberConversionType>
+				endian: &Endian
 			)
 			-> $type
 			{
@@ -113,16 +77,14 @@ macro_rules! build_u8conversion
 			to_u8_vec
 			(
 				&self,
-				endian: &Endian,
-				conversion_type: Option<RealNumberConversionType>
+				endian: &Endian
 			)
 			-> Vec<u8>
 			{
 				let mut u8_vec = Vec::new();
 				for value in self
 				{
-					// u8_vec.extend(value.to_u8_vec(endian).iter());
-					u8_vec.extend(<$type as U8conversion<$type>>::to_u8_vec(value, endian, conversion_type.clone()).iter());
+					u8_vec.extend(<$type as U8conversion<$type>>::to_u8_vec(value, endian).iter());
 				}
 				return u8_vec;
 			}
@@ -131,8 +93,7 @@ macro_rules! build_u8conversion
 			from_u8_vec
 			(
 				u8_vec: &Vec<u8>,
-				endian: &Endian,
-				conversion_type: Option<RealNumberConversionType>
+				endian: &Endian
 			)
 			-> Vec<$type>
 			{
@@ -148,8 +109,7 @@ macro_rules! build_u8conversion
 					result.push(
 						<$type>::from_u8_vec(
 							&u8_vec[(0 + i*$number_of_bytes)..((i+1)*$number_of_bytes)].to_vec(), 
-							endian,
-							conversion_type.clone()
+							endian
 					) as $type);
 				}
 
@@ -176,8 +136,7 @@ impl U8conversion<String> for String
 	to_u8_vec
 	(
 		&self,
-		_endian: &Endian,
-		_conversion_type: Option<RealNumberConversionType>
+		_endian: &Endian
 	)
 	-> Vec<u8>
 	{
@@ -190,8 +149,7 @@ impl U8conversion<String> for String
 	from_u8_vec
 	(
 		u8_vec: &Vec<u8>,
-		_endian: &Endian,
-		_conversion_type: Option<RealNumberConversionType>
+		_endian: &Endian
 	)
 	-> String
 	{
@@ -215,18 +173,18 @@ impl U8conversion<String> for String
 }
 
 macro_rules! to_u8_vec_macro {
-	($type:ty, $value:expr, $endian:expr, $conversion_type:expr)
+	($type:ty, $value:expr, $endian:expr)
 	=>
 	{
-		<$type as U8conversion<$type>>::to_u8_vec($value, $endian, $conversion_type)
+		<$type as U8conversion<$type>>::to_u8_vec($value, $endian)
 	};
 }
 
 macro_rules! from_u8_vec_macro {
-	($type:ty, $value:expr, $endian:expr, $conversion_type:expr)
+	($type:ty, $value:expr, $endian:expr)
 	=>
 	{
-		<$type as U8conversion<$type>>::from_u8_vec($value, $endian, $conversion_type)
+		<$type as U8conversion<$type>>::from_u8_vec($value, $endian)
 	}
 }
 
