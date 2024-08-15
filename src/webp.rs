@@ -10,6 +10,7 @@ use std::io::SeekFrom;
 use std::path::Path;
 
 use crate::endian::*;
+use crate::u8conversion::*;
 use crate::general_file_io::*;
 use crate::riff_chunk::RiffChunk;
 use crate::riff_chunk::RiffChunkDescriptor;

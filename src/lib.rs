@@ -31,6 +31,7 @@ mod webp;
 mod riff_chunk;
 
 pub mod endian;
+pub mod u8conversion;
 pub mod exif_tag;
 pub mod exif_tag_format;
 pub mod filetype;
