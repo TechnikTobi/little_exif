@@ -6,13 +6,16 @@ use std::u32;
 const MAX_TERM_COUNT:        usize = 42;
 const CONVERGENCE_TOLERANCE: f64   = 1e-9;
 
+type r64u = (u32, u32);
+type r64i = (i32, i32);
+
 fn add_next_fraction_term
 (
-	term:                u32,
-	convergent:          (u32, u32),
-	previous_convergent: (u32, u32),
+	term:                &u32,
+	convergent:          &r64u,
+	previous_convergent: &r64u,
 )
--> (u32, u32)
+-> r64u
 {
 	return (
 		term * convergent.0 + previous_convergent.0,
@@ -23,7 +26,7 @@ fn add_next_fraction_term
 fn
 rational64s_to_float
 (
-	fraction: &(i32, i32)
+	fraction: &r64i
 )
 -> f64
 {
@@ -33,7 +36,7 @@ rational64s_to_float
 fn
 rational64u_to_float
 (
-	fraction: &(u32, u32)
+	fraction: &r64u
 )
 -> f64
 {
@@ -46,7 +49,7 @@ float_to_rational64s
 	real_number:     f64,
 	max_denominator: u32
 )
--> (i32, i32)
+-> r64i
 {
 	let best_approximation = float_to_rational64u(real_number, max_denominator);
 	return (
@@ -64,7 +67,7 @@ float_to_rational64u
 	real_number:     f64,
 	max_denominator: u32
 )
--> (u32, u32)
+-> r64u
 {
 	// Make sure that we are dealing with positive real numbers
 	let real_number = real_number.abs();
@@ -126,7 +129,7 @@ float_to_rational64u
 
 		if continued_fraction_term >= n as f64 { break; }
 
-		let next_convergent = add_next_fraction_term(continued_fraction_term as u32, convergent, previous_convergent);
+		let next_convergent = add_next_fraction_term(&(continued_fraction_term as u32), &convergent, &previous_convergent);
 		previous_convergent = convergent;
 		convergent          = next_convergent;
 	}
@@ -143,7 +146,7 @@ float_to_rational64u
 			n = continued_fraction_term as u32; 
 		}
 
-		let semiconvergent = add_next_fraction_term(n, convergent, previous_convergent);
+		let semiconvergent = add_next_fraction_term(&n, &convergent, &previous_convergent);
 
 		if 
 		(
