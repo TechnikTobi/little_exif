@@ -3,7 +3,8 @@
 
 use paste::paste;
 
-use crate::endian::{U8conversion, Endian};
+use crate::endian::Endian;
+use crate::u8conversion::U8conversion;
 use crate::exif_tag_format::*;
 
 #[allow(non_camel_case_types)]

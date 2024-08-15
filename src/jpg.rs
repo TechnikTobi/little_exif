@@ -9,7 +9,8 @@ use std::io::SeekFrom;
 use std::fs::File;
 use std::fs::OpenOptions;
 
-use crate::endian::*;
+use crate::endian::Endian;
+use crate::u8conversion::*;
 use crate::general_file_io::*;
 
 pub(crate) const JPG_SIGNATURE: [u8; 2] = [0xff, 0xd8];
