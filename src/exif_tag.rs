@@ -340,7 +340,7 @@ macro_rules! build_tag_enum {
 							}
 
 							// In case we have a string, return its length +1 for 0x00 at the end
-							// Otherwise just the containers length of the container
+							// Otherwise just the length of the container
 							return value.len() as u32 + self.is_string() as u32;
 						},
 					)*
