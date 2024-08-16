@@ -24,6 +24,23 @@ pub struct iR64
 }
 
 
+
+fn greatest_common_divisor
+(
+	mut a: u32,
+	mut b: u32
+)
+-> u32
+{
+	while b != 0
+	{
+		let remainder = a % b;
+		a = b;
+		b = remainder;
+	}
+	return a;
+}
+
 fn add_next_fraction_term
 (
 	term:                &u32,
@@ -33,10 +50,12 @@ fn add_next_fraction_term
 -> uR64
 {
 	return uR64 {
-		nominator:   term * convergent.nominator + previous_convergent.denominator,
-		denominator: term * convergent.nominator + previous_convergent.denominator
+		nominator:   term * convergent.nominator   + previous_convergent.nominator,
+		denominator: term * convergent.denominator + previous_convergent.denominator
 	};
 }
+
+
 
 pub fn
 rational64s_to_f64
@@ -165,7 +184,15 @@ f64_to_rational64u
 		}
 	}
 
-	return best_approximation;
+	let gcd = greatest_common_divisor(
+		best_approximation.nominator, 
+		best_approximation.denominator
+	);
+
+	return uR64 {
+		nominator:   best_approximation.nominator   / gcd,
+		denominator: best_approximation.denominator / gcd
+	};
 }
 
 impl 
