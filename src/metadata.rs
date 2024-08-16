@@ -5,6 +5,7 @@ use std::path::Path;
 use std::str::FromStr;
 
 use crate::endian::*;
+use crate::u8conversion::*;
 use crate::exif_tag::ExifTag;
 use crate::exif_tag::ExifTagGroup;
 use crate::exif_tag_format::ExifTagFormat;
