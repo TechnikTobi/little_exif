@@ -9,7 +9,7 @@ extern crate little_exif;
 use little_exif::metadata::Metadata;
 use little_exif::exif_tag::ExifTag;
 use little_exif::exif_tag::ExifTagGroup;
-use little_exif::endian::U8conversion;
+use little_exif::u8conversion::*;
 
 fn
 main()
@@ -89,4 +89,8 @@ fill_metadata
 	metadata.set_tag(
 		ExifTag::UnknownSTRING("test2".to_string(), 0x010c, ExifTagGroup::IFD0)
 	);
+
+	metadata.set_tag(
+		ExifTag::FNumber(vec![1.4.into()])
+	)
 }
