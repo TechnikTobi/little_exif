@@ -7,12 +7,12 @@ pub type INT8U          = Vec<u8>;
 pub type STRING         = String;
 pub type INT16U         = Vec<u16>;
 pub type INT32U         = Vec<u32>;
-pub type RATIONAL64U    = Vec<r64u>;
+pub type RATIONAL64U    = Vec<uR64>;
 pub type INT8S          = Vec<i8>;
 pub type UNDEF          = Vec<u8>;      // got no better idea for this atm
 pub type INT16S         = Vec<i16>;
 pub type INT32S         = Vec<i32>;
-pub type RATIONAL64S    = Vec<r64i>;
+pub type RATIONAL64S    = Vec<iR64>;
 pub type FLOAT          = Vec<f32>;
 pub type DOUBLE         = Vec<f64>;
 

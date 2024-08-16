@@ -24,7 +24,6 @@
 #![crate_name = "little_exif"]
 
 mod general_file_io;
-mod rational;
 mod png;
 mod png_chunk;
 mod jpg;
@@ -32,6 +31,7 @@ mod webp;
 mod riff_chunk;
 
 pub mod endian;
+pub mod rational;
 pub mod u8conversion;
 pub mod exif_tag;
 pub mod exif_tag_format;
