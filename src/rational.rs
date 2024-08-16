@@ -1,6 +1,8 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+// Based on: https://github.com/google/audio-to-tactile/blob/main/src/dsp/number_util.c
+
 use std::u32;
 use std::convert::Into;
 
@@ -77,7 +79,7 @@ rational64u_to_f64
 	fraction.nominator as f64 / fraction.denominator as f64
 }
 
-fn 
+fn
 f64_to_rational64s
 (
 	real_number:     f64,
@@ -94,7 +96,7 @@ f64_to_rational64s
 	};
 }
 
-fn 
+fn
 f64_to_rational64u
 (
 	real_number:     f64,
@@ -124,7 +126,7 @@ f64_to_rational64u
 
 
 	let mut n = 0;
-	for term_count in 2..MAX_TERM_COUNT
+	for _ in 2..MAX_TERM_COUNT
 	{
 		// Basically the value after the decimal point
 		let next_residual = reciprocal_residual - continued_fraction_term;
@@ -171,14 +173,12 @@ f64_to_rational64u
 		let semiconvergent = add_next_fraction_term(&n, &convergent, &previous_convergent);
 
 		if 
-		(
 			(n as f64 > lower_bound)
 			|| 
 			(
 				(real_number - rational64u_to_f64(&semiconvergent)).abs()
 				< (real_number - rational64u_to_f64(&convergent)).abs()
 			)
-		)
 		{
 			best_approximation = semiconvergent;
 		}
