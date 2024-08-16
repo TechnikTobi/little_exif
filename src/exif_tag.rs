@@ -4,7 +4,7 @@
 use paste::paste;
 
 use crate::endian::Endian;
-use crate::u8conversion::U8conversion;
+use crate::u8conversion::*;
 use crate::exif_tag_format::*;
 
 #[allow(non_camel_case_types)]
