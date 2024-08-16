@@ -57,7 +57,7 @@ fn add_next_fraction_term
 
 
 
-pub fn
+fn
 rational64s_to_f64
 (
 	fraction: &iR64
@@ -67,7 +67,7 @@ rational64s_to_f64
 	fraction.nominator as f64 / fraction.denominator as f64
 }
 
-pub fn
+fn
 rational64u_to_f64
 (
 	fraction: &uR64
@@ -77,7 +77,7 @@ rational64u_to_f64
 	fraction.nominator as f64 / fraction.denominator as f64
 }
 
-pub fn 
+fn 
 f64_to_rational64s
 (
 	real_number:     f64,
@@ -94,7 +94,7 @@ f64_to_rational64s
 	};
 }
 
-pub fn 
+fn 
 f64_to_rational64u
 (
 	real_number:     f64,
@@ -195,30 +195,17 @@ f64_to_rational64u
 	};
 }
 
-impl 
-Into<uR64> for f64
-{
-	fn 
-	into
-	(
-		self
-	) 
-	-> uR64 
-	{
-		f64_to_rational64u(self)
-	}
-}
+impl Into<uR64> for f64 { fn into (self) -> uR64 { f64_to_rational64u(self) } }
+impl Into<iR64> for f64 { fn into (self) -> iR64 { f64_to_rational64s(self) } }
 
-impl 
-Into<f64> for uR64
-{
-	fn 
-	into
-	(
-		self
-	) 
-	-> f64 
-	{
-		rational64u_to_f64(&self)
-	}
-}
+impl Into<uR64> for u32 { fn into (self) -> uR64 { f64_to_rational64u(self as f64) } }
+impl Into<iR64> for u32 { fn into (self) -> iR64 { f64_to_rational64s(self as f64) } }
+impl Into<iR64> for i32 { fn into (self) -> iR64 { f64_to_rational64s(self as f64) } }
+
+
+impl Into<f64> for uR64 { fn into (self) -> f64 { rational64u_to_f64(&self) } }
+impl Into<f64> for iR64 { fn into (self) -> f64 { rational64s_to_f64(&self) } }
+
+impl Into<u32> for uR64 { fn into (self) -> u32 { rational64u_to_f64(&self) as u32 } }
+impl Into<u32> for iR64 { fn into (self) -> u32 { rational64s_to_f64(&self) as u32 } }
+impl Into<i32> for iR64 { fn into (self) -> i32 { rational64s_to_f64(&self) as i32 } }
