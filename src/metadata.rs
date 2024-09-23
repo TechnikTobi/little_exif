@@ -426,18 +426,20 @@ Metadata
 		let mut all_tags = Vec::new();
 
 		// Start with IFD0
-		if let Ok(ifd0_and_subifd_tags) = Self::decode_ifd(
+		let ifd0_decode_result = Self::decode_ifd(
 			&encoded_data[14..].to_vec(),
 			&ExifTagGroup::IFD0,
 			8,                                                                  // TODO: What if IFD0 is at another offset? Can this even happen?
 			&endian
-		)
+		);
+
+		if let Ok(ifd0_and_subifd_tags) = ifd0_decode_result
 		{
 			all_tags.extend(ifd0_and_subifd_tags);
 		}
 		else
 		{
-			return io_error!(Other, "Could not get IFD0 tags!");
+			return io_error!(Other, format!("Could not get IFD0 tags:\n {}", ifd0_decode_result.err().unwrap()));
 		}
 
 		return Ok((endian, all_tags));
@@ -467,8 +469,8 @@ Metadata
 			let ifd_start_index = (2 + (i as u32)*IFD_ENTRY_LENGTH) as usize;
 
 			// Decode the first 8 bytes with the tag, format and component number
-			let hex_tag = from_u8_vec_macro!(u16, &encoded_data[(ifd_start_index)..(ifd_start_index+2)].to_vec(), endian);
-			let hex_format = from_u8_vec_macro!(u16, &encoded_data[(ifd_start_index+2)..(ifd_start_index+4)].to_vec(), endian);
+			let hex_tag              = from_u8_vec_macro!(u16, &encoded_data[(ifd_start_index  )..(ifd_start_index+2)].to_vec(), endian);
+			let hex_format           = from_u8_vec_macro!(u16, &encoded_data[(ifd_start_index+2)..(ifd_start_index+4)].to_vec(), endian);
 			let hex_component_number = from_u8_vec_macro!(u32, &encoded_data[(ifd_start_index+4)..(ifd_start_index+8)].to_vec(), endian);
 
 			// Decoding the format
@@ -479,17 +481,17 @@ Metadata
 			}
 			else
 			{
-				return io_error!(Other, "Illegal format value!");
+				return io_error!(Other, format!("Illegal format value: {}", hex_format));
 			}
 
 			// Check if the tag is known and compatible with the given format
 			// Return error if incompatible
-			// Use one of the unkown tags if unknown
+			// Use one of the unknown tags if unknown
 			if let Ok(tag) = ExifTag::from_u16(hex_tag)
 			{
 				if tag.format().as_u16() != format.as_u16()
 				{
-					return io_error!(Other, "Illegal format for known tag!");
+					return io_error!(Other, format!("Illegal format for known tag! Tag: {:?} Expected: {:?} Got: {:?}", tag, tag.format(), format));
 				}
 			}
 
@@ -520,19 +522,21 @@ Metadata
 					let offset = from_u8_vec_macro!(u32, &raw_data, endian);
 					let relative_offset = (offset - given_offset) as usize;
 
-					if let Ok(subifd_result) = Self::decode_ifd(
+					let subifd_decode_result = Self::decode_ifd(
 						&encoded_data[relative_offset..].to_vec(),
 						&subifd_group,
 						offset,
 						endian
-					)
+					);
+
+					if let Ok(subifd_result) = subifd_decode_result
 					{
 						tags.extend(subifd_result);
 						continue;
 					}
 					else
 					{
-						return io_error!(Other, "Could not decode SubIFD!");
+						return io_error!(Other, format!("Could not decode SubIFD:\n  {}", subifd_decode_result.err().unwrap()));
 					}
 				}
 			}
