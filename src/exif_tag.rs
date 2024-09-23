@@ -379,6 +379,31 @@ macro_rules! build_tag_enum {
 				}
 			}
 
+			/// For handling special case tags that need to be able to accept
+			/// both INT16U and INT32U
+			/// See subsections 4.6.5 and 4.6.6 of CIPA DC-008-2023, which is
+			/// the EXIF specification in Version 3.0
+			pub fn
+			set_value_to_int32u_vec
+			(
+				&self,
+				data: Vec<u32>
+			)
+			-> Result<ExifTag, String>
+			{
+				match self
+				{
+					ExifTag::ImageWidth(_)      => Ok(ExifTag::ImageWidth(     data)),
+					ExifTag::ImageHeight(_)     => Ok(ExifTag::ImageHeight(    data)),
+					ExifTag::StripOffsets(_)    => Ok(ExifTag::StripOffsets(   data)),
+					ExifTag::RowsPerStrip(_)    => Ok(ExifTag::RowsPerStrip(   data)),
+					ExifTag::StripByteCounts(_) => Ok(ExifTag::StripByteCounts(data)),
+					ExifTag::ExifImageWidth(_)  => Ok(ExifTag::ExifImageWidth( data)),
+					ExifTag::ExifImageHeight(_) => Ok(ExifTag::ExifImageHeight(data)),
+					_ => Err(String::from("Not a INT32U compatible tag!"))
+				}
+			}
+
 			/// Gets the value stored in the tag as an u8 vector, using the 
 			/// given endianness for conversion.
 			pub fn
@@ -428,8 +453,8 @@ build_tag_enum![
 	// Tag                        Tag ID  Format         Nr. Components     Writable   Group
 	(InteroperabilityIndex,       0x0001, STRING,        Some::<u32>(4),    true,      InteropIFD),
 
-	(ImageWidth,                  0x0100, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1? // or: INT16U
-	(ImageHeight,                 0x0101, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1? // or: INT16U
+	(ImageWidth,                  0x0100, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
+	(ImageHeight,                 0x0101, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
 	(BitsPerSample,               0x0102, INT16U,        Some::<u32>(3),    true,      IFD0),       // IFD1?
 	(Compression,                 0x0103, INT16U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
 
@@ -438,12 +463,12 @@ build_tag_enum![
 	(ImageDescription,            0x010e, STRING,        None::<u32>,       true,      IFD0),
 	(Make,                        0x010f, STRING,        None::<u32>,       true,      IFD0),
 	(Model,                       0x0110, STRING,        None::<u32>,       true,      IFD0),
-	(StripOffsets,                0x0111, INT32U,        None::<u32>,       false,     NO_GROUP),   // IFD1? // or: INT16U
+	(StripOffsets,                0x0111, INT32U,        None::<u32>,       false,     NO_GROUP),   // IFD1?
 	(Orientation,                 0x0112, INT16U,        Some::<u32>(1),    true,      IFD0),
 
 	(SamplesPerPixel,             0x0115, INT16U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
-	(RowsPerStrip,                0x0116, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1? // or: INT16U
-	(StripByteCounts,             0x0117, INT32U,        None::<u32>,       false,     NO_GROUP),   // IFD1? // or: INT16U
+	(RowsPerStrip,                0x0116, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
+	(StripByteCounts,             0x0117, INT32U,        None::<u32>,       false,     NO_GROUP),   // IFD1?
 
 	(XResolution,                 0x011a, RATIONAL64U,   Some::<u32>(1),    true,      IFD0),
 	(YResolution,                 0x011b, RATIONAL64U,   Some::<u32>(1),    true,      IFD0),
@@ -525,8 +550,8 @@ build_tag_enum![
 
 	(FlashpixVersion,             0xa000, UNDEF,         Some::<u32>(4),    true,      ExifIFD),
 	(ColorSpace,                  0xa001, INT16U,        Some::<u32>(1),    true,      ExifIFD),
-	(ExifImageWidth,              0xa002, INT32U,        Some::<u32>(1),    true,      ExifIFD), // or: INT16U
-	(ExifImageHeight,             0xa003, INT32U,        Some::<u32>(1),    true,      ExifIFD), // or: INT16U
+	(ExifImageWidth,              0xa002, INT32U,        Some::<u32>(1),    true,      ExifIFD),
+	(ExifImageHeight,             0xa003, INT32U,        Some::<u32>(1),    true,      ExifIFD),
 
 	(RelatedSoundFile,            0xa004, STRING,        None::<u32>,       true,      ExifIFD),
 	(InteropOffset,               0xa005, INT32U,        Some::<u32>(1),    true,      ExifIFD),

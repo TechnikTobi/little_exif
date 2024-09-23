@@ -5,6 +5,7 @@ use std::path::Path;
 use std::str::FromStr;
 
 use crate::endian::*;
+use crate::exif_tag_format::INT16U;
 use crate::u8conversion::*;
 use crate::exif_tag::ExifTag;
 use crate::exif_tag::ExifTagGroup;
@@ -484,19 +485,13 @@ Metadata
 				return io_error!(Other, format!("Illegal format value: {}", hex_format));
 			}
 
-			// Check if the tag is known and compatible with the given format
-			// Return error if incompatible
-			// Use one of the unknown tags if unknown
-			if let Ok(tag) = ExifTag::from_u16(hex_tag)
-			{
-				if tag.format().as_u16() != format.as_u16()
-				{
-					return io_error!(Other, format!("Illegal format for known tag! Tag: {:?} Expected: {:?} Got: {:?}", tag, tag.format(), format));
-				}
-			}
-
 			// Calculating the number of required bytes to determine if next
 			// 4 bytes are data or an offset to data
+			// Note: It is expected that the format here is "correct" in the
+			// sense that it tells us whether or not an offset is used for the
+			// data even if the given format in the image file is not the
+			// right/default one for the currently processed tag according to 
+			// the exif specification. 
 			let byte_count = format.bytes_per_component() * hex_component_number;
 
 			let raw_data;
@@ -512,7 +507,7 @@ Metadata
 				raw_data = encoded_data[(ifd_start_index+8)..(ifd_start_index+12)].to_vec();
 			}
 
-			// If this is known tag...
+			// If this is a known tag...
 			if let Ok(tag) = ExifTag::from_u16(hex_tag)
 			{
 				// ...for a SubIFD...
@@ -540,9 +535,41 @@ Metadata
 					}
 				}
 			}
+
+			// At this point we have established that the tag is *not* a 
+			// SubIFD offset Tag like e.g. GPSInfo
+			// But: The tag
+			// - may be unknown 
+			// - may require conversion, e.g. INT16U -> INT32U
+
+			// Check if the tag is known and compatible with the given format
+			// Return error if incompatible and not a special case
+			// Use one of the unknown tags if unknown
+			if let Ok(tag) = ExifTag::from_u16(hex_tag)
+			{
+				if tag.format().as_u16() != format.as_u16()
+				{
+					// The expected format and the given format in the file
+					// do *not* match. Check special cases (INT16U -> INT32U)
+					// If no special cases match, return an error
+					if 
+						tag.format() == ExifTagFormat::INT32U &&
+						format       == ExifTagFormat::INT16U
+					{
+						let int16u_data = <INT16U as U8conversion<INT16U>>::from_u8_vec(&raw_data, endian);
+						let int32u_data = int16u_data.into_iter().map(|x| x as u32).collect::<Vec<u32>>();
+						tags.push(tag.set_value_to_int32u_vec(int32u_data).unwrap());
+						continue;
+					}
+					// Other special cases
+					else
+					{
+						return io_error!(Other, format!("Illegal format for known tag! Tag: {:?} Expected: {:?} Got: {:?}", tag, tag.format(), format));
+					}
+				}
+			}
 			
 			tags.push(ExifTag::from_u16_with_data(hex_tag, &format, &raw_data, &endian, group).unwrap());
-			
 		}
 
 		return Ok(tags);
