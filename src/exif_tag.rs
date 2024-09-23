@@ -158,18 +158,18 @@ macro_rules! build_tag_enum {
 						// In this case, the given hex_value represents a tag that is unknown
 						match *format
 						{
-							ExifTagFormat::INT8U        => Ok(ExifTag::UnknownINT8U(        <INT8U          as U8conversion<INT8U>>::from_u8_vec(raw_data, endian),         hex_value, *group)),
-							ExifTagFormat::STRING       => Ok(ExifTag::UnknownSTRING(       <STRING         as U8conversion<STRING>>::from_u8_vec(raw_data, endian),        hex_value, *group)),
-							ExifTagFormat::INT16U       => Ok(ExifTag::UnknownINT16U(       <INT16U         as U8conversion<INT16U>>::from_u8_vec(raw_data, endian),        hex_value, *group)),
-							ExifTagFormat::INT32U       => Ok(ExifTag::UnknownINT32U(       <INT32U         as U8conversion<INT32U>>::from_u8_vec(raw_data, endian),        hex_value, *group)),
-							ExifTagFormat::RATIONAL64U  => Ok(ExifTag::UnknownRATIONAL64U(  <RATIONAL64U    as U8conversion<RATIONAL64U>>::from_u8_vec(raw_data, endian),   hex_value, *group)),
-							ExifTagFormat::INT8S        => Ok(ExifTag::UnknownINT8S(        <INT8S          as U8conversion<INT8S>>::from_u8_vec(raw_data, endian),         hex_value, *group)),
-							ExifTagFormat::UNDEF        => Ok(ExifTag::UnknownUNDEF(        <UNDEF          as U8conversion<UNDEF>>::from_u8_vec(raw_data, endian),         hex_value, *group)),
-							ExifTagFormat::INT16S       => Ok(ExifTag::UnknownINT16S(       <INT16S         as U8conversion<INT16S>>::from_u8_vec(raw_data, endian),        hex_value, *group)),
-							ExifTagFormat::INT32S       => Ok(ExifTag::UnknownINT32S(       <INT32S         as U8conversion<INT32S>>::from_u8_vec(raw_data, endian),        hex_value, *group)),
-							ExifTagFormat::RATIONAL64S	=> Ok(ExifTag::UnknownRATIONAL64S(	<RATIONAL64S    as U8conversion<RATIONAL64S>>::from_u8_vec(raw_data, endian),   hex_value, *group)),
-							ExifTagFormat::FLOAT        => Ok(ExifTag::UnknownFLOAT(        <FLOAT          as U8conversion<FLOAT>>::from_u8_vec(raw_data, endian),         hex_value, *group)),
-							ExifTagFormat::DOUBLE       => Ok(ExifTag::UnknownDOUBLE(       <DOUBLE         as U8conversion<DOUBLE>>::from_u8_vec(raw_data, endian),        hex_value, *group)),
+							ExifTagFormat::INT8U       => Ok(ExifTag::UnknownINT8U(      <INT8U       as U8conversion<INT8U      >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::STRING      => Ok(ExifTag::UnknownSTRING(     <STRING      as U8conversion<STRING     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::INT16U      => Ok(ExifTag::UnknownINT16U(     <INT16U      as U8conversion<INT16U     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::INT32U      => Ok(ExifTag::UnknownINT32U(     <INT32U      as U8conversion<INT32U     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::RATIONAL64U => Ok(ExifTag::UnknownRATIONAL64U(<RATIONAL64U as U8conversion<RATIONAL64U>>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::INT8S       => Ok(ExifTag::UnknownINT8S(      <INT8S       as U8conversion<INT8S      >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::UNDEF       => Ok(ExifTag::UnknownUNDEF(      <UNDEF       as U8conversion<UNDEF      >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::INT16S      => Ok(ExifTag::UnknownINT16S(     <INT16S      as U8conversion<INT16S     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::INT32S      => Ok(ExifTag::UnknownINT32S(     <INT32S      as U8conversion<INT32S     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::RATIONAL64S => Ok(ExifTag::UnknownRATIONAL64S(<RATIONAL64S as U8conversion<RATIONAL64S>>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::FLOAT       => Ok(ExifTag::UnknownFLOAT(      <FLOAT       as U8conversion<FLOAT      >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::DOUBLE      => Ok(ExifTag::UnknownDOUBLE(     <DOUBLE      as U8conversion<DOUBLE     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
 							
 						}
 					},
@@ -428,8 +428,8 @@ build_tag_enum![
 	// Tag                        Tag ID  Format         Nr. Components     Writable   Group
 	(InteroperabilityIndex,       0x0001, STRING,        Some::<u32>(4),    true,      InteropIFD),
 
-	(ImageWidth,                  0x0100, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
-	(ImageHeight,                 0x0101, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
+	(ImageWidth,                  0x0100, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1? // or: INT16U
+	(ImageHeight,                 0x0101, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1? // or: INT16U
 	(BitsPerSample,               0x0102, INT16U,        Some::<u32>(3),    true,      IFD0),       // IFD1?
 	(Compression,                 0x0103, INT16U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
 
@@ -438,12 +438,12 @@ build_tag_enum![
 	(ImageDescription,            0x010e, STRING,        None::<u32>,       true,      IFD0),
 	(Make,                        0x010f, STRING,        None::<u32>,       true,      IFD0),
 	(Model,                       0x0110, STRING,        None::<u32>,       true,      IFD0),
-	(StripOffsets,                0x0111, INT32U,        None::<u32>,       false,     NO_GROUP),   // IFD1?
+	(StripOffsets,                0x0111, INT32U,        None::<u32>,       false,     NO_GROUP),   // IFD1? // or: INT16U
 	(Orientation,                 0x0112, INT16U,        Some::<u32>(1),    true,      IFD0),
 
 	(SamplesPerPixel,             0x0115, INT16U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
-	(RowsPerStrip,                0x0116, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
-	(StripByteCounts,             0x0117, INT32U,        None::<u32>,       false,     NO_GROUP),   // IFD1?
+	(RowsPerStrip,                0x0116, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1? // or: INT16U
+	(StripByteCounts,             0x0117, INT32U,        None::<u32>,       false,     NO_GROUP),   // IFD1? // or: INT16U
 
 	(XResolution,                 0x011a, RATIONAL64U,   Some::<u32>(1),    true,      IFD0),
 	(YResolution,                 0x011b, RATIONAL64U,   Some::<u32>(1),    true,      IFD0),
@@ -525,8 +525,8 @@ build_tag_enum![
 
 	(FlashpixVersion,             0xa000, UNDEF,         Some::<u32>(4),    true,      ExifIFD),
 	(ColorSpace,                  0xa001, INT16U,        Some::<u32>(1),    true,      ExifIFD),
-	(ExifImageWidth,              0xa002, INT32U,        Some::<u32>(1),    true,      ExifIFD),
-	(ExifImageHeight,             0xa003, INT32U,        Some::<u32>(1),    true,      ExifIFD),
+	(ExifImageWidth,              0xa002, INT32U,        Some::<u32>(1),    true,      ExifIFD), // or: INT16U
+	(ExifImageHeight,             0xa003, INT32U,        Some::<u32>(1),    true,      ExifIFD), // or: INT16U
 
 	(RelatedSoundFile,            0xa004, STRING,        None::<u32>,       true,      ExifIFD),
 	(InteropOffset,               0xa005, INT32U,        Some::<u32>(1),    true,      ExifIFD),
