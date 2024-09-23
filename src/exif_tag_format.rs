@@ -24,12 +24,12 @@ ExifTagFormat
 	STRING,         // ascii string         string
 	INT16U,         // unsigned short       int16u
 	INT32U,         // unsigned long        int32u
-	RATIONAL64U,    // unsigned rational    rational64u     should this be u64?
+	RATIONAL64U,    // unsigned rational    rational64u
 	INT8S,          // signed byte          int8s
 	UNDEF,          // undefined            undef
 	INT16S,         // signed short         int16s
 	INT32S,         // signed long          int32s
-	RATIONAL64S,    // signed rational      rational64s     should this be i64?
+	RATIONAL64S,    // signed rational      rational64s
 	FLOAT,          // single float         float
 	DOUBLE          // double float         double
 }
