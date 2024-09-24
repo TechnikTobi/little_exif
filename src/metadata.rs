@@ -504,7 +504,9 @@ Metadata
 			else
 			{
 				// The 4 bytes are the actual data
-				raw_data = encoded_data[(ifd_start_index+8)..(ifd_start_index+12)].to_vec();
+				// Note: This may actually be *less* than 4 bytes! This is why
+				// The second index isn't just ifd_start_index+12
+				raw_data = encoded_data[(ifd_start_index+8)..(ifd_start_index+8+byte_count as usize)].to_vec();
 			}
 
 			// If this is a known tag...
