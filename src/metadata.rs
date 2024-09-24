@@ -457,6 +457,12 @@ Metadata
 	)
 	-> Result<Vec<ExifTag>, std::io::Error>
 	{
+		// Return an empty vector if there is not enough data to decode an IFD
+		if encoded_data.len() <= 1
+		{
+			return Ok(Vec::new());
+		}
+
 		// The first two bytes give us the number of entries in this IFD
 		let number_of_entries = from_u8_vec_macro!(u16, &encoded_data[0..2].to_vec(), endian);
 
