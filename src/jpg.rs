@@ -100,7 +100,7 @@ file_check_signature
 }
 
 pub(crate) fn
-test
+clear_metadata
 (
 	buffer: &mut Vec<u8>
 )
@@ -297,6 +297,49 @@ write_metadata
 
 pub(crate) fn
 read_metadata
+(
+	buffer: &Vec<u8>
+)
+-> Result<Vec<u8>, std::io::Error>
+{
+	check_signature(buffer)?;
+
+	// Setup of variables necessary for going through the file
+	let mut previous_byte_was_marker_prefix = false;                            // A boolean for remembering if the previous byte was a marker prefix (0xFF)
+
+	for (i, byte_buffer) in buffer.iter().enumerate()
+	{
+		if previous_byte_was_marker_prefix
+		{
+			match byte_buffer
+			{
+				0xe1	=> {                                                    // APP1 marker
+
+					// Read & decode the length to determine how much more data there is
+					let length = from_u8_vec_macro!(u16, &buffer[i+1..=i+2].to_vec(), &Endian::Big);
+					let remaining_length = (length - 2) as usize;
+
+					// Read in & return the remaining data
+					let app1_buffer = buffer[i+3..=i+remaining_length].to_vec();
+					return Ok(app1_buffer);
+				},
+				0xd9	=> break,                                               // EOI marker
+				_		=> (),                                                  // Every other marker
+			}
+
+			previous_byte_was_marker_prefix = false;
+		}
+		else
+		{
+			previous_byte_was_marker_prefix = byte_buffer == &JPG_MARKER_PREFIX;
+		}
+	}
+	
+	return io_error!(Other, "No EXIF data found!");
+}
+
+pub(crate) fn
+file_read_metadata
 (
 	path: &Path
 )

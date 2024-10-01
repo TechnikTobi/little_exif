@@ -48,6 +48,15 @@ new_from_path_panic_not_supported()
 	let _ = Metadata::new_from_path(Path::new("tests/sample1.txt")).unwrap();
 }
 
+#[test]
+fn
+new_from_vec()
+{
+	let image_data = read("tests/read_sample.jpg").unwrap();
+
+	let _ = Metadata::new_from_vec(&image_data, little_exif::filetype::FileExtension::JPEG).unwrap();
+}
+
 
 
 fn
