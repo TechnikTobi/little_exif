@@ -102,7 +102,7 @@ Metadata
 		let raw_pre_decode_general = match file_type
 		{
 			FileExtension::JPEG 
-				=>  todo!(), // jpg::read_metadata(&path),
+				=>  jpg::read_metadata(buffer),
 			_ => todo!()
 		};
 
@@ -133,7 +133,7 @@ Metadata
 		let raw_pre_decode_general = match raw_file_type
 		{
 			FileExtension::JPEG 
-				=>  jpg::read_metadata(&path),
+				=>  jpg::file_read_metadata(&path),
 			FileExtension::PNG {as_zTXt_chunk: _} 
 				=>  png::read_metadata(&path),
 			FileExtension::WEBP 
