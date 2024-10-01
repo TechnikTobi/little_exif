@@ -2,7 +2,6 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::path::Path;
-use std::str::FromStr;
 
 use crate::endian::*;
 use crate::exif_tag_format::INT16U;
@@ -11,6 +10,7 @@ use crate::exif_tag::ExifTag;
 use crate::exif_tag::ExifTagGroup;
 use crate::exif_tag_format::ExifTagFormat;
 use crate::filetype::FileExtension;
+use crate::filetype::get_file_type;
 use crate::general_file_io::*;
 
 use crate::jpg;
@@ -49,6 +49,36 @@ Metadata
 		Metadata { endian: Endian::Little, data: Vec::new() }
 	}
 
+
+
+	fn
+	general_decoding_wrapper
+	(
+		raw_pre_decode_general: Result<Vec<u8>, std::io::Error>
+	)
+	-> Result<Metadata, std::io::Error>
+	{
+		if let Ok(pre_decode_general) = raw_pre_decode_general
+		{
+			let decoding_result = Self::decode_metadata_general(&pre_decode_general);
+			if let Ok((endian, data)) = decoding_result
+			{
+				return Ok(Metadata { endian, data });
+			}
+			else
+			{
+				eprintln!("{}", decoding_result.err().unwrap());
+			}
+		}
+		else
+		{
+			eprintln!("Error during decoding: {:?}", raw_pre_decode_general.err().unwrap());
+		}
+
+		eprintln!("WARNING: Can't read metadata - Create new & empty struct");
+		return Ok(Metadata::new());
+	}
+
 	/// Constructs a new `Metadata` object with the metadata from an image that is stored as a `Vec<u8>`
 	/// - If unable to handle the file vector (e.g. unsupported file type, etc.), this (currently) panics.
 	/// - If unable to decode the metadata, a new, empty object gets created and returned.
@@ -56,51 +86,27 @@ Metadata
 	/// ```no_run
 	/// use std::fs;
 	/// use little_exif::metadata::Metadata;
+	/// use little_exif::filetype::FileExtension;
 	/// 
 	/// let file_data = fs::read("image.jpg").unwrap();
-	/// let mut metadata: Metadata = Metadata::new_from_vec(&file_data).unwrap();
+	/// let mut metadata: Metadata = Metadata::new_from_vec(&file_data, FileExtension::JPEG).unwrap();
 	/// ```
 	pub fn
 	new_from_vec
-	()
-	-> Metadata
-	{
-		todo!()
-	}
-
-	fn
-	get_file_type
 	(
-		path: &Path
+		buffer:    &Vec<u8>,
+		file_type: FileExtension
 	)
-	-> Result<FileExtension, std::io::Error>
+	-> Result<Metadata, std::io::Error>
 	{
-		if !path.exists()
+		let raw_pre_decode_general = match file_type
 		{
-			return io_error!(Other, "File does not exist!");
-		}
+			FileExtension::JPEG 
+				=>  todo!(), // jpg::read_metadata(&path),
+			_ => todo!()
+		};
 
-		let raw_file_type_str = path.extension();
-		if raw_file_type_str.is_none()
-		{
-			return io_error!(Other, "Can't get extension from given path!");
-		}
-
-		let file_type_str = raw_file_type_str.unwrap().to_str();
-		if file_type_str.is_none()
-		{
-			return io_error!(Other, "Can't convert file type to string!");
-		}
-
-		let raw_file_type = FileExtension::from_str(file_type_str.unwrap().to_lowercase().as_str());
-		if raw_file_type.is_err()
-		{
-			return io_error!(Unsupported, "Unsupported file type!");
-		}
-		else
-		{
-			return Ok(raw_file_type.unwrap());
-		}
+		return Self::general_decoding_wrapper(raw_pre_decode_general);
 	}
 
 	/// Constructs a new `Metadata` object with the metadata from the image at the specified path.
@@ -120,7 +126,7 @@ Metadata
 	)
 	-> Result<Metadata, std::io::Error>
 	{
-		let raw_file_type = Self::get_file_type(path)?;
+		let raw_file_type = get_file_type(path)?;
 
 		// Call the file specific decoders as a starting point for obtaining
 		// the raw EXIF data that gets further processed
@@ -134,25 +140,7 @@ Metadata
 				=> webp::read_metadata(&path),
 		};
 
-		if let Ok(pre_decode_general) = raw_pre_decode_general
-		{
-			let decoding_result = Self::decode_metadata_general(&pre_decode_general);
-			if let Ok((endian, data)) = decoding_result
-			{
-				return Ok(Metadata { endian, data });
-			}
-			else
-			{
-				eprintln!("{}", decoding_result.err().unwrap());
-			}
-		}
-		else
-		{
-			eprintln!("Error during decoding: {:?}", raw_pre_decode_general.err().unwrap());
-		}
-
-		eprintln!("WARNING: Can't read metadata from file - Create new & empty struct");
-		return Ok(Metadata::new());
+		return Self::general_decoding_wrapper(raw_pre_decode_general);
 	}
 	
 	/// Gets a shared reference to the list of all tags currently stored in the object.
@@ -339,29 +327,7 @@ Metadata
 	)
 	-> Result<(), std::io::Error>
 	{
-		if !path.exists()
-		{
-			return io_error!(Other, "Can't clear Metadata - File does not exist!");
-		}
-
-		let raw_file_type_str = path.extension();
-		if raw_file_type_str.is_none()
-		{
-			return io_error!(Other, "Can't get extension from given path!");
-		}
-		let file_type_str = raw_file_type_str.unwrap().to_str();
-		if file_type_str.is_none()
-		{
-			return io_error!(Other, "Can't convert file type to string!");
-		}
-
-		let raw_file_type = FileExtension::from_str(file_type_str.unwrap().to_lowercase().as_str());
-		if raw_file_type.is_err()
-		{
-			return io_error!(Unsupported, "Can't clear Metadata - Unsupported file type!");
-		}
-
-		match raw_file_type.unwrap()
+		match get_file_type(path)?
 		{
 			FileExtension::JPEG 
 				=>  jpg::file_clear_metadata(&path),
@@ -385,29 +351,7 @@ Metadata
 	)
 	-> Result<(), std::io::Error>
 	{
-		if !path.exists()
-		{
-			return io_error!(Other, "Can't write Metadata - File does not exist!");
-		}
-
-		let raw_file_type_str = path.extension();
-		if raw_file_type_str.is_none()
-		{
-			return io_error!(Other, "Can't get extension from given path!");
-		}
-		let file_type_str = raw_file_type_str.unwrap().to_str();
-		if file_type_str.is_none()
-		{
-			return io_error!(Other, "Can't convert file type to string!");
-		}
-
-		let raw_file_type = FileExtension::from_str(file_type_str.unwrap().to_lowercase().as_str());
-		if raw_file_type.is_err()
-		{
-			return io_error!(Unsupported, "Can't read Metadata - Unsupported file type!");
-		}
-
-		match raw_file_type.unwrap()
+		match get_file_type(path)?
 		{
 			FileExtension::JPEG 
 				=>  jpg::write_metadata(&path, &self.encode_metadata_general()),
