@@ -2,6 +2,7 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::fs::copy;
+use std::fs::read;
 use std::fs::remove_file;
 use std::path::Path;
 
@@ -24,7 +25,7 @@ new_from_path()
 }
 
 #[test]
-#[should_panic(expected = "Can't read Metadata - File does not exist!")]
+#[should_panic(expected = "File does not exist!")]
 fn
 new_from_path_panic_not_existant()
 {
@@ -40,7 +41,7 @@ new_from_path_panic_no_extension()
 }
 
 #[test]
-#[should_panic(expected = "Can't read Metadata - Unsupported file type!")]
+#[should_panic(expected = "Unsupported file type!")]
 fn
 new_from_path_panic_not_supported()
 {
@@ -70,6 +71,33 @@ read_from_file_webp()
 -> Result<(), std::io::Error>
 {
 	let raw_metadata = Metadata::new_from_path(Path::new("tests/read_sample.webp"));
+	if raw_metadata.is_err()
+	{
+		panic!();
+	}
+
+	let metadata = raw_metadata.unwrap();
+
+	if let Some(iso_tag) = metadata.get_tag(&ExifTag::ISO(vec![0]))
+	{
+		assert_eq!(from_u8_vec_to_u32_le(&iso_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)), 2706);
+	}
+	else
+	{
+		panic!("Could not read ISO tag!")
+	}
+
+	Ok(())
+}
+
+#[test]
+fn
+read_from_vec_jpg()
+-> Result<(), std::io::Error>
+{
+	let image_data = read("tests/read_sample.jpg").unwrap();
+
+	let raw_metadata = Metadata::new_from_vec(&image_data, little_exif::filetype::FileExtension::JPEG);
 	if raw_metadata.is_err()
 	{
 		panic!();
