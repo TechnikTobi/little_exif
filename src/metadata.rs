@@ -49,26 +49,35 @@ Metadata
 		Metadata { endian: Endian::Little, data: Vec::new() }
 	}
 
-	/// Constructs a new `Metadata` object with the metadata from the image at the specified path.
-	/// - If unable to read the file (e.g. does not exist, unsupported file type, etc.), this (currently) panics.
+	/// Constructs a new `Metadata` object with the metadata from an image that is stored as a `Vec<u8>`
+	/// - If unable to handle the file vector (e.g. unsupported file type, etc.), this (currently) panics.
 	/// - If unable to decode the metadata, a new, empty object gets created and returned.
-	///
 	/// # Examples
 	/// ```no_run
+	/// use std::fs;
 	/// use little_exif::metadata::Metadata;
 	/// 
-	/// let mut metadata: Metadata = Metadata::new_from_path(std::path::Path::new("image.png")).unwrap();
+	/// let file_data = fs::read("image.jpg").unwrap();
+	/// let mut metadata: Metadata = Metadata::new_from_vec(&file_data).unwrap();
 	/// ```
 	pub fn
-	new_from_path
+	new_from_vec
+	()
+	-> Metadata
+	{
+		todo!()
+	}
+
+	fn
+	get_file_type
 	(
 		path: &Path
 	)
-	-> Result<Metadata, std::io::Error>
+	-> Result<FileExtension, std::io::Error>
 	{
 		if !path.exists()
 		{
-			return io_error!(Other, "Can't read Metadata - File does not exist!");
+			return io_error!(Other, "File does not exist!");
 		}
 
 		let raw_file_type_str = path.extension();
@@ -86,12 +95,36 @@ Metadata
 		let raw_file_type = FileExtension::from_str(file_type_str.unwrap().to_lowercase().as_str());
 		if raw_file_type.is_err()
 		{
-			return io_error!(Unsupported, "Can't read Metadata - Unsupported file type!");
+			return io_error!(Unsupported, "Unsupported file type!");
 		}
+		else
+		{
+			return Ok(raw_file_type.unwrap());
+		}
+	}
+
+	/// Constructs a new `Metadata` object with the metadata from the image at the specified path.
+	/// - If unable to read the file (e.g. does not exist, unsupported file type, etc.), this (currently) panics.
+	/// - If unable to decode the metadata, a new, empty object gets created and returned.
+	///
+	/// # Examples
+	/// ```no_run
+	/// use little_exif::metadata::Metadata;
+	/// 
+	/// let mut metadata: Metadata = Metadata::new_from_path(std::path::Path::new("image.png")).unwrap();
+	/// ```
+	pub fn
+	new_from_path
+	(
+		path: &Path
+	)
+	-> Result<Metadata, std::io::Error>
+	{
+		let raw_file_type = Self::get_file_type(path)?;
 
 		// Call the file specific decoders as a starting point for obtaining
 		// the raw EXIF data that gets further processed
-		let raw_pre_decode_general = match raw_file_type.unwrap()
+		let raw_pre_decode_general = match raw_file_type
 		{
 			FileExtension::JPEG 
 				=>  jpg::read_metadata(&path),
@@ -331,7 +364,7 @@ Metadata
 		match raw_file_type.unwrap()
 		{
 			FileExtension::JPEG 
-				=>  jpg::clear_metadata(&path),
+				=>  jpg::file_clear_metadata(&path),
 			FileExtension::PNG {as_zTXt_chunk: _}
 				=>  png::clear_metadata(&path),
 			FileExtension::WEBP 

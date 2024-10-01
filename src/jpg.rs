@@ -45,6 +45,28 @@ encode_metadata_jpg
 fn
 check_signature
 (
+	buffer: &Vec<u8>
+)
+-> Result<(), std::io::Error>
+{
+	// Check the signature
+	let signature_is_valid = buffer[0..2].iter()
+		.zip(JPG_SIGNATURE.iter())
+		.filter(|&(read, constant)| read == constant)
+		.count() == JPG_SIGNATURE.len();
+
+	if !signature_is_valid
+	{
+		return io_error!(InvalidData, "Can't open JPG file - Wrong signature!");
+	}
+
+	// Signature is valid - can proceed using as JPG file
+	return Ok(());
+}
+
+fn
+file_check_signature
+(
 	path: &Path
 )
 -> Result<File, std::io::Error>
@@ -78,13 +100,24 @@ check_signature
 }
 
 pub(crate) fn
-clear_metadata
+test
+(
+	buffer: &mut Vec<u8>
+)
+-> Result<(), std::io::Error>
+{
+	Ok(())
+}
+
+
+pub(crate) fn
+file_clear_metadata
 (
 	path: &Path
 )
 -> Result<(), std::io::Error>
 {
-	let file_result = check_signature(path);
+	let file_result = file_check_signature(path);
 
 	if file_result.is_err()
 	{
@@ -235,7 +268,7 @@ write_metadata
 )
 -> Result<(), std::io::Error>
 {
-	clear_metadata(path)?;
+	file_clear_metadata(path)?;
 
 	// Encode the data specifically for JPG and open the file...
 	let encoded_metadata = encode_metadata_jpg(general_encoded_metadata);
@@ -269,7 +302,7 @@ read_metadata
 )
 -> Result<Vec<u8>, std::io::Error>
 {
-	let file_result = check_signature(path);
+	let file_result = file_check_signature(path);
 
 	if file_result.is_err()
 	{
