@@ -18,6 +18,8 @@ pub(crate) const JPG_SIGNATURE: [u8; 2] = [0xff, 0xd8];
 const JPG_MARKER_PREFIX: u8  = 0xff;
 const JPG_APP1_MARKER:   u16 = 0xffe1;
 
+
+
 fn
 encode_metadata_jpg
 (
@@ -41,6 +43,8 @@ encode_metadata_jpg
 
 	return jpg_exif;
 }
+
+
 
 fn
 check_signature
@@ -99,58 +103,33 @@ file_check_signature
 	return Ok(file);
 }
 
+
+
 pub(crate) fn
 clear_metadata
 (
-	buffer: &mut Vec<u8>
+	file_buffer: &mut Vec<u8>
 )
 -> Result<(), std::io::Error>
 {
-	Ok(())
-}
-
-
-pub(crate) fn
-file_clear_metadata
-(
-	path: &Path
-)
--> Result<(), std::io::Error>
-{
-	let file_result = file_check_signature(path);
-
-	if file_result.is_err()
-	{
-		return Err(file_result.err().unwrap());
-	}
+	check_signature(&file_buffer)?;
 
 	// Setup of variables necessary for going through the file
-	let mut file = file_result.unwrap();                                        // The struct for interacting with the file
-	perform_file_action!(file.seek(SeekFrom::Start(0)));                        // Seek to file start (reason: signature check returns a file where the first two bytes have already been read)
+	let mut buffer_iterator = file_buffer.iter();                               // Iterator for processing the bytes of the file
 	let mut seek_counter = 0u64;                                                // A counter for keeping track of where in the file we currently are
 	let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
 	let mut previous_byte_was_marker_prefix = false;                            // A boolean for remembering if the previous byte was a marker prefix (0xFF)
 
-	// Load the entire file into memory instead of reading one byte at a time
-	// to improve the overall speed
-	// Thanks to Xuf3r for this improvement!
-	let mut file_buffer:Vec<u8> = Vec::new();
-	file.read_to_end(&mut file_buffer)?;
-
-	// Iterate for processing the bytes of the file
-	let mut iterator_file = file_buffer.iter();
-
 	loop
 	{
 		// Read next byte into buffer
-		if let Some(byte) = iterator_file.next() 
+		if let Some(byte) = buffer_iterator.next() 
 		{
 			byte_buffer[0] = byte.clone();
 		}
 
 		if previous_byte_was_marker_prefix
 		{
-			
 			match byte_buffer[0]
 			{
 				0xe1	=> {
@@ -160,7 +139,7 @@ file_clear_metadata
 					// (which follows immediately after the marker)
 					let mut length_buffer = [0u8; 2];
 
-					if let (Some(&byte1), Some(&byte2)) = (iterator_file.next(), iterator_file.next()) 
+					if let (Some(&byte1), Some(&byte2)) = (buffer_iterator.next(), buffer_iterator.next()) 
 					{
 						length_buffer = [byte1, byte2];
 					}
@@ -172,7 +151,7 @@ file_clear_metadata
 					// Skip the segment
 					if remaining_length > 0 
 					{
-						if iterator_file.nth((remaining_length - 1) as usize).is_none()
+						if buffer_iterator.nth((remaining_length - 1) as usize).is_none()
 						{
 							panic!("Could not skip to end of APP1 segment!");
 						}
@@ -208,12 +187,12 @@ file_clear_metadata
 					// Cut off right-most bytes that are now duplicates due 
 					// to the previous shift-to-left operation
 					let cutoff_index = (seek_counter as usize) + buffer.len();
-					file_buffer = file_buffer[..cutoff_index].to_vec();
+					let _ = file_buffer.split_off(cutoff_index);
 
 					// Reassign iterator to the new file buffer and seek to the
 					// current position
-					iterator_file = file_buffer.iter();
-					iterator_file.nth(seek_counter as usize);
+					buffer_iterator = file_buffer.iter();
+					buffer_iterator.nth(seek_counter as usize);
 
 					// Account for the fact that we stepped back the prefix
 					// marker and the marker itself (note the increment at the
@@ -235,10 +214,28 @@ file_clear_metadata
 		seek_counter += 1;
 
 	}
+
+	return Ok(());
+}
+
+pub(crate) fn
+file_clear_metadata
+(
+	path: &Path
+)
+-> Result<(), std::io::Error>
+{
+	// Load the entire file into memory instead of reading one byte at a time
+	// to improve the overall speed
+	// Thanks to Xuf3r for this improvement!
+	let mut file_buffer: Vec<u8> = std::fs::read(path)?;
+
+	// Clear the metadata from the file buffer
+	clear_metadata(&mut file_buffer)?;
 	
 	// Write the file
 	// Possible to optimize further by returning the purged bytestream itself?
-	file = std::fs::OpenOptions::new().write(true).truncate(true).open(path)?;
+	let mut file = std::fs::OpenOptions::new().write(true).truncate(true).open(path)?;
 	perform_file_action!(file.write_all(&file_buffer));
 
 	return Ok(());
@@ -304,8 +301,7 @@ read_metadata
 {
 	check_signature(buffer)?;
 
-	// Setup of variables necessary for going through the file
-	let mut previous_byte_was_marker_prefix = false;                            // A boolean for remembering if the previous byte was a marker prefix (0xFF)
+	let mut previous_byte_was_marker_prefix = false;
 
 	for (i, byte_buffer) in buffer.iter().enumerate()
 	{
