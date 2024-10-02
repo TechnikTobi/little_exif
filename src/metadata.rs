@@ -357,6 +357,28 @@ Metadata
 		}
 	}
 
+	/// Writes the metadata to an image stored as a Vec<u8>
+	/// For now, this only works for JPGs
+	pub fn
+	write_to_vec
+	(
+		&self,
+		file_buffer: &mut Vec<u8>,
+		file_type:   FileExtension
+	)
+	-> Result<(), std::io::Error>
+	{
+		match file_type
+		{
+			FileExtension::JPEG 
+				=> jpg::write_metadata(file_buffer, &self.encode_metadata_general()),
+			FileExtension::PNG {as_zTXt_chunk: _}
+				=> todo!(),
+			FileExtension::WEBP 
+				=> todo!(),
+		}
+	}
+
 	/// Writes the metadata to the specified file.
 	/// This could return an error for multiple reasons:
 	/// - The file does not exist at the given path
