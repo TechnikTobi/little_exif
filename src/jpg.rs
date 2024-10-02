@@ -1,13 +1,13 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::path::Path;
-use std::io::Read;
-use std::io::Write;
-use std::io::Seek;
-use std::io::SeekFrom;
 use std::fs::File;
 use std::fs::OpenOptions;
+use std::io::Seek;
+use std::io::SeekFrom;
+use std::io::Read;
+use std::io::Write;
+use std::path::Path;
 
 use crate::endian::Endian;
 use crate::u8conversion::*;
@@ -49,12 +49,12 @@ encode_metadata_jpg
 fn
 check_signature
 (
-	buffer: &Vec<u8>
+	file_buffer: &Vec<u8>
 )
 -> Result<(), std::io::Error>
 {
 	// Check the signature
-	let signature_is_valid = buffer[0..2].iter()
+	let signature_is_valid = file_buffer[0..2].iter()
 		.zip(JPG_SIGNATURE.iter())
 		.filter(|&(read, constant)| read == constant)
 		.count() == JPG_SIGNATURE.len();
@@ -187,7 +187,7 @@ clear_metadata
 					// Cut off right-most bytes that are now duplicates due 
 					// to the previous shift-to-left operation
 					let cutoff_index = (seek_counter as usize) + buffer.len();
-					let _ = file_buffer.split_off(cutoff_index);
+					file_buffer.truncate(cutoff_index);
 
 					// Reassign iterator to the new file buffer and seek to the
 					// current position
@@ -253,57 +253,74 @@ as_u8_vec
 	encode_metadata_jpg(general_encoded_metadata)
 }
 
+
+
+pub(crate) fn
+write_metadata
+(
+	file_buffer: &mut Vec<u8>,
+	general_encoded_metadata: &Vec<u8>
+)
+-> Result<(), std::io::Error>
+{
+	// Remove old metadata
+	clear_metadata(file_buffer)?;
+
+	// Encode the data specifically for JPG
+	let mut encoded_metadata = encode_metadata_jpg(general_encoded_metadata);
+
+	// Insert the metadata right after the signature
+	crate::util::insert_multiple_at(file_buffer, 2, &mut encoded_metadata);
+
+	return Ok(());
+}
+
 /// Writes the given generally encoded metadata to the JP(E)G image file at 
 /// the specified path. 
 /// Note that any previously stored metadata under the APP1 marker gets removed
 /// first before writing the "new" metadata. 
 pub(crate) fn
-write_metadata
+file_write_metadata
 (
 	path: &Path,
 	general_encoded_metadata: &Vec<u8>
 )
 -> Result<(), std::io::Error>
 {
-	file_clear_metadata(path)?;
-
-	// Encode the data specifically for JPG and open the file...
-	let encoded_metadata = encode_metadata_jpg(general_encoded_metadata);
+	// Load the entire file into memory instead of performing multiple read, 
+	// seek and write operations
 	let mut file = OpenOptions::new()
 		.write(true)
 		.read(true)
 		.open(path)
 		.expect("Could not open file");
+	let mut file_buffer: Vec<u8> = Vec::new();
+	perform_file_action!(file.read_to_end(&mut file_buffer));
 
-	// ...and copy everything after the signature into a buffer...
-	let mut buffer = Vec::new();
-	perform_file_action!(file.seek(SeekFrom::Start(JPG_SIGNATURE.len() as u64)));
-	perform_file_action!(file.read_to_end(&mut buffer));
+	// Writes the metadata to the file_buffer vec
+	// The called function handles the removal of old metadata and the JPG
+	// specific encoding, so we pass only the generally encoded metadata here
+	write_metadata(&mut file_buffer, general_encoded_metadata)?;
 
-	// ...seek back to where the encoded data will be written
-	perform_file_action!(file.seek(SeekFrom::Start(JPG_SIGNATURE.len() as u64)));
+	// Seek back to start & write the file
+	perform_file_action!(file.seek(SeekFrom::Start(0)));
+	perform_file_action!(file.write_all(&file_buffer));
 
-	// ...and write the exif data...
-	perform_file_action!(file.write_all(&encoded_metadata));
-
-	// ...and the rest of the file from the buffer
-	perform_file_action!(file.write_all(&buffer));
-	
 	return Ok(());
 }
 
 pub(crate) fn
 read_metadata
 (
-	buffer: &Vec<u8>
+	file_buffer: &Vec<u8>
 )
 -> Result<Vec<u8>, std::io::Error>
 {
-	check_signature(buffer)?;
+	check_signature(file_buffer)?;
 
 	let mut previous_byte_was_marker_prefix = false;
 
-	for (i, byte_buffer) in buffer.iter().enumerate()
+	for (i, byte_buffer) in file_buffer.iter().enumerate()
 	{
 		if previous_byte_was_marker_prefix
 		{
@@ -312,11 +329,11 @@ read_metadata
 				0xe1	=> {                                                    // APP1 marker
 
 					// Read & decode the length to determine how much more data there is
-					let length = from_u8_vec_macro!(u16, &buffer[i+1..=i+2].to_vec(), &Endian::Big);
+					let length = from_u8_vec_macro!(u16, &file_buffer[i+1..=i+2].to_vec(), &Endian::Big);
 					let remaining_length = (length - 2) as usize;
 
 					// Read in & return the remaining data
-					let app1_buffer = buffer[i+3..=i+remaining_length].to_vec();
+					let app1_buffer = file_buffer[i+3..=i+remaining_length].to_vec();
 					return Ok(app1_buffer);
 				},
 				0xd9	=> break,                                               // EOI marker

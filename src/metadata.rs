@@ -94,15 +94,15 @@ Metadata
 	pub fn
 	new_from_vec
 	(
-		buffer:    &Vec<u8>,
-		file_type: FileExtension
+		file_buffer: &Vec<u8>,
+		file_type:   FileExtension
 	)
 	-> Result<Metadata, std::io::Error>
 	{
 		let raw_pre_decode_general = match file_type
 		{
 			FileExtension::JPEG 
-				=>  jpg::read_metadata(buffer),
+				=>  jpg::read_metadata(file_buffer),
 			_ => todo!()
 		};
 
@@ -323,6 +323,25 @@ Metadata
 	pub fn
 	clear_metadata
 	(
+		file_buffer: &mut Vec<u8>,
+		file_type:   FileExtension
+	)
+	-> Result<(), std::io::Error>
+	{
+		match file_type
+		{
+			FileExtension::JPEG 
+				=> jpg::clear_metadata(file_buffer),
+			FileExtension::PNG {as_zTXt_chunk: _}
+				=> todo!(),
+			FileExtension::WEBP 
+				=> todo!(),
+		}
+	}
+
+	pub fn
+	file_clear_metadata
+	(
 		path: &Path
 	)
 	-> Result<(), std::io::Error>
@@ -354,7 +373,7 @@ Metadata
 		match get_file_type(path)?
 		{
 			FileExtension::JPEG 
-				=>  jpg::write_metadata(&path, &self.encode_metadata_general()),
+				=>  jpg::file_write_metadata(&path, &self.encode_metadata_general()),
 			FileExtension::PNG {as_zTXt_chunk: _}
 				=>  png::write_metadata(&path, &self.encode_metadata_general()),
 			FileExtension::WEBP 
