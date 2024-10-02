@@ -1,9 +1,11 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+use std::fs::OpenOptions;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
+use std::path::Path;
 
 use crate::endian::Endian;
 use crate::u8conversion::*;
@@ -92,8 +94,11 @@ read_metadata
 		match type_buffer
 		{
 			EXIF => {
+
 				let position = cursor.position() as usize;
-				let exif_buffer = file_buffer[position..position + length as usize].to_vec();
+
+				// Ignore the next 4 bytes (because that's the minor version???)
+				let exif_buffer = file_buffer[position+4..position + length as usize].to_vec();
 				return Ok(exif_buffer);
 			},
 			_ => {
@@ -102,6 +107,65 @@ read_metadata
 			}
 		}
 	}
+}
 
-	todo!()
+pub(crate) fn
+file_read_metadata
+(
+	path: &Path
+)
+-> Result<Vec<u8>, std::io::Error>
+{
+	let mut file = OpenOptions::new()
+		.read(true)
+		.write(true)
+		.open(path)
+		.expect("Could not open file");
+
+	let mut first_12_bytes = [0u8; 12];
+	file.read(&mut first_12_bytes).unwrap();
+	let first_12_bytes_vec = first_12_bytes.to_vec();
+
+	if starts_with_jxl_signature(&first_12_bytes_vec)
+	{
+		return io_error!(Other, "Simple JXL codestream file - No metadata!");
+	}
+
+	if !starts_with_iso_bmff_signature(&first_12_bytes_vec)
+	{
+		return io_error!(Other, "This isn't JXL data!");
+	}
+
+	loop
+	{
+		// Get the first 4 bytes at the current cursor position to determine
+		// the length of the current box (and account for the 8 bytes of length
+		// and box type)
+		let mut length_buffer = [0u8; 4];
+		file.read_exact(&mut length_buffer)?;
+		let length = from_u8_vec_macro!(u32, &length_buffer.to_vec(), &Endian::Big) - 8;
+
+		// Next, read the box type
+		let mut type_buffer = [0u8; 4];
+		file.read_exact(&mut type_buffer)?;
+
+		match type_buffer
+		{
+			EXIF => {
+
+				// Skip the next 4 bytes (which contain the minor version???)
+				file.seek_relative(4)?;
+
+				// `length-4` because of the previous relative seek operation
+				let mut exif_buffer = vec![0u8; (length-4) as usize];
+				file.read_exact(&mut exif_buffer)?;
+
+				return Ok(exif_buffer);
+			},
+			_ => {
+				// Not an EXIF box so skip it
+				file.seek_relative(length as i64)?;
+			}
+		}
+	}
 }
