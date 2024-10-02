@@ -103,7 +103,14 @@ Metadata
 		{
 			FileExtension::JPEG 
 				=>  jpg::read_metadata(file_buffer),
-			_ => todo!()
+			_
+				=> return io_error!(
+					Other, 
+					format!(
+						"Function 'new_from_vec' not yet implemented for {:?}", 
+						file_type
+					)
+				),
 		};
 
 		return Self::general_decoding_wrapper(raw_pre_decode_general);
@@ -126,11 +133,11 @@ Metadata
 	)
 	-> Result<Metadata, std::io::Error>
 	{
-		let raw_file_type = get_file_type(path)?;
+		let file_type = get_file_type(path)?;
 
 		// Call the file specific decoders as a starting point for obtaining
 		// the raw EXIF data that gets further processed
-		let raw_pre_decode_general = match raw_file_type
+		let raw_pre_decode_general = match file_type
 		{
 			FileExtension::JPEG 
 				=>  jpg::file_read_metadata(&path),
@@ -138,6 +145,14 @@ Metadata
 				=>  png::read_metadata(&path),
 			FileExtension::WEBP 
 				=> webp::read_metadata(&path),
+			_
+				=> return io_error!(
+					Other, 
+					format!(
+						"Function 'new_from_path' not yet implemented for {:?}", 
+						file_type
+					)
+				),
 		};
 
 		return Self::general_decoding_wrapper(raw_pre_decode_general);
@@ -317,6 +332,8 @@ Metadata
 				=>  jpg::as_u8_vec(&general_encoded_metadata),
 			FileExtension::WEBP 
 				=> webp::as_u8_vec(&general_encoded_metadata),
+			_
+				=> Vec::new(),
 		}
 	}
 
@@ -332,10 +349,14 @@ Metadata
 		{
 			FileExtension::JPEG 
 				=> jpg::clear_metadata(file_buffer),
-			FileExtension::PNG {as_zTXt_chunk: _}
-				=> todo!(),
-			FileExtension::WEBP 
-				=> todo!(),
+			_
+				=> return io_error!(
+					Other, 
+					format!(
+						"Function 'clear_metadata' not yet implemented for {:?}", 
+						file_type
+					)
+				),
 		}
 	}
 
@@ -346,7 +367,9 @@ Metadata
 	)
 	-> Result<(), std::io::Error>
 	{
-		match get_file_type(path)?
+		let file_type = get_file_type(path)?;
+
+		match file_type
 		{
 			FileExtension::JPEG 
 				=>  jpg::file_clear_metadata(&path),
@@ -354,6 +377,14 @@ Metadata
 				=>  png::clear_metadata(&path),
 			FileExtension::WEBP 
 				=> webp::clear_metadata(&path),
+			_
+				=> return io_error!(
+					Other, 
+					format!(
+						"Function 'file_clear_metadata' not yet implemented for {:?}", 
+						file_type
+					)
+				),
 		}
 	}
 
@@ -372,10 +403,14 @@ Metadata
 		{
 			FileExtension::JPEG 
 				=> jpg::write_metadata(file_buffer, &self.encode_metadata_general()),
-			FileExtension::PNG {as_zTXt_chunk: _}
-				=> todo!(),
-			FileExtension::WEBP 
-				=> todo!(),
+			_
+				=> return io_error!(
+					Other, 
+					format!(
+						"Function 'file_clear_metadata' not yet implemented for {:?}", 
+						file_type
+					)
+				),
 		}
 	}
 
@@ -392,7 +427,9 @@ Metadata
 	)
 	-> Result<(), std::io::Error>
 	{
-		match get_file_type(path)?
+		let file_type = get_file_type(path)?;
+
+		match file_type
 		{
 			FileExtension::JPEG 
 				=>  jpg::file_write_metadata(&path, &self.encode_metadata_general()),
@@ -400,6 +437,14 @@ Metadata
 				=>  png::write_metadata(&path, &self.encode_metadata_general()),
 			FileExtension::WEBP 
 				=> webp::write_metadata(&path, &self.encode_metadata_general()),
+			_
+				=> return io_error!(
+					Other, 
+					format!(
+						"Function 'file_clear_metadata' not yet implemented for {:?}", 
+						file_type
+					)
+				),
 		}
 	}
 

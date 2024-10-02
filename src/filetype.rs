@@ -13,6 +13,7 @@ FileExtension
 {
 	PNG  {as_zTXt_chunk: bool},
 	JPEG,
+	JXL,
 	WEBP
 }
 
@@ -34,6 +35,7 @@ FileExtension
 		{
 			"jpg"   => Ok(FileExtension::JPEG),
 			"jpeg"  => Ok(FileExtension::JPEG),
+			"jxl"   => Ok(FileExtension::JXL),
 			"png"   => Ok(FileExtension::PNG{ as_zTXt_chunk: true}),
 			"webp"  => Ok(FileExtension::WEBP),
 			_       => Err(()),
