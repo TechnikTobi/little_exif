@@ -25,6 +25,15 @@ new_from_path()
 }
 
 #[test]
+fn
+new_from_path_no_data()
+{
+	let data = Metadata::new_from_path(Path::new("tests/no_exif.jxl")).unwrap();
+	assert_eq!(data.data().len(), 0);
+}
+
+
+#[test]
 #[should_panic(expected = "File does not exist!")]
 fn
 new_from_path_panic_not_existant()
@@ -101,6 +110,31 @@ read_from_file_webp()
 
 #[test]
 fn
+read_from_file_jxl()
+-> Result<(), std::io::Error>
+{
+	let raw_metadata = Metadata::new_from_path(Path::new("tests/with_exif.jxl"));
+	if raw_metadata.is_err()
+	{
+		panic!();
+	}
+
+	let metadata = raw_metadata.unwrap();
+
+	if let Some(iso_tag) = metadata.get_tag(&ExifTag::ISO(vec![0]))
+	{
+		assert_eq!(from_u8_vec_to_u32_le(&iso_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)), 2706);
+	}
+	else
+	{
+		panic!("Could not read ISO tag!")
+	}
+
+	Ok(())
+}
+
+#[test]
+fn
 read_from_vec_jpg()
 -> Result<(), std::io::Error>
 {
@@ -125,6 +159,35 @@ read_from_vec_jpg()
 
 	Ok(())
 }
+
+#[test]
+fn
+read_from_vec_jxl()
+-> Result<(), std::io::Error>
+{
+	let image_data = read("tests/with_exif.jxl").unwrap();
+
+	let raw_metadata = Metadata::new_from_vec(&image_data, little_exif::filetype::FileExtension::JXL);
+	if raw_metadata.is_err()
+	{
+		panic!();
+	}
+
+	let metadata = raw_metadata.unwrap();
+
+	if let Some(iso_tag) = metadata.get_tag(&ExifTag::ISO(vec![0]))
+	{
+		assert_eq!(from_u8_vec_to_u32_le(&iso_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)), 2706);
+	}
+	else
+	{
+		panic!("Could not read ISO tag!")
+	}
+
+	Ok(())
+}
+
+
 
 
 fn

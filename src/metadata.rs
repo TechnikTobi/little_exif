@@ -5,6 +5,7 @@ use std::path::Path;
 
 use crate::endian::*;
 use crate::exif_tag_format::INT16U;
+use crate::jxl;
 use crate::u8conversion::*;
 use crate::exif_tag::ExifTag;
 use crate::exif_tag::ExifTagGroup;
@@ -103,6 +104,8 @@ Metadata
 		{
 			FileExtension::JPEG 
 				=>  jpg::read_metadata(file_buffer),
+			FileExtension::JXL
+				=>  jxl::read_metadata(file_buffer),
 			_
 				=> return io_error!(
 					Other, 
@@ -141,6 +144,8 @@ Metadata
 		{
 			FileExtension::JPEG 
 				=>  jpg::file_read_metadata(&path),
+			FileExtension::JXL
+				=>  jxl::file_read_metadata(&path),
 			FileExtension::PNG {as_zTXt_chunk: _} 
 				=>  png::read_metadata(&path),
 			FileExtension::WEBP 
