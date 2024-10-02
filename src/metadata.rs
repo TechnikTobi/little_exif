@@ -92,6 +92,7 @@ Metadata
 	/// let file_data = fs::read("image.jpg").unwrap();
 	/// let mut metadata: Metadata = Metadata::new_from_vec(&file_data, FileExtension::JPEG).unwrap();
 	/// ```
+	#[allow(unreachable_patterns)]
 	pub fn
 	new_from_vec
 	(
@@ -129,6 +130,7 @@ Metadata
 	/// 
 	/// let mut metadata: Metadata = Metadata::new_from_path(std::path::Path::new("image.png")).unwrap();
 	/// ```
+	#[allow(unreachable_patterns)]
 	pub fn
 	new_from_path
 	(
@@ -319,6 +321,7 @@ Metadata
 	/// have to determine where to write this, update the file size information
 	/// and so on - check file type specific implementations or documentation
 	/// for further details
+	#[allow(unreachable_patterns)]
 	pub fn
 	as_u8_vec
 	(
@@ -342,6 +345,7 @@ Metadata
 		}
 	}
 
+	#[allow(unreachable_patterns)]
 	pub fn
 	clear_metadata
 	(
@@ -365,6 +369,7 @@ Metadata
 		}
 	}
 
+	#[allow(unreachable_patterns)]
 	pub fn
 	file_clear_metadata
 	(
@@ -395,6 +400,7 @@ Metadata
 
 	/// Writes the metadata to an image stored as a Vec<u8>
 	/// For now, this only works for JPGs
+	#[allow(unreachable_patterns)]
 	pub fn
 	write_to_vec
 	(
@@ -424,6 +430,7 @@ Metadata
 	/// - The file does not exist at the given path
 	/// - Interpreting the given path fails
 	/// - The file type is not supported
+	#[allow(unreachable_patterns)]
 	pub fn
 	write_to_file
 	(

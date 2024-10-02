@@ -2,7 +2,6 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::fs::File;
-use std::fs::OpenOptions;
 use std::io::Read;
 use std::io::Write;
 use std::io::Seek;
@@ -123,16 +122,7 @@ file_check_signature
 )
 -> Result<File, std::io::Error>
 {
-	if !path.exists()
-	{
-		return io_error!(NotFound, "Can't open WebP file - File does not exist!");
-	}
-
-	let mut file = OpenOptions::new()
-		.read(true)
-		.write(true)
-		.open(path)
-		.expect("Could not open file");
+	let mut file = open_write_file(path)?;
 
 	// Get the first 12 bytes that are required for the following checks
 	let mut first_12_bytes = [0u8; 12];

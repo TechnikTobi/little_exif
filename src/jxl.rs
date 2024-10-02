@@ -1,7 +1,6 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::fs::OpenOptions;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
@@ -60,11 +59,31 @@ starts_with_jxl_signature
 }
 
 pub(crate) fn
-read_metadata
+clear_metadata
+(
+	file_buffer: &mut Vec<u8>
+)
+-> Result<(), std::io::Error>
+{
+	todo!()
+}
+
+pub(crate) fn
+file_clear_metadata
+(
+	path: &Path
+)
+-> Result<(), std::io::Error>
+{
+	todo!()
+}
+
+fn
+check_signature
 (
 	file_buffer: &Vec<u8>
 )
--> Result<Vec<u8>, std::io::Error>
+-> Result<(), std::io::Error>
 {
 	if starts_with_jxl_signature(file_buffer)
 	{
@@ -75,6 +94,19 @@ read_metadata
 	{
 		return io_error!(Other, "This isn't JXL data!");
 	}
+
+	return Ok(());
+}
+
+/// Read 
+pub(crate) fn
+read_metadata
+(
+	file_buffer: &Vec<u8>
+)
+-> Result<Vec<u8>, std::io::Error>
+{
+	check_signature(file_buffer)?;
 
 	let mut cursor = Cursor::new(file_buffer);
 
@@ -116,25 +148,12 @@ file_read_metadata
 )
 -> Result<Vec<u8>, std::io::Error>
 {
-	let mut file = OpenOptions::new()
-		.read(true)
-		.write(true)
-		.open(path)
-		.expect("Could not open file");
+	let mut file = open_read_file(path)?;
 
+	// Read first 12 bytes and check that we have a ISO BMFF file
 	let mut first_12_bytes = [0u8; 12];
 	file.read(&mut first_12_bytes).unwrap();
-	let first_12_bytes_vec = first_12_bytes.to_vec();
-
-	if starts_with_jxl_signature(&first_12_bytes_vec)
-	{
-		return io_error!(Other, "Simple JXL codestream file - No metadata!");
-	}
-
-	if !starts_with_iso_bmff_signature(&first_12_bytes_vec)
-	{
-		return io_error!(Other, "This isn't JXL data!");
-	}
+	check_signature(&first_12_bytes.to_vec())?;
 
 	loop
 	{

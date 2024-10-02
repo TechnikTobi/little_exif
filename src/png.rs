@@ -7,7 +7,6 @@ use std::io::Write;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::fs::File;
-use std::fs::OpenOptions;
 use std::collections::VecDeque;
 
 use crc::Crc;
@@ -190,15 +189,7 @@ check_signature
 )
 -> Result<File, std::io::Error>
 {
-	if !path.exists()
-	{
-		return io_error!(NotFound, "Can't open PNG file - File does not exist!");
-	}
-
-	let mut file = OpenOptions::new()
-		.read(true)
-		.open(path)
-		.expect("Could not open file");
+	let mut file = open_read_file(path)?;
 	
 	// Check the signature
 	let mut signature_buffer = [0u8; 8];
@@ -333,11 +324,7 @@ clear_metadata
 	let parse_png_result = parse_png(path)?;
 
 	// Parsed PNG is Ok to use - Open the file and go through the chunks
-	let mut file = OpenOptions::new()
-		.write(true)
-		.read(true)
-		.open(path)
-		.expect("Could not open file");
+	let mut file = open_write_file(path)?;
 	let mut seek_counter = 8u64;
 
 	for chunk in &parse_png_result
@@ -522,17 +509,13 @@ write_metadata
 
 	// Encode the data specifically for PNG and open the image file
 	let encoded_metadata = encode_metadata_png(general_encoded_metadata);
-	let mut file = OpenOptions::new()
-		.write(true)
-		.read(true)
-		.open(path)
-		.expect("Could not open file");
 	let seek_start = 0u64         // Skip ...
 	+ PNG_SIGNATURE.len() as u64  // PNG Signature
 	+ IHDR_length         as u64  // IHDR data section
 	+ 12                  as u64; // rest of IHDR chunk (length, type, CRC)
 
 	// Get to first chunk after IHDR, copy all the data starting from there
+	let mut file   = open_write_file(path)?;
 	let mut buffer = Vec::new();
 	perform_file_action!(file.seek(SeekFrom::Start(seek_start)));
 	perform_file_action!(file.read_to_end(&mut buffer));
