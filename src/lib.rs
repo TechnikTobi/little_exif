@@ -27,6 +27,7 @@ mod general_file_io;
 mod png;
 mod png_chunk;
 mod jpg;
+mod jxl;
 mod webp;
 mod riff_chunk;
 mod util;
