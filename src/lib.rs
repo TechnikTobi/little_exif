@@ -19,7 +19,7 @@
 //! metadata.write_to_file(std::path::Path::new("image.png"));
 //! ```
 
-// #![forbid(unsafe_code)]
+#![forbid(unsafe_code)]
 #![crate_type = "lib"]
 #![crate_name = "little_exif"]
 

@@ -5,6 +5,45 @@
 /// case, everything stays untouched.
 pub(crate) fn insert_multiple_at<T>
 (
+    vec_dst: &mut Vec<T>,
+    offset:  usize,
+    vec_src: &mut Vec<T>,
+)
+-> usize
+where T: Copy 
+{
+    match (vec_dst.len(), vec_src.len()) 
+    {
+        (_, 0)           => 0,
+        (current_len, _) => {
+
+            // If this is true we return at this point as this would cause a
+            // "gap" between existing and new vector contents
+            if current_len < offset
+            {
+                return std::cmp::max(1, current_len);
+            }
+
+            // Reserve without over-allocation space needed for new elements
+            vec_dst.reserve_exact(vec_src.len());
+
+            let mut temp = vec_dst.split_off(offset);
+            vec_dst.append(vec_src);
+            vec_dst.append(&mut temp);
+
+            return 0;
+        },
+    }
+}
+
+/*
+/// Inserts a slice into a vector at a given offset, shifting elements 
+/// starting at the offset towards the end.
+/// Returns 0 (zero) if the operation was successful, non-zero if the offset 
+/// is larger than the current length of the destination vector. In the latter 
+/// case, everything stays untouched.
+pub(crate) fn insert_multiple_at<T>
+(
     vec_dst: &mut Vec<T>, 
     offset:  usize, 
     vec_src: &mut [T]
@@ -70,3 +109,4 @@ where T: Copy
         },
     }
 }
+*/
