@@ -31,5 +31,45 @@ macro_rules! io_error {
 	};
 }
 
+use std::fs::File;
+use std::fs::OpenOptions;
+use std::path::Path;
+
+pub(crate) fn
+open_read_file
+(
+	path: &Path
+)
+-> Result<File, std::io::Error>
+{
+	if !path.exists()
+	{
+		return io_error!(NotFound, "Can't open file - File does not exist!");
+	}
+
+	OpenOptions::new()
+		.read(true)
+		.write(false)
+		.open(path)
+}
+
+pub(crate) fn
+open_write_file
+(
+	path: &Path
+)
+-> Result<File, std::io::Error>
+{
+	if !path.exists()
+	{
+		return io_error!(NotFound, "Can't open file - File does not exist!");
+	}
+	
+	OpenOptions::new()
+		.read(true)
+		.write(true)
+		.open(path)
+}
+
 pub(crate) use perform_file_action;
 pub(crate) use io_error;

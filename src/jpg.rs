@@ -2,7 +2,6 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::fs::File;
-use std::fs::OpenOptions;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::io::Read;
@@ -75,16 +74,7 @@ file_check_signature
 )
 -> Result<File, std::io::Error>
 {
-	if !path.exists()
-	{
-		return io_error!(NotFound, "Can't open JPG file - File does not exist!");
-	}
-
-	let mut file = OpenOptions::new()
-		.read(true)
-		.write(true)
-		.open(path)
-		.expect("Could not open file");
+	let mut file = open_read_file(path)?;
 	
 	// Check the signature
 	let mut signature_buffer = [0u8; 2];
@@ -289,11 +279,7 @@ file_write_metadata
 {
 	// Load the entire file into memory instead of performing multiple read, 
 	// seek and write operations
-	let mut file = OpenOptions::new()
-		.write(true)
-		.read(true)
-		.open(path)
-		.expect("Could not open file");
+	let mut file = open_write_file(path)?;
 	let mut file_buffer: Vec<u8> = Vec::new();
 	perform_file_action!(file.read_to_end(&mut file_buffer));
 
