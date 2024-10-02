@@ -165,7 +165,7 @@ clear_metadata
 					// ...copy data from there onwards into a buffer...
 					let mut file_buffer_clone = file_buffer.clone();
 					let (_, buffer) = file_buffer_clone.split_at_mut(
-						  (seek_counter     as usize)                           // Skip what has already been seeked
+						  (seek_counter     as usize)                           // Skip what has already been sought
 						+ (remaining_length as usize)                           // Skip current segment
 						+ 2                                                     // Skip Marker Prefix and APP1 marker
 						+ 2                                                     // Skip the two length bytes

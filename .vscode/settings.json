@@ -1,8 +1,22 @@
 {
 	"cSpell.words": [
+		"BMFF",
 		"bytestream",
 		"CIPA",
+		"codestream",
+		"Deque",
+		"endianness",
 		"Exif",
-		"Prisching"
+		"exififd",
+		"HDLC",
+		"ICCP",
+		"IEND",
+		"IHDR",
+		"jxlc",
+		"miniz",
+		"nonoverlapping",
+		"Prisching",
+		"subifd",
+		"Testcam"
 	]
 }

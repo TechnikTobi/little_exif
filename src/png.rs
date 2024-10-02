@@ -99,7 +99,7 @@ decode_metadata_png
 	let mut other_byte: Option<u8> = None;
 
 	// This performs the reverse operation to encode_byte:
-	// Two successing bytes represent the ASCII values of the digits of 
+	// Two succeeding bytes represent the ASCII values of the digits of 
 	// a hex value, e.g. 0x31, 0x32 represent '1' and '2', so the resulting
 	// hex value is 0x12, which gets pushed onto exif_all
 	for byte in encoded_data
