@@ -226,7 +226,7 @@ Metadata
 		self.get_tag_by_hex(input_tag.as_u16())
 	}
 
-	/// Gets the sored tag in the metadata by its hex value.
+	/// Gets the sorted tag in the metadata by its hex value.
 	/// Returns `None`if the tag is not present in the metadata struct.
 	/// 
 	/// # Examples

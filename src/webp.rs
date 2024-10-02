@@ -393,7 +393,7 @@ read_metadata
 		{
 			return io_error!(
 				Other, 
-				format!("Got unexpected chunk type! Exprected {} but got {}", expected_chunk_type, chunk_type)
+				format!("Got unexpected chunk type! Expected {} but got {}", expected_chunk_type, chunk_type)
 			);
 		}
 
@@ -613,7 +613,7 @@ set_exif_flag
 	}	
 
 	// At this point we know that we have a VP8X chunk at the expected location
-	// So, read in the flags and set the EXIF flag accoring to the given bool
+	// So, read in the flags and set the EXIF flag according to the given bool
 	let mut flag_buffer = vec![0u8; 4usize];
 	perform_file_action!(file.seek(SeekFrom::Start(12u64 + 4u64 + 4u64)));
 	if file.read(&mut flag_buffer).unwrap() != 4

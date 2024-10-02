@@ -36,7 +36,7 @@ new_from_path_no_data()
 #[test]
 #[should_panic(expected = "File does not exist!")]
 fn
-new_from_path_panic_not_existant()
+new_from_path_panic_not_existent()
 {
 	let _ = Metadata::new_from_path(Path::new("sample2.png")).unwrap();
 }
@@ -346,17 +346,17 @@ write_to_file_webp_simple_lossless()
 -> Result<(), std::io::Error>
 {
 	// Remove file from previous run and replace it with fresh copy
-	if let Err(error) = remove_file("tests/sample2_simple_loseless_copy.webp")
+	if let Err(error) = remove_file("tests/sample2_simple_lossless_copy.webp")
 	{
 		println!("{}", error);
 	}
-	copy("tests/sample2_simple_loseless.webp", "tests/sample2_simple_loseless_copy.webp")?;
+	copy("tests/sample2_simple_lossless.webp", "tests/sample2_simple_lossless_copy.webp")?;
 
 	// Create newly created & filled metadata struct
 	let metadata = get_test_metadata()?;
 		
 	// Write metadata to file
-	metadata.write_to_file(Path::new("tests/sample2_simple_loseless_copy.webp"))?;
+	metadata.write_to_file(Path::new("tests/sample2_simple_lossless_copy.webp"))?;
 
 	Ok(())
 }
