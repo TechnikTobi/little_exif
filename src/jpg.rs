@@ -358,15 +358,8 @@ file_read_metadata
 )
 -> Result<Vec<u8>, std::io::Error>
 {
-	let file_result = file_check_signature(path);
-
-	if file_result.is_err()
-	{
-		return Err(file_result.err().unwrap());
-	}
-
 	// Setup of variables necessary for going through the file
-	let mut file = file_result.unwrap();                                        // The struct for interacting with the file
+	let mut file = file_check_signature(path)?;                                 // The struct for interacting with the file
 	let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
 	let mut previous_byte_was_marker_prefix = false;                            // A boolean for remembering if the previous byte was a marker prefix (0xFF)
 
