@@ -20,6 +20,95 @@ pub(crate) const WEBP_SIGNATURE:       [u8; 4] = [0x57, 0x45, 0x42, 0x50];
 pub(crate) const VP8X_HEADER:          &str    = "VP8X";
 pub(crate) const EXIF_CHUNK_HEADER:    &str    = "EXIF";
 
+fn
+check_riff_signature
+(
+	file_buffer: &Vec<u8>
+)
+-> Result<(), std::io::Error>
+{
+	// Check the RIFF signature
+	if !file_buffer[0..4].iter()
+		.zip(RIFF_SIGNATURE.iter())
+		.filter(|&(read, constant)| read == constant)
+		.count() == RIFF_SIGNATURE.len()
+	{
+		return io_error!(
+			InvalidData, 
+			format!("Can't open WebP file - Expected RIFF signature but found {}!", from_u8_vec_macro!(String, &file_buffer[0..4].to_vec(), &Endian::Big))
+		);
+	}
+
+	return Ok(());
+}
+
+fn
+check_webp_signature
+(
+	file_buffer: &Vec<u8>
+)
+-> Result<(), std::io::Error>
+{
+	if !file_buffer[8..12].iter()
+		.zip(WEBP_SIGNATURE.iter())
+		.filter(|&(read, constant)| read == constant)
+		.count() == WEBP_SIGNATURE.len()
+	{
+		return io_error!(
+			InvalidData, 
+			format!("Can't open WebP file - Expected WEBP signature but found {}!", from_u8_vec_macro!(String, &file_buffer[8..12].to_vec(), &Endian::Big))
+		);
+	}
+
+	return Ok(());
+}
+
+fn
+check_byte_count
+(
+	file_buffer: &Vec<u8>,
+	opt_file: Option<&File>
+)
+-> Result<(), std::io::Error>
+{
+	let byte_count = from_u8_vec_macro!(
+		u32, 
+		&file_buffer[4..8].to_vec(), 
+		&Endian::Little
+	) + 8;
+
+	if let Some(file) = opt_file
+	{
+		if file.metadata().unwrap().len() != byte_count as u64
+		{
+			return io_error!(InvalidData, "Can't open WebP file - Promised byte count does not correspond with file size!");
+		}	
+	}
+	else
+	{
+		if file_buffer.len() != byte_count as usize
+		{
+			return io_error!(InvalidData, "Can't handle WebP file buffer - Promised byte count does not correspond with file buffer length!");
+		}
+	}
+
+	return Ok(());
+}
+
+fn
+check_signature
+(
+	file_buffer: &Vec<u8>
+)
+-> Result<(), std::io::Error>
+{
+	check_riff_signature(file_buffer      )?;
+	check_byte_count(    file_buffer, None)?;
+	check_webp_signature(file_buffer      )?;
+
+	return Ok(())
+}
+
 /// A WebP file starts as follows
 /// - The RIFF signature: ASCII characters "R", "I", "F", "F"  -> 4 bytes
 /// - The file size starting at offset 8                       -> 4 bytes
@@ -28,7 +117,7 @@ pub(crate) const EXIF_CHUNK_HEADER:    &str    = "EXIF";
 /// sure that the file actually exists and can be opened. 
 /// Finally, the file struct is returned for further processing
 fn
-check_signature
+file_check_signature
 (
 	path: &Path
 )
@@ -44,43 +133,16 @@ check_signature
 		.write(true)
 		.open(path)
 		.expect("Could not open file");
+
+	// Get the first 12 bytes that are required for the following checks
+	let mut first_12_bytes = [0u8; 12];
+	perform_file_action!(file.read(&mut first_12_bytes));
+	let first_12_bytes_vec = first_12_bytes.to_vec();
 	
-	// Check the RIFF signature
-	let mut riff_signature_buffer = [0u8; 4];
-	perform_file_action!(file.read(&mut riff_signature_buffer));
-	if !riff_signature_buffer.iter()
-		.zip(RIFF_SIGNATURE.iter())
-		.filter(|&(read, constant)| read == constant)
-		.count() == RIFF_SIGNATURE.len()
-	{
-		return io_error!(
-			InvalidData, 
-			format!("Can't open WebP file - Expected RIFF signature but found {}!", from_u8_vec_macro!(String, &riff_signature_buffer.to_vec(), &Endian::Big))
-		);
-	}
-
-	// Read the file size in byte and validate it using the file metadata
-	let mut size_buffer = [0u8; 4];
-	file.read(&mut size_buffer).unwrap();
-	let byte_count = from_u8_vec_macro!(u32, &size_buffer.to_vec(), &Endian::Little);
-	if file.metadata().unwrap().len() != (byte_count + 8) as u64
-	{
-		return io_error!(InvalidData, "Can't open WebP file - Promised byte count does not correspond with file size!");
-	}
-
-	// Check the WEBP signature
-	let mut webp_signature_buffer = [0u8; 4];
-	file.read(&mut webp_signature_buffer).unwrap();
-	if !webp_signature_buffer.iter()
-		.zip(WEBP_SIGNATURE.iter())
-		.filter(|&(read, constant)| read == constant)
-		.count() == WEBP_SIGNATURE.len()
-	{
-		return io_error!(
-			InvalidData, 
-			format!("Can't open WebP file - Expected WEBP signature but found {}!", from_u8_vec_macro!(String, &webp_signature_buffer.to_vec(), &Endian::Big))
-		);
-	}
+	// Perform checks
+	check_riff_signature(&first_12_bytes_vec             )?;
+	check_byte_count(    &first_12_bytes_vec, Some(&file))?;
+	check_webp_signature(&first_12_bytes_vec             )?;
 
 	// Signature is valid - can proceed using the file as WebP file
 	return Ok(file);
@@ -168,7 +230,7 @@ parse_webp
 )
 -> Result<Vec<RiffChunkDescriptor>, std::io::Error>
 {
-	let file_result = check_signature(path);
+	let file_result = file_check_signature(path);
 	let mut chunks = Vec::new();
 
 	if file_result.is_err()
@@ -186,7 +248,7 @@ parse_webp
 	// - 4 bytes for RIFF signature
 	// - 4 bytes for file size
 	// - 4 bytes for WEBP signature
-	// These bytes are already read in by the `check_signature` subroutine
+	// These bytes are already read in by the `file_check_signature` subroutine
 	let mut parsed_length = 12u64;
 
 	loop
@@ -272,7 +334,7 @@ check_exif_in_file
 	// - RIFF + file size + WEBP -> 12 byte
 	// - VP8X header             ->  4 byte
 	// - VP8X chunk size         ->  4 byte
-	let mut file = check_signature(path).unwrap();
+	let mut file = file_check_signature(path).unwrap();
 	let mut flag_buffer = vec![0u8; 4usize];
 	perform_file_action!(file.seek(SeekFrom::Start(12u64 + 4u64 + 4u64)));
 	if file.read(&mut flag_buffer).unwrap() != 4
@@ -532,7 +594,7 @@ set_exif_flag
 	}
 
 	// Open the file for further processing
-	let mut file = check_signature(path).unwrap();
+	let mut file = file_check_signature(path).unwrap();
 
 	// Next, check if this is an Extended File Format WebP file
 	// In this case, the first Chunk SHOULD have the type "VP8X"
@@ -734,7 +796,7 @@ write_metadata
 	let encoded_metadata = encode_metadata_webp(general_encoded_metadata);
 
 	// Open the file...
-	let mut file = check_signature(path)?;
+	let mut file = file_check_signature(path)?;
 
 	// ...and find a location where to put the EXIF chunk
 	// This is done by requesting a chunk descriptor as long as we find a chunk
