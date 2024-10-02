@@ -187,7 +187,7 @@ as_u8_vec_png_zTXt()
 
 #[test]
 fn
-clear_metadata_jpg()
+file_clear_metadata_jpg()
 -> Result<(), std::io::Error>
 {
 	// Remove file from previous run and replace it with fresh copy
@@ -204,7 +204,7 @@ clear_metadata_jpg()
 	metadata.write_to_file(Path::new("tests/sample2_copy_no_metadata.jpg"))?;
 
 	// Clear metadata
-	Metadata::clear_metadata(Path::new("tests/sample2_copy_no_metadata.jpg"))?;
+	Metadata::file_clear_metadata(Path::new("tests/sample2_copy_no_metadata.jpg"))?;
 
 	Ok(())
 }
