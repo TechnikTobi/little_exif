@@ -358,6 +358,8 @@ Metadata
 		{
 			FileExtension::JPEG 
 				=> jpg::clear_metadata(file_buffer),
+			FileExtension::JXL
+				=> jxl::clear_metadata(file_buffer),
 			_
 				=> return io_error!(
 					Other, 
@@ -383,6 +385,8 @@ Metadata
 		{
 			FileExtension::JPEG 
 				=>  jpg::file_clear_metadata(&path),
+			FileExtension::JXL
+				=>  jxl::file_clear_metadata(&path),
 			FileExtension::PNG {as_zTXt_chunk: _}
 				=>  png::clear_metadata(&path),
 			FileExtension::WEBP 
