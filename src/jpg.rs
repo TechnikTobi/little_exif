@@ -78,16 +78,8 @@ file_check_signature
 	
 	// Check the signature
 	let mut signature_buffer = [0u8; 2];
-	file.read(&mut signature_buffer).unwrap();
-	let signature_is_valid = signature_buffer.iter()
-		.zip(JPG_SIGNATURE.iter())
-		.filter(|&(read, constant)| read == constant)
-		.count() == JPG_SIGNATURE.len();
-
-	if !signature_is_valid
-	{
-		return io_error!(InvalidData, "Can't open JPG file - Wrong signature!");
-	}
+	file.read(&mut signature_buffer)?;
+	check_signature(&signature_buffer.to_vec())?;
 
 	// Signature is valid - can proceed using the file as JPG file
 	return Ok(file);
