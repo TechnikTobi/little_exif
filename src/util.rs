@@ -3,7 +3,8 @@
 /// Returns 0 (zero) if the operation was successful, non-zero if the offset 
 /// is larger than the current length of the destination vector. In the latter 
 /// case, everything stays untouched.
-pub(crate) fn insert_multiple_at<T>
+pub(crate) fn 
+insert_multiple_at<T>
 (
     vec_dst: &mut Vec<T>,
     offset:  usize,
@@ -34,6 +35,34 @@ where T: Copy
             return 0;
         },
     }
+}
+
+pub(crate) fn
+range_remove<T>
+(
+    vec:   &mut Vec<T>,
+    start: usize,
+    end:   usize
+)
+where T: Copy
+{
+    // Invalid input, nothing to do here
+    if start > end { return; }
+
+    let old_vec_len = vec.len();
+
+    // Simply truncating is sufficient in this case
+    if end >= old_vec_len { vec.truncate(start); return; }
+
+    // Otherwise, move the elements starting at end over to the left
+    for (dst_offset, src_index) in (end..old_vec_len).enumerate()
+    {
+        vec[start + dst_offset] = vec[src_index];
+    }
+
+    // Resize the vector to cut off any residue from the shifting operations
+    let new_vec_len = old_vec_len - (end - start);
+    vec.truncate(new_vec_len);
 }
 
 /*
