@@ -250,6 +250,46 @@ as_u8_vec_png_zTXt()
 
 #[test]
 fn
+clear_metadata_jxl()
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/sample_copy_no_metadata.jxl")
+	{
+		println!("{}", error);
+	}
+	copy("tests/with_exif.jxl", "tests/sample_copy_no_metadata.jxl")?;
+
+	let mut image_data = read("tests/sample_copy_no_metadata.jxl").unwrap();
+
+	// Clear metadata
+	Metadata::clear_metadata(&mut image_data, little_exif::filetype::FileExtension::JXL)?;
+
+	std::fs::write("tests/sample_copy_no_metadata.jxl", image_data)?;
+
+	Ok(())
+}
+
+#[test]
+fn
+file_clear_metadata_jxl()
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/sample_copy_no_metadata2.jxl")
+	{
+		println!("{}", error);
+	}
+	copy("tests/with_exif.jxl", "tests/sample_copy_no_metadata2.jxl")?;
+
+	// Clear metadata
+	Metadata::file_clear_metadata(Path::new("tests/sample_copy_no_metadata2.jxl"))?;
+
+	Ok(())
+}
+
+#[test]
+fn
 file_clear_metadata_jpg()
 -> Result<(), std::io::Error>
 {
