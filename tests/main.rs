@@ -336,6 +336,48 @@ write_to_file_jpg()
 
 #[test]
 fn 
+write_to_file_jxl_no_conversion() 
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/iso_no_exif_copy.jxl")
+	{
+		println!("{}", error);
+	}
+	copy("tests/iso_no_exif.jxl", "tests/iso_no_exif_copy.jxl")?;
+
+	// Create newly created & filled metadata struct
+	let metadata = get_test_metadata()?;
+	
+	// Write metadata to file
+	metadata.write_to_file(Path::new("tests/iso_no_exif_copy.jxl"))?;
+
+	Ok(())
+}
+
+#[test]
+fn 
+write_to_file_jxl_with_conversion() 
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/no_exif_copy.jxl")
+	{
+		println!("{}", error);
+	}
+	copy("tests/no_exif.jxl", "tests/no_exif_copy.jxl")?;
+
+	// Create newly created & filled metadata struct
+	let metadata = get_test_metadata()?;
+	
+	// Write metadata to file
+	metadata.write_to_file(Path::new("tests/no_exif_copy.jxl"))?;
+
+	Ok(())
+}
+
+#[test]
+fn 
 write_to_file_png() 
 -> Result<(), std::io::Error>
 {
