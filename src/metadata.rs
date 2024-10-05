@@ -417,7 +417,9 @@ Metadata
 		match file_type
 		{
 			FileExtension::JPEG 
-				=> jpg::write_metadata(file_buffer, &self.encode_metadata_general()),
+				=>  jpg::write_metadata(file_buffer, &self.encode_metadata_general()),
+			FileExtension::JXL 
+				=>  jxl::write_metadata(file_buffer, &self.encode_metadata_general()),
 			_
 				=> return io_error!(
 					Other, 
@@ -449,6 +451,8 @@ Metadata
 		{
 			FileExtension::JPEG 
 				=>  jpg::file_write_metadata(&path, &self.encode_metadata_general()),
+			FileExtension::JXL 
+				=>  jxl::file_write_metadata(&path, &self.encode_metadata_general()),
 			FileExtension::PNG {as_zTXt_chunk: _}
 				=>  png::write_metadata(&path, &self.encode_metadata_general()),
 			FileExtension::WEBP 
