@@ -321,6 +321,7 @@ encode_metadata_jxl
 		+ 4                                        // - the length field
 		+ IsoBmffBoxType::EXIF.len()        as u32 // - the box type 
 		+ ISO_BMFF_EXIF_MINOR_VERSION.len() as u32 // - the minor version
+		+ EXIF_HEADER.len()                 as u32 // - the exif header
 		+ exif_vec.len()                    as u32 // - the exif data
 	;
 	
@@ -328,6 +329,7 @@ encode_metadata_jxl
 	jxl_exif.extend(to_u8_vec_macro!(u32, &exif_box_length, &Endian::Big));
 	jxl_exif.extend(IsoBmffBoxType::EXIF);
 	jxl_exif.extend(ISO_BMFF_EXIF_MINOR_VERSION);
+	jxl_exif.extend(EXIF_HEADER.iter());
 	jxl_exif.extend(exif_vec.iter());
 
 	return jxl_exif;
