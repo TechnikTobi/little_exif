@@ -5,20 +5,42 @@ use std::fs::File;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
+use std::io::SeekFrom;
 use std::io::Write;
 use std::path::Path;
 
 use crate::endian::Endian;
 use crate::u8conversion::*;
 use crate::general_file_io::*;
+use crate::util::insert_multiple_at;
 use crate::util::range_remove;
 
-pub(crate) const JXL_SIGNATURE:      [u8; 2]  = [0xff, 0x0a];
+pub(crate) const JXL_SIGNATURE:          [u8; 2]  = [0xff, 0x0a];
 pub(crate) const ISO_BMFF_JXL_SIGNATURE: [u8; 12] = [
 	0x00, 0x00, 0x00, 0x0c,
 	0x4a, 0x58, 0x4c, 0x20,
 	0x0d, 0x0a, 0x87, 0x0a
 ];
+
+pub(crate) const FTYP_BOX: [u8; 20] = [
+	0x00, 0x00, 0x00, 0x14, // length of this box
+	0x66, 0x74, 0x79, 0x70, // "ftyp"
+	0x6a, 0x78, 0x6c, 0x20, // "jxl "
+	0x00, 0x00, 0x00, 0x00, // minor version
+	0x6a, 0x78, 0x6c, 0x20  // "jxl " - yes, again
+];
+
+pub(crate) const ISO_BMFF_EXIF_MINOR_VERSION: [u8; 4] = [0x00, 0x00, 0x00, 0x06];
+
+#[non_exhaustive]
+struct IsoBmffBoxType;
+
+impl IsoBmffBoxType {
+    pub const EXIF: [u8; 4] = [0x45, 0x78, 0x69, 0x66]; // "Exif"
+	pub const FTYP: [u8; 4] = [0x66, 0x74, 0x79, 0x70]; // "ftyp"
+	pub const JXL:  [u8; 4] = [0x4a, 0x58, 0x4c, 0x20]; // "JXL "
+	pub const JXLC: [u8; 4] = [0x6a, 0x78, 0x6c, 0x63]; // "jxlc"
+}
 
 /// Checks if the given file buffer vector starts with the necessary bytes that
 /// indicate a JXL file in an ISO BMFF container
@@ -96,6 +118,7 @@ file_check_signature
 
 	return Ok(file);
 }
+
 
 
 pub(crate) fn
@@ -285,4 +308,126 @@ file_read_metadata
 			}
 		}
 	}
+}
+
+fn
+encode_metadata_jxl
+(
+	exif_vec: &Vec<u8>
+)
+-> Vec<u8>
+{
+	let exif_box_length = 0                        // Length has to include
+		+ 4                                        // - the length field
+		+ IsoBmffBoxType::EXIF.len()        as u32 // - the box type 
+		+ ISO_BMFF_EXIF_MINOR_VERSION.len() as u32 // - the minor version
+		+ exif_vec.len()                    as u32 // - the exif data
+	;
+	
+	let mut jxl_exif = Vec::new();
+	jxl_exif.extend(to_u8_vec_macro!(u32, &exif_box_length, &Endian::Big));
+	jxl_exif.extend(IsoBmffBoxType::EXIF);
+	jxl_exif.extend(ISO_BMFF_EXIF_MINOR_VERSION);
+	jxl_exif.extend(exif_vec.iter());
+
+	return jxl_exif;
+}
+
+fn
+find_insert_position
+(
+	file_buffer: &Vec<u8>
+)
+-> Result<usize, std::io::Error>
+{
+	let mut cursor = Cursor::new(file_buffer);
+
+	loop
+	{
+		// Get the first 4 bytes at the current cursor position to determine
+		// the length of the current box (and account for the 8 bytes of length
+		// and box type)
+		let mut length_buffer = [0u8; 4];
+		cursor.read_exact(&mut length_buffer)?;
+		let length = from_u8_vec_macro!(u32, &length_buffer.to_vec(), &Endian::Big) - 8;
+
+		// Next, read the box type
+		let mut type_buffer = [0u8; 4];
+		cursor.read_exact(&mut type_buffer)?;
+
+		match type_buffer
+		{
+			IsoBmffBoxType::JXL |
+			IsoBmffBoxType::FTYP => {
+				// Place exif box after these boxes
+				cursor.seek_relative(length as i64)?;
+			}
+			_ => {
+				return Ok(cursor.position() as usize - 8);
+			}
+		}
+	}
+}
+
+pub(crate) fn 
+write_metadata
+(
+	file_buffer: &mut Vec<u8>,
+	general_encoded_metadata: &Vec<u8>
+)
+-> Result<(), std::io::Error> 
+{
+	if starts_with_jxl_signature(file_buffer)
+	{
+		// Need to modify the file_buffer first so that it is a ISO BMFF 
+		let mut new_file_buffer = Vec::new();
+
+		// Start of the new file
+		new_file_buffer.extend(ISO_BMFF_JXL_SIGNATURE);
+		new_file_buffer.extend(FTYP_BOX);
+
+		// JXL codestream box
+		// - length of box (including 4 bytes of length & type fields each)
+		// - type field
+		// - data
+		let jxlc_box_length = file_buffer.len() as u32 + 8;
+		new_file_buffer.extend(to_u8_vec_macro!(u32, &jxlc_box_length, &Endian::Big));
+		new_file_buffer.extend(IsoBmffBoxType::JXLC);
+		new_file_buffer.append(file_buffer);
+
+		// Replace file buffer
+		*file_buffer = new_file_buffer;
+	}
+
+	let mut encoded_metadata = encode_metadata_jxl(general_encoded_metadata);
+	let     insert_position  = find_insert_position(file_buffer)?;
+	insert_multiple_at(file_buffer, insert_position, &mut encoded_metadata);
+
+	return Ok(());
+}
+
+pub(crate) fn 
+file_write_metadata
+(
+	path: &Path,
+	general_encoded_metadata: &Vec<u8>
+)
+-> Result<(), std::io::Error>
+{
+	// Load the entire file into memory instead of performing multiple read, 
+	// seek and write operations
+	let mut file = open_write_file(path)?;
+	let mut file_buffer: Vec<u8> = Vec::new();
+	perform_file_action!(file.read_to_end(&mut file_buffer));
+
+	// Writes the metadata to the file_buffer vec
+	// The called function handles the removal of old metadata and the JPG
+	// specific encoding, so we pass only the generally encoded metadata here
+	write_metadata(&mut file_buffer, general_encoded_metadata)?;
+
+	// Seek back to start & write the file
+	perform_file_action!(file.seek(SeekFrom::Start(0)));
+	perform_file_action!(file.write_all(&file_buffer));
+
+	return Ok(());
 }
