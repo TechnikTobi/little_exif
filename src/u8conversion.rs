@@ -139,9 +139,6 @@ impl U8conversion<uR64> for uR64
 	)
 	-> Vec<u8>
 	{
-		// let test: f64 = *self.into();
-		// println!("huhu {}", test);
-
 		let mut u8_vec = self.nominator.to_u8_vec(endian);
 		u8_vec.extend(self.denominator.to_u8_vec(endian));
 		return u8_vec;
