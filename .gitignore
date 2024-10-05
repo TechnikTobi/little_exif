@@ -32,3 +32,5 @@ debug/*
 examples/copy Kopie.jpg
 tests/sample_copy_no_metadata2.jxl
 tests/sample_copy_no_metadata.jxl
+tests/iso_no_exif_copy.jxl
+tests/no_exif_copy.jxl
