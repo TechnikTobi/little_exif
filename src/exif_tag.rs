@@ -116,10 +116,10 @@ macro_rules! build_tag_enum {
 			}
 
 			/// Gets the tag for a given hex value. 
-			/// The tag is initalized using the given raw data by converting it
+			/// The tag is initialized using the given raw data by converting it
 			/// to the appropriate format.
 			/// If the hex value is unknown, the other parameters are used to
-			/// generate an appropriate unkown tag for the specified format.
+			/// generate an appropriate unknown tag for the specified format.
 			/// 
 			/// # Examples
 			/// ```no_run
@@ -360,7 +360,7 @@ macro_rules! build_tag_enum {
 			}
 
 			/// Checks if the format type of the tag is `STRING`.
-			/// Needed for generating the EXIF data to know wheter to add a 
+			/// Needed for generating the EXIF data to know whether to add a 
 			/// NUL terminator at the end
 			pub fn
 			is_string
