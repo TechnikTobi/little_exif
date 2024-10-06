@@ -660,7 +660,7 @@ Metadata
 					}
 				}
 			}
-			
+
 			tags.push(ExifTag::from_u16_with_data(hex_tag, &format, &raw_data, &endian, group).unwrap());
 		}
 
@@ -820,11 +820,23 @@ Metadata
 			ExifTagGroup::ExifIFD,
 			current_offset,                                                     // Don't need +8 as already accounted for in this value due to previous function call
 			&[0x00, 0x00, 0x00, 0x00],
-			None
+			Some(ExifTag::InteropOffset(vec![0]))
 		)
 		{
 			current_offset = offset_post_exififd;
 			exif_vec.extend(exififd_data.iter());
+		}
+
+		// InteropIFD
+		if let Some((offset_post_interopifd, interopifd_data)) = self.encode_ifd(
+			ExifTagGroup::InteropIFD,
+			current_offset,                                                     // Don't need +8 as already accounted for in this value due to previous function call
+			&[0x00, 0x00, 0x00, 0x00],
+			None
+		)
+		{
+			current_offset = offset_post_interopifd;
+			exif_vec.extend(interopifd_data.iter());
 		}
 
 		// Other directories here... (someday)
