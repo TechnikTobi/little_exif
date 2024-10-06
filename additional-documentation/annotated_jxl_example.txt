@@ -1,0 +1,65 @@
+# 1. Box - ?
+0000000C Length of 12 bytes
+4A584C20 JXL specific
+0D0A870A JXL specific
+
+# 2. Box - File Type Box
+00000014 Length of 20 bytes
+66747970 "ftyp"
+6A786C20 "jxl " - major brand of file format
+00000000 The minor version number
+6A786C20 "jxl " - compatible brand
+
+# 3. Box - ?
+00000011 Length of 17 bytes
+6A786C70 "jxlp" - box type
+00000000 
+FF0A00F0 
+01
+
+# 4. Box - EXIF
+00000062 Length of 98 bytes
+45786966 "Exif" - box type
+00000006 minor version number?
+45786966 "Exif" - Exif header
+00004D4D Rest of exif data
+002A0000
+00080002
+01120003
+00000001
+00010000
+87690004
+00000001
+00000026
+00000000
+0003A001
+00030000
+00010001
+0000A002
+00040000
+00010000
+0002A003
+00040000
+00010000
+00010000
+0000
+
+# 5. Box - JXL data
+00000048 Length of 72 bytes
+6A786C70 "jxlp"
+80000001
+00128802
+00D40045
+C7160000
+152AA38C
+1BBC9CEB
+F9F24387
+C5B48DEB
+0C6DB56D
+6149A2C8
+38364927
+70481249
+60E31698
+E1674033
+729B2B49
+0C49C600
