@@ -616,7 +616,7 @@ impl ExifTag
 		{
 			ExifTag::ExifOffset(_)		=> Some(ExifTagGroup::ExifIFD),
 			ExifTag::GPSInfo(_)			=> Some(ExifTagGroup::GPSIFD),
-			ExifTag::MakerNote(_)		=> Some(ExifTagGroup::MakerNotesIFD),
+			// ExifTag::MakerNote(_)		=> Some(ExifTagGroup::MakerNotesIFD),
 			ExifTag::InteropOffset(_)	=> Some(ExifTagGroup::InteropIFD),
 			_ => None
 		}
