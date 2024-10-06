@@ -21,6 +21,7 @@ use crate::webp;
 const IFD_ENTRY_LENGTH: u32     = 12;
 const IFD_END:          [u8; 4] = [0x00, 0x00, 0x00, 0x00];
 
+#[derive(Clone)]
 pub struct
 Metadata
 {
