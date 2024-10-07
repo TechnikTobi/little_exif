@@ -3,7 +3,6 @@
 
 use std::io::Cursor;
 use std::io::Read;
-use std::io::Write;
 use std::io::Seek;
 
 use crc::Crc;
