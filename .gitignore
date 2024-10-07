@@ -22,24 +22,6 @@ Cargo.lock
 *.swp
 copy.png
 examples/copy.jpg
-tests/sample2_copy.png
 tests/read_sample_no_exif.webp
-tests/sample2_simple_lossless_copy.webp
-tests/sample2_extended_copy.webp
-tests/sample2_copy.jpg
-tests/sample2_copy_no_metadata.jpg
 debug/*
-examples/copy Kopie.jpg
-tests/sample_copy_no_metadata2.jxl
-tests/sample_copy_no_metadata.jxl
-tests/iso_no_exif_copy.jxl
-tests/no_exif_copy.jxl
-tests/sample2_simple_lossless_copy1.webp
-tests/sample2_simple_lossless_copy2.webp
-tests/sample2_simple_extended_copy2.webp
-tests/sample2_extended_copy2.webp
-tests/sample2_extended_copy1.webp
-tests/sample2_copy2.png
-tests/sample2_copy2.jpg
-tests/sample2_copy1.png
-tests/sample2_copy1.jpg
+tests/*copy*
