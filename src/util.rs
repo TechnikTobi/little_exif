@@ -37,6 +37,9 @@ where T: Copy
     }
 }
 
+/// Removes a section in the middle of a vector. The element at index `start` 
+/// is where the removal starts, up to the element prior to at index `end`
+/// The element originally positioned at `end` will survive. 
 pub(crate) fn
 range_remove<T>
 (
