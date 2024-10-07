@@ -22,7 +22,7 @@ FromStr
 for 
 FileExtension 
 {
-	type Err = ();
+	type Err = std::io::Error;
 
 	fn 
 	from_str
@@ -38,7 +38,7 @@ FileExtension
 			"jxl"   => Ok(FileExtension::JXL),
 			"png"   => Ok(FileExtension::PNG{ as_zTXt_chunk: true}),
 			"webp"  => Ok(FileExtension::WEBP),
-			_       => Err(()),
+			_       => io_error!(Unsupported, "Unknown file type!")
 		}
 	}
 }
