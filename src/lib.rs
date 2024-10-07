@@ -34,7 +34,6 @@ mod png_chunk;
 mod jpg;
 mod jxl;
 mod webp;
-mod riff_chunk;
 mod util;
 
 pub mod endian;
