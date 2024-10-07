@@ -42,7 +42,7 @@ check_signature
 
 	// Signature is valid - can proceed using the data as PNG file
 	let mut cursor = Cursor::new(file_buffer);
-	cursor.set_position(12);
+	cursor.set_position(8);
 	return Ok(cursor);
 }
 
@@ -315,9 +315,6 @@ write_metadata
 	+ IHDR_length         as u64  // IHDR data section
 	+ 12                  as u64; // rest of IHDR chunk (length, type, CRC)
 
-	// Get to first chunk after IHDR, copy all the data starting from there
-	let mut cursor = Cursor::new(file_buffer);
-
 	// Build data of new chunk using zlib compression (level=8 -> default)
 	let mut zTXt_chunk_data: Vec<u8> = vec![0x7a, 0x54, 0x58, 0x74];
 	zTXt_chunk_data.extend(RAW_PROFILE_TYPE_EXIF.iter());
@@ -331,18 +328,19 @@ write_metadata
 		zTXt_chunk_data.push( (checksum >> (8 * (3-i))) as u8);		
 	}
 
-	// Write new data to PNG file
-	// Start with length of the new chunk (subtracting 8 for type and CRC)
-	cursor.set_position(seek_start);
-	let chunk_data_len = zTXt_chunk_data.len() as u32 - 8;
+	// Prepare the length of the new chunk (subtracting 8 for type and CRC) for
+	// inserting prior to the new chunk
+	let     chunk_data_len        = zTXt_chunk_data.len() as u32 - 8;
+	let mut chunk_data_len_buffer = [0u8; 4];
 	for i in 0..4
 	{
-		cursor.write( &[(chunk_data_len >> (8 * (3-i))) as u8] )?;
+		chunk_data_len_buffer[i] = (chunk_data_len >> (8 * (3-i))) as u8;
 	}
-
-	// Write data of new chunk and rest of PNG file
-	let insert_position = cursor.position() as usize;
-	insert_multiple_at(cursor.get_mut(), insert_position, &mut zTXt_chunk_data);
+	
+	// Write data of new chunk length and chunk itself
+	let insert_position = seek_start as usize;
+	insert_multiple_at(file_buffer, insert_position,   &mut chunk_data_len_buffer.to_vec());
+	insert_multiple_at(file_buffer, insert_position+4, &mut zTXt_chunk_data);
 
 	return Ok(());
 }
