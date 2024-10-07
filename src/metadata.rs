@@ -108,6 +108,8 @@ Metadata
 				=>  jpg::read_metadata(file_buffer),
 			FileExtension::JXL
 				=>  jxl::read_metadata(file_buffer),
+			FileExtension::WEBP
+				=> webp::vec::read_metadata(file_buffer),
 			_
 				=> return io_error!(
 					Other, 
@@ -358,9 +360,11 @@ Metadata
 		match file_type
 		{
 			FileExtension::JPEG 
-				=> jpg::clear_metadata(file_buffer),
+				=>  jpg::clear_metadata(file_buffer),
 			FileExtension::JXL
-				=> jxl::clear_metadata(file_buffer),
+				=>  jxl::clear_metadata(file_buffer),
+			FileExtension::WEBP
+				=> webp::vec::clear_metadata(file_buffer),
 			_
 				=> return io_error!(
 					Other, 
@@ -421,6 +425,8 @@ Metadata
 				=>  jpg::write_metadata(file_buffer, &self.encode_metadata_general()),
 			FileExtension::JXL 
 				=>  jxl::write_metadata(file_buffer, &self.encode_metadata_general()),
+			FileExtension::WEBP
+				=> webp::vec::write_metadata(file_buffer, &self.encode_metadata_general()),
 			_
 				=> return io_error!(
 					Other, 
