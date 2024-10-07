@@ -152,7 +152,7 @@ Metadata
 			FileExtension::PNG {as_zTXt_chunk: _} 
 				=>  png::read_metadata(&path),
 			FileExtension::WEBP 
-				=> webp::read_metadata(&path),
+				=> webp::file::read_metadata(&path),
 			_
 				=> return io_error!(
 					Other, 
@@ -391,7 +391,7 @@ Metadata
 			FileExtension::PNG {as_zTXt_chunk: _}
 				=>  png::clear_metadata(&path),
 			FileExtension::WEBP 
-				=> webp::clear_metadata(&path),
+				=> webp::file::clear_metadata(&path),
 			_
 				=> return io_error!(
 					Other, 
@@ -457,7 +457,7 @@ Metadata
 			FileExtension::PNG {as_zTXt_chunk: _}
 				=>  png::write_metadata(&path, &self.encode_metadata_general()),
 			FileExtension::WEBP 
-				=> webp::write_metadata(&path, &self.encode_metadata_general()),
+				=> webp::file::write_metadata(&path, &self.encode_metadata_general()),
 			_
 				=> return io_error!(
 					Other, 
