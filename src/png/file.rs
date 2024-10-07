@@ -7,7 +7,6 @@ use std::io::Write;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::fs::File;
-use std::collections::VecDeque;
 
 use crc::Crc;
 use crc::CRC_32_ISO_HDLC;
@@ -20,104 +19,8 @@ use super::PNG_SIGNATURE;
 use super::RAW_PROFILE_TYPE_EXIF;
 
 use super::png_chunk::PngChunk;
-use super::encode_byte;
+use super::decode_metadata_png;
 use super::encode_metadata_png;
-
-fn
-decode_metadata_png
-(
-	encoded_data: &Vec<u8>
-)
--> Result<Vec<u8>, std::io::Error>
-{
-
-	let mut exif_all: VecDeque<u8> = VecDeque::new();
-	let mut other_byte: Option<u8> = None;
-
-	// This performs the reverse operation to encode_byte:
-	// Two succeeding bytes represent the ASCII values of the digits of 
-	// a hex value, e.g. 0x31, 0x32 represent '1' and '2', so the resulting
-	// hex value is 0x12, which gets pushed onto exif_all
-	for byte in encoded_data
-	{
-		// Ignore newline characters
-		if *byte == '\n' as u8
-		{
-			continue;
-		}
-
-		if other_byte.is_none()
-		{
-			other_byte = Some(*byte);
-			continue;
-		}
-
-		let value_string = "".to_owned()
-			+ &(other_byte.unwrap() as char).to_string()
-			+ &(*byte as char).to_string();
-			
-		if let Ok(value) = u8::from_str_radix(value_string.trim(), 16)
-		{
-			exif_all.push_back(value);
-		}
-		
-		other_byte = None;
-	}
-
-	// Now remove the first element until the exif header is found
-	// Store the popped elements to get the size information
-	let mut exif_header_found = false;
-	let mut pop_storage: Vec<u8> = Vec::new();
-
-	while !exif_header_found
-	{
-		let mut counter = 0;
-		for header_value in &EXIF_HEADER
-		{
-			if *header_value != exif_all[counter]
-			{
-				break;
-			}
-			counter += 1;
-		}
-
-		exif_header_found = counter == EXIF_HEADER.len();
-
-		if exif_header_found
-		{
-			break;
-		}
-		pop_storage.push(exif_all.pop_front().unwrap());
-	}
-
-	// The exif header has been found
-	// -> exif_all now starts with the exif header information
-	// -> pop_storage has in its last 4 elements the size information
-	//    that will now get extracted
-	// Consider this part optional as it might be removed in the future and
-	// isn't strictly necessary and just for validating the data we get
-	assert!(pop_storage.len() > 0);
-
-	// Using the encode_byte function re-encode the bytes regarding the size
-	// information and construct its value using decimal based shifting
-	// Example: 153 = 0
-	// + 5*10*10^(2*0) + 3*1*10^(2*0) 
-	// + 0*10*10^(2*1) + 1*1*10^(2*1)
-	let mut given_exif_len = 0u64;
-	for i in 0..std::cmp::min(4, pop_storage.len())
-	{
-		let re_encoded_byte = encode_byte(&pop_storage[pop_storage.len() -1 -i]);
-		let tens_place = u64::from_str_radix(&(re_encoded_byte[0] as char).to_string(), 10).unwrap();
-		let ones_place = u64::from_str_radix(&(re_encoded_byte[1] as char).to_string(), 10).unwrap();
-		given_exif_len = given_exif_len + tens_place * 10 * 10_u64.pow((2 * i).try_into().unwrap());
-		given_exif_len = given_exif_len + ones_place *  1 * 10_u64.pow((2 * i).try_into().unwrap());
-	}
-
-	assert!(given_exif_len == exif_all.len().try_into().unwrap());
-	// End optional part
-
-	return Ok(Vec::from(exif_all));
-}
 
 fn
 check_signature
