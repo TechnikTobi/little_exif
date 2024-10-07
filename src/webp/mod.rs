@@ -84,7 +84,7 @@ check_byte_count
 	{
 		if file_buffer.len() != byte_count as usize
 		{
-			return io_error!(InvalidData, "Can't handle WebP file buffer - Promised byte count does not correspond with file buffer length!");
+			return io_error!(InvalidData, format!("Can't handle WebP file buffer - Promised byte count {} does not correspond with file buffer length {}!", byte_count, file_buffer.len()));
 		}
 	}
 
