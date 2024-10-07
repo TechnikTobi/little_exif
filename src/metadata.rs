@@ -522,11 +522,14 @@ Metadata
 		// Decode all the tags
 		let mut all_tags = Vec::new();
 
+		// Get offset to first IFD
+		let ifd0_offset = from_u8_vec_macro!(u32, &encoded_data[10..14].to_vec(), &endian);
+
 		// Start with IFD0
 		let ifd0_decode_result = Self::decode_ifd(
 			&encoded_data[14..].to_vec(),
 			&ExifTagGroup::IFD0,
-			8,                                                                  // TODO: What if IFD0 is at another offset? Can this even happen?
+			ifd0_offset,
 			&endian
 		);
 
