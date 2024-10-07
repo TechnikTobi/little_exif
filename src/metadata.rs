@@ -152,7 +152,7 @@ Metadata
 			FileExtension::JXL
 				=>  jxl::file_read_metadata(&path),
 			FileExtension::PNG {as_zTXt_chunk: _} 
-				=>  png::read_metadata(&path),
+				=>  png::file::read_metadata(&path),
 			FileExtension::WEBP 
 				=> webp::file::read_metadata(&path),
 			_
@@ -393,7 +393,7 @@ Metadata
 			FileExtension::JXL
 				=>  jxl::file_clear_metadata(&path),
 			FileExtension::PNG {as_zTXt_chunk: _}
-				=>  png::clear_metadata(&path),
+				=>  png::file::clear_metadata(&path),
 			FileExtension::WEBP 
 				=> webp::file::clear_metadata(&path),
 			_
@@ -461,7 +461,7 @@ Metadata
 			FileExtension::JXL 
 				=>  jxl::file_write_metadata(&path, &self.encode_metadata_general()),
 			FileExtension::PNG {as_zTXt_chunk: _}
-				=>  png::write_metadata(&path, &self.encode_metadata_general()),
+				=>  png::file::write_metadata(&path, &self.encode_metadata_general()),
 			FileExtension::WEBP 
 				=> webp::file::write_metadata(&path, &self.encode_metadata_general()),
 			_
