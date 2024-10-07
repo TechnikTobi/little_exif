@@ -23,7 +23,7 @@ use super::*;
 /// sure that the file actually exists and can be opened. 
 /// Finally, the file struct is returned for further processing
 fn
-file_check_signature
+check_signature
 (
 	path: &Path
 )
@@ -127,7 +127,7 @@ parse_webp
 )
 -> Result<Vec<RiffChunkDescriptor>, std::io::Error>
 {
-	let file_result = file_check_signature(path);
+	let file_result = check_signature(path);
 	let mut chunks = Vec::new();
 
 	if file_result.is_err()
@@ -145,7 +145,7 @@ parse_webp
 	// - 4 bytes for RIFF signature
 	// - 4 bytes for file size
 	// - 4 bytes for WEBP signature
-	// These bytes are already read in by the `file_check_signature` subroutine
+	// These bytes are already read in by the `check_signature` subroutine
 	let mut parsed_length = 12u64;
 
 	loop
@@ -231,7 +231,7 @@ check_exif_in_file
 	// - RIFF + file size + WEBP -> 12 byte
 	// - VP8X header             ->  4 byte
 	// - VP8X chunk size         ->  4 byte
-	let mut file = file_check_signature(path).unwrap();
+	let mut file = check_signature(path).unwrap();
 	let mut flag_buffer = vec![0u8; 4usize];
 	perform_file_action!(file.seek(SeekFrom::Start(12u64 + 4u64 + 4u64)));
 	if file.read(&mut flag_buffer).unwrap() != 4
@@ -400,8 +400,6 @@ convert_to_extended_format
 			=> io_error!(Other, "Expected either 'VP8 ' or 'VP8L' chunk for conversion!")
 	}?;
 
-	println!("{} {}", width, height);
-
 	let width_vec  = to_u8_vec_macro!(u32, &width,  &Endian::Little);
 	let height_vec = to_u8_vec_macro!(u32, &height, &Endian::Little);
 
@@ -488,7 +486,7 @@ set_exif_flag
 	}
 
 	// Open the file for further processing
-	let mut file = file_check_signature(path).unwrap();
+	let mut file = check_signature(path).unwrap();
 
 	// Next, check if this is an Extended File Format WebP file
 	// In this case, the first Chunk SHOULD have the type "VP8X"
@@ -644,7 +642,7 @@ write_metadata
 	let encoded_metadata = encode_metadata_webp(general_encoded_metadata);
 
 	// Open the file...
-	let mut file = file_check_signature(path)?;
+	let mut file = check_signature(path)?;
 
 	// ...and find a location where to put the EXIF chunk
 	// This is done by requesting a chunk descriptor as long as we find a chunk
