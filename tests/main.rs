@@ -112,6 +112,15 @@ read_from_file_webp()
 		panic!("Could not read ISO tag!")
 	}
 
+	if let Some(image_description_tag) = metadata.get_tag(&ExifTag::ImageDescription(String::new()))
+	{
+		assert_eq!(String::from_utf8(image_description_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)).unwrap(), "Hello World!\0".to_string());
+	}
+	else
+	{
+		panic!("Could not read ImageDescription tag!")
+	}
+
 	Ok(())
 }
 
