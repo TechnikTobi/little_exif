@@ -34,3 +34,5 @@ tests/sample_copy_no_metadata2.jxl
 tests/sample_copy_no_metadata.jxl
 tests/iso_no_exif_copy.jxl
 tests/no_exif_copy.jxl
+tests/sample2_simple_lossless_copy1.webp
+tests/sample2_simple_lossless_copy2.webp
