@@ -1,16 +1,14 @@
 [package]
 name = "little_exif"
 
-version = "0.5.0-beta.3"
+version = "0.5.0"
 edition = "2021"
 
 description = """
-This little library implements simple functionality for basic reading and 
-writing of EXIF (related) metadata for PNG, JP(E)G and WebP image files (other 
-file types - e.g. TIFF or HEIC - are planned for the future), with the 
+Basic reading and writing of EXIF (related) metadata for PNG, JP(E)G, JXL and 
+WebP image files (other file types - e.g. TIFF or HEIC - are planned), with the 
 advantage of being solely written in Rust & not relying on any 3rd party 
-(C-)library for accessing the data (there are dependencies e.g. for calculating 
-checksums or (de)compressing - however, they are also written in Rust). 
+non-rust library.
 """
 
 authors = ["Tobias Prisching"]
