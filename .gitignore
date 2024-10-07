@@ -36,3 +36,10 @@ tests/iso_no_exif_copy.jxl
 tests/no_exif_copy.jxl
 tests/sample2_simple_lossless_copy1.webp
 tests/sample2_simple_lossless_copy2.webp
+tests/sample2_simple_extended_copy2.webp
+tests/sample2_extended_copy2.webp
+tests/sample2_extended_copy1.webp
+tests/sample2_copy2.png
+tests/sample2_copy2.jpg
+tests/sample2_copy1.png
+tests/sample2_copy1.jpg
