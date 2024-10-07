@@ -471,38 +471,43 @@ write_to_file_webp_extended()
 	Ok(())
 }
 
-#[test]
 fn 
-compare_write_to_webp_lossless()
+compare_write_to_generic
+(
+	original_file:  &str,
+	copy1_file:     &str,
+	copy2_file:     &str,
+	file_extension: little_exif::filetype::FileExtension
+)
 -> Result<(), std::io::Error>
 {
 	// Create newly created & filled metadata struct
 	let metadata = get_test_metadata()?;
 	
-	if let Err(error) = remove_file("tests/sample2_simple_lossless_copy1.webp")
+	if let Err(error) = remove_file(copy1_file)
 	{
 		println!("{}", error);
 	}
-	copy("tests/sample2_simple_lossless.webp", "tests/sample2_simple_lossless_copy1.webp")?;
-	metadata.write_to_file(Path::new("tests/sample2_simple_lossless_copy1.webp"))?;
-
+	copy(original_file, copy1_file)?;
+	metadata.write_to_file(Path::new(copy1_file))?;
 
 	// Now do the same but via the vec-based function
-	if let Err(error) = remove_file("tests/sample2_simple_lossless_copy2.webp")
+	if let Err(error) = remove_file(copy2_file)
 	{
 		println!("{}", error);
 	}
-	copy("tests/sample2_simple_lossless.webp", "tests/sample2_simple_lossless_copy2.webp")?;
-	let mut image_data = read("tests/sample2_simple_lossless_copy2.webp").unwrap();
-	metadata.write_to_vec(&mut image_data, little_exif::filetype::FileExtension::WEBP)?;
-	
+	copy(original_file, copy2_file)?;
+	let mut image_data = read(copy2_file).unwrap();
+	metadata.write_to_vec(&mut image_data, file_extension)?;
+	std::fs::write(copy2_file, image_data.clone())?;
+
 	// Read first write version back in
-	let compare_me = read("tests/sample2_simple_lossless_copy1.webp").unwrap();
+	let compare_me = read(copy1_file).unwrap();
 
 	// Compare their lengths
 	if compare_me.len() != image_data.len()
 	{
-		panic!("Lengths differ! {} vs {}", compare_me.len(), image_data.len());
+		panic!("Lengths differ! file: {} vs vec: {}", compare_me.len(), image_data.len());
 	}
 
 	// Compare their contents
@@ -510,9 +515,61 @@ compare_write_to_webp_lossless()
 	{
 		if compare_me[i] != image_data[i]
 		{
-			panic!("Data differs! {} vs {}", compare_me[i], image_data[i]);
+			panic!("Data differs! file: {} vs vec: {}", compare_me[i], image_data[i]);
 		}
 	}
 
 	Ok(())
+}
+
+#[test]
+fn 
+compare_write_to_jpg()
+-> Result<(), std::io::Error>
+{
+	return compare_write_to_generic(
+		"tests/sample2.jpg",
+		"tests/sample2_copy1.jpg",
+		"tests/sample2_copy2.jpg",
+		little_exif::filetype::FileExtension::JPEG
+	);
+}
+
+#[test]
+fn 
+compare_write_to_png()
+-> Result<(), std::io::Error>
+{
+	return compare_write_to_generic(
+		"tests/sample2.png",
+		"tests/sample2_copy1.png",
+		"tests/sample2_copy2.png",
+		little_exif::filetype::FileExtension::PNG { as_zTXt_chunk: false }
+	);
+}
+
+#[test]
+fn 
+compare_write_to_webp_lossless()
+-> Result<(), std::io::Error>
+{
+	return compare_write_to_generic(
+		"tests/sample2_simple_lossless.webp",
+		"tests/sample2_simple_lossless_copy1.webp",
+		"tests/sample2_simple_lossless_copy2.webp",
+		little_exif::filetype::FileExtension::WEBP
+	);
+}
+
+#[test]
+fn 
+compare_write_to_webp_extended()
+-> Result<(), std::io::Error>
+{
+	return compare_write_to_generic(
+		"tests/sample2_extended.webp",
+		"tests/sample2_extended_copy1.webp",
+		"tests/sample2_extended_copy2.webp",
+		little_exif::filetype::FileExtension::WEBP
+	);
 }
