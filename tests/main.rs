@@ -537,6 +537,19 @@ compare_write_to_jpg()
 
 #[test]
 fn 
+compare_write_to_jxl()
+-> Result<(), std::io::Error>
+{
+	return compare_write_to_generic(
+		"tests/no_exif.jxl",
+		"tests/no_exif_copy1.jxl",
+		"tests/no_exif_copy2.jxl",
+		little_exif::filetype::FileExtension::JXL
+	);
+}
+
+#[test]
+fn 
 compare_write_to_png()
 -> Result<(), std::io::Error>
 {
