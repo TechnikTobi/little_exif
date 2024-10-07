@@ -108,6 +108,8 @@ Metadata
 				=>  jpg::read_metadata(file_buffer),
 			FileExtension::JXL
 				=>  jxl::read_metadata(file_buffer),
+			FileExtension::PNG { as_zTXt_chunk: _ }
+				=>  png::vec::read_metadata(file_buffer),
 			FileExtension::WEBP
 				=> webp::vec::read_metadata(file_buffer),
 			_
@@ -151,7 +153,7 @@ Metadata
 				=>  jpg::file_read_metadata(&path),
 			FileExtension::JXL
 				=>  jxl::file_read_metadata(&path),
-			FileExtension::PNG {as_zTXt_chunk: _} 
+			FileExtension::PNG { as_zTXt_chunk: _ } 
 				=>  png::file::read_metadata(&path),
 			FileExtension::WEBP 
 				=> webp::file::read_metadata(&path),
@@ -337,7 +339,7 @@ Metadata
 
 		match for_file_type
 		{
-			FileExtension::PNG {as_zTXt_chunk} 
+			FileExtension::PNG { as_zTXt_chunk } 
 				=>  png::as_u8_vec(&general_encoded_metadata, as_zTXt_chunk),
 			FileExtension::JPEG 
 				=>  jpg::as_u8_vec(&general_encoded_metadata),
@@ -363,6 +365,8 @@ Metadata
 				=>  jpg::clear_metadata(file_buffer),
 			FileExtension::JXL
 				=>  jxl::clear_metadata(file_buffer),
+			FileExtension::PNG { as_zTXt_chunk: _ }
+				=>  png::vec::clear_metadata(file_buffer),
 			FileExtension::WEBP
 				=> webp::vec::clear_metadata(file_buffer),
 			_
@@ -392,7 +396,7 @@ Metadata
 				=>  jpg::file_clear_metadata(&path),
 			FileExtension::JXL
 				=>  jxl::file_clear_metadata(&path),
-			FileExtension::PNG {as_zTXt_chunk: _}
+			FileExtension::PNG { as_zTXt_chunk: _ }
 				=>  png::file::clear_metadata(&path),
 			FileExtension::WEBP 
 				=> webp::file::clear_metadata(&path),
@@ -425,6 +429,8 @@ Metadata
 				=>  jpg::write_metadata(file_buffer, &self.encode_metadata_general()),
 			FileExtension::JXL 
 				=>  jxl::write_metadata(file_buffer, &self.encode_metadata_general()),
+			FileExtension::PNG { as_zTXt_chunk: _ }
+				=>  png::vec::write_metadata(file_buffer, &self.encode_metadata_general()),
 			FileExtension::WEBP
 				=> webp::vec::write_metadata(file_buffer, &self.encode_metadata_general()),
 			_
@@ -460,7 +466,7 @@ Metadata
 				=>  jpg::file_write_metadata(&path, &self.encode_metadata_general()),
 			FileExtension::JXL 
 				=>  jxl::file_write_metadata(&path, &self.encode_metadata_general()),
-			FileExtension::PNG {as_zTXt_chunk: _}
+			FileExtension::PNG { as_zTXt_chunk: _ }
 				=>  png::file::write_metadata(&path, &self.encode_metadata_general()),
 			FileExtension::WEBP 
 				=> webp::file::write_metadata(&path, &self.encode_metadata_general()),
