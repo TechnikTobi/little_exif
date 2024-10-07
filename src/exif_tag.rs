@@ -527,7 +527,7 @@ build_tag_enum![
 	(BrightnessValue,             0x9203, RATIONAL64S,   Some::<u32>(1),    true,      ExifIFD),
 	(ExposureCompensation,        0x9204, RATIONAL64S,   Some::<u32>(1),    true,      ExifIFD),
 	(MaxApertureValue,            0x9205, RATIONAL64U,   Some::<u32>(1),    true,      ExifIFD),
-	(SubjectDistance,             0x9206, RATIONAL64S,   Some::<u32>(1),    true,      ExifIFD),
+	(SubjectDistance,             0x9206, RATIONAL64U,   Some::<u32>(1),    true,      ExifIFD),
 	(MeteringMode,                0x9207, INT16U,        Some::<u32>(1),    true,      ExifIFD),
 	(LightSource,                 0x9208, INT16U,        Some::<u32>(1),    true,      ExifIFD),    // -> EXIF LightSource Values: https://exiftool.org/TagNames/EXIF.html#LightSource
 	(Flash,                       0x9209, INT16U,        Some::<u32>(1),    true,      ExifIFD),    // -> EXIF Flash Values: https://exiftool.org/TagNames/EXIF.html#Flash
