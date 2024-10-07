@@ -297,7 +297,7 @@ read_metadata
 		// Get the size of this chunk from the previous parsing process and skip
 		// the 4 bytes regarding the size
 		let chunk_size = parse_webp_result.iter().nth(chunk_index).unwrap().len();
-		perform_file_action!(file.seek(SeekFrom::Current(4)));
+		perform_file_action!(file.seek_relative(4));
 
 		if chunk_type.to_lowercase() == EXIF_CHUNK_HEADER.to_lowercase()
 		{
@@ -318,14 +318,11 @@ read_metadata
 		else
 		{
 			// Skip the entire chunk
-			perform_file_action!(file.seek(SeekFrom::Current(chunk_size as i64)));
+			perform_file_action!(file.seek_relative(chunk_size as i64));
 
 			// Note that we have to seek another byte in case the chunk is of 
 			// uneven size to account for the padding byte that must be included
-			if chunk_size % 2 == 1
-			{
-				perform_file_action!(file.seek(SeekFrom::Current(1i64)));
-			}
+			perform_file_action!(file.seek_relative(chunk_size as i64 % 2));
 		}
 
 		// Update for next loop iteration
@@ -568,7 +565,7 @@ clear_metadata
 	let mut delta = 0i32;
 
 	// Skip the WEBP signature
-	perform_file_action!(file.seek(SeekFrom::Current(4i64)));
+	perform_file_action!(file.seek_relative(4i64));
 
 	for parsed_chunk in parse_webp_result
 	{
@@ -586,7 +583,7 @@ clear_metadata
 		// Not an EXIF chunk, seek to next one and continue
 		if parsed_chunk.header().to_lowercase() != EXIF_CHUNK_HEADER.to_lowercase()
 		{
-			perform_file_action!(file.seek(SeekFrom::Current(parsed_chunk_byte_count as i64)));
+			perform_file_action!(file.seek_relative(parsed_chunk_byte_count as i64));
 			continue;
 		}
 
@@ -597,7 +594,7 @@ clear_metadata
 		let exif_chunk_start_cursor_position = SeekFrom::Start(file.seek(SeekFrom::Current(0)).unwrap());
 
 		// Skip the EXIF chunk ...
-		perform_file_action!(file.seek(SeekFrom::Current(parsed_chunk_byte_count as i64)));
+		perform_file_action!(file.seek_relative(parsed_chunk_byte_count as i64));
 
 		// ...and copy everything afterwards into a buffer...
 		let mut buffer = Vec::new();
