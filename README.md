@@ -10,7 +10,13 @@ A little library for reading and writing EXIF data in pure Rust.
 [license-badge]: https://img.shields.io/crates/l/little_exif.svg
 [license]: https://github.com/TechnikTobi/little_exif#license
 
+## Supported Formats
+- JPEG
+- JXL
+- PNG
+- WebP (only lossless and extended)
 
+Your required format is not listed here or you've run into a problem with a file that should be supported? Open up a new issue (ideally with an example image for reproduction in case of a problem) and I'll take a look!
 
 ## Example
 
