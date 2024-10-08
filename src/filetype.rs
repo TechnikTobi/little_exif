@@ -14,6 +14,7 @@ FileExtension
 	PNG  {as_zTXt_chunk: bool},
 	JPEG,
 	JXL,
+	TIFF,
 	WEBP
 }
 
@@ -37,6 +38,8 @@ FileExtension
 			"jpeg"  => Ok(FileExtension::JPEG),
 			"jxl"   => Ok(FileExtension::JXL),
 			"png"   => Ok(FileExtension::PNG{ as_zTXt_chunk: true}),
+			"tif"   => Ok(FileExtension::TIFF),
+			"tiff"  => Ok(FileExtension::TIFF),
 			"webp"  => Ok(FileExtension::WEBP),
 			_       => io_error!(Unsupported, "Unknown file type!")
 		}
