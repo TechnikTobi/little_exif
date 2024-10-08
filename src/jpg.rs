@@ -348,27 +348,34 @@ file_read_metadata
 
 		if previous_byte_was_marker_prefix
 		{
+			// Read in the length of the segment
+			// (which follows immediately after the marker)
+			let mut length_buffer = [0u8; 2];
+			perform_file_action!(file.read(&mut length_buffer));
+
+			// Decode the length to determine how much more data there is
+			let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
+			let remaining_length = (length - 2) as usize;
+
 			match byte_buffer[0]
 			{
 				0xe1	=> {                                                    // APP1 marker
-
-					// Read in the length of the segment
-					// (which follows immediately after the marker)
-					let mut length_buffer = [0u8; 2];
-					perform_file_action!(file.read(&mut length_buffer));
-
-					// Decode the length to determine how much more data there is
-					let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
-					let remaining_length = (length - 2) as usize;
-
 					// Read in the remaining data
 					let mut buffer = vec![0u8; remaining_length];
 					perform_file_action!(file.read(&mut buffer));
 
 					return Ok(buffer);
 				},
-				0xd9	=> break,                                               // EOI marker
-				_		=> (),                                                  // Every other marker
+
+				0xd9	=> {                                                    // EOI marker
+					// No more data to read in
+					return io_error!(Other, "No EXIF data found!");
+				},
+
+				_		=> {                                                    // Every other marker
+					// Skip this segment
+					file.seek_relative(remaining_length as i64)?;
+				},
 			}
 
 			previous_byte_was_marker_prefix = false;
@@ -378,6 +385,4 @@ file_read_metadata
 			previous_byte_was_marker_prefix = byte_buffer[0] == JPG_MARKER_PREFIX;
 		}
 	}
-
-	return io_error!(Other, "No EXIF data found!");
 }
