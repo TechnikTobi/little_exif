@@ -149,6 +149,31 @@ read_from_file_jxl()
 	Ok(())
 }
 
+#[test]
+fn
+read_from_file_tiff()
+-> Result<(), std::io::Error>
+{
+	let raw_metadata = Metadata::new_from_path(Path::new("tests/read_sample.tif"));
+	if raw_metadata.is_err()
+	{
+		panic!();
+	}
+
+	let metadata = raw_metadata.unwrap();
+
+	if let Some(iso_tag) = metadata.get_tag(&ExifTag::ISO(vec![0]))
+	{
+		assert_eq!(from_u8_vec_to_u32_le(&iso_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)), 2706);
+	}
+	else
+	{
+		panic!("Could not read ISO tag!")
+	}
+
+	Ok(())
+}
+
 
 fn
 read_from_vec_generic
