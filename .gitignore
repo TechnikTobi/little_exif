@@ -22,4 +22,5 @@ copy.png
 examples/copy.jpg
 tests/read_sample_no_exif.webp
 debug/*/target/*
+debug/*.lock
 tests/*copy*
