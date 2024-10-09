@@ -6,7 +6,7 @@ use std::path::Path;
 
 use crate::general_file_io::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[allow(non_snake_case)]
 pub enum
 FileExtension
