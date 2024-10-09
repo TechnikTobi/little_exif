@@ -348,6 +348,52 @@ read_metadata
 	}
 }
 
+/// Skips the entropy-coded segment (ECS) that is followed by a start of scan
+/// segment (SOS) and positions the cursor at the start of the next segment,
+/// i.e. a 0xFF byte that is followed by a marker that is NOT 0xD0-0xD7 or 0x00.
+/// Assumes that the given cursor is positioned at the start of the ECS
+fn 
+skip_ecs
+<T: Seek + Read>
+(
+	cursor: &mut T
+)
+-> Result<(), std::io::Error>
+{
+	
+	let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
+	let mut previous_byte_was_marker_prefix = false;                            // A boolean for remembering if the previous byte was a marker prefix (0xFF)
+
+	loop
+	{
+		// Read next byte into buffer
+		cursor.read_exact(&mut byte_buffer)?;
+
+		if previous_byte_was_marker_prefix
+		{
+			match byte_buffer[0]
+			{
+				0xd0 | 0xd1 | 0xd2 | 0xd3 | 0xd4 | 0xd5 | 0x6 | 0xd7 |
+				0x00 => {
+					// Continue
+				},
+
+				_ => {
+					// Position back to where the 0xFF byte is located
+					cursor.seek_relative(-2)?;
+					return Ok(()); 
+				},
+			}
+
+			previous_byte_was_marker_prefix = false;
+		}
+		else
+		{
+			previous_byte_was_marker_prefix = byte_buffer[0] == JPG_MARKER_PREFIX;
+		}
+	}
+}
+
 pub(crate) fn
 file_read_metadata
 (
@@ -367,6 +413,15 @@ file_read_metadata
 
 		if previous_byte_was_marker_prefix
 		{
+			// Check if this is the end of the file. In that case, the length
+			// data can't be read and we need to return prematurely. 
+			// This is why this case can't be included in the match afterwards.
+			if byte_buffer[0] == 0xd9                                           // EOI marker
+			{
+				// No more data to read in
+				return io_error!(Other, "No EXIF data found!");
+			}
+
 			// Read in the length of the segment
 			// (which follows immediately after the marker)
 			let mut length_buffer = [0u8; 2];
@@ -378,7 +433,7 @@ file_read_metadata
 
 			match byte_buffer[0]
 			{
-				0xe1	=> {                                                    // APP1 marker
+				0xe1 => {                                                       // APP1 marker
 					// Read in & return the remaining data
 					let mut app1_buffer = vec![0u8; remaining_length];
 					perform_file_action!(file.read(&mut app1_buffer));
@@ -386,12 +441,25 @@ file_read_metadata
 					return Ok(app1_buffer);
 				},
 
-				0xd9	=> {                                                    // EOI marker
-					// No more data to read in
-					return io_error!(Other, "No EXIF data found!");
-				},
+				0xda => {                                                       // SOS marker
+					// The start of scan (SOS) segment is followed by a blob of
+					// image data, the entropy-coded segment (ECS), which has no
+					// information regarding its length (as it may easily be 
+					// bigger than the max segment length of 64kb)
 
-				_		=> {                                                    // Every other marker
+					// So, we have to scan byte-for-byte at this point until
+					// a marker prefix comes up that is NOT
+					// - followed by a restart marker (D0 - D7) or 
+					// - a data FF (followed by 00)
+
+					// So, start by skipping the SOS segment
+					file.seek_relative(remaining_length as i64)?;
+
+					// And skip the ECS
+					skip_ecs(&mut file)?;
+				}
+
+				_ => {                                                          // Every other marker
 					// Skip this segment
 					file.seek_relative(remaining_length as i64)?;
 				},
