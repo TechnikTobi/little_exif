@@ -2,6 +2,7 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::fs::File;
+use std::io::Cursor;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::io::Read;
@@ -296,37 +297,55 @@ read_metadata
 {
 	check_signature(file_buffer)?;
 
+	let mut cursor = Cursor::new(file_buffer);
+	cursor.set_position(2);
+
+	let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
 	let mut previous_byte_was_marker_prefix = false;
 
-	for (i, byte_buffer) in file_buffer.iter().enumerate()
+	loop
 	{
+		cursor.read_exact(&mut byte_buffer)?;
+
 		if previous_byte_was_marker_prefix
 		{
-			match byte_buffer
+			// Read in the length of the segment
+			// (which follows immediately after the marker)
+			let mut length_buffer = [0u8; 2];
+			cursor.read_exact(&mut length_buffer)?;
+
+			// Decode the length to determine how much more data there is
+			let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
+			let remaining_length = (length - 2) as usize;
+
+			match byte_buffer[0]
 			{
 				0xe1	=> {                                                    // APP1 marker
-
-					// Read & decode the length to determine how much more data there is
-					let length = from_u8_vec_macro!(u16, &file_buffer[i+1..=i+2].to_vec(), &Endian::Big);
-					let remaining_length = (length - 2) as usize;
-
 					// Read in & return the remaining data
-					let app1_buffer = file_buffer[i+3..=i+remaining_length].to_vec();
+					let mut app1_buffer = vec![0u8; remaining_length];
+					cursor.read_exact(&mut app1_buffer)?;
+
 					return Ok(app1_buffer);
 				},
-				0xd9	=> break,                                               // EOI marker
-				_		=> (),                                                  // Every other marker
+
+				0xd9	=> {                                                    // EOI marker
+					// No more data to read in
+					return io_error!(Other, "No EXIF data found!");
+				},
+
+				_		=> {                                                    // Every other marker
+					// Skip this segment
+					cursor.seek_relative(remaining_length as i64)?;
+				},
 			}
 
 			previous_byte_was_marker_prefix = false;
 		}
 		else
 		{
-			previous_byte_was_marker_prefix = byte_buffer == &JPG_MARKER_PREFIX;
+			previous_byte_was_marker_prefix = byte_buffer[0] == JPG_MARKER_PREFIX;
 		}
 	}
-	
-	return io_error!(Other, "No EXIF data found!");
 }
 
 pub(crate) fn
@@ -360,11 +379,11 @@ file_read_metadata
 			match byte_buffer[0]
 			{
 				0xe1	=> {                                                    // APP1 marker
-					// Read in the remaining data
-					let mut buffer = vec![0u8; remaining_length];
-					perform_file_action!(file.read(&mut buffer));
+					// Read in & return the remaining data
+					let mut app1_buffer = vec![0u8; remaining_length];
+					perform_file_action!(file.read(&mut app1_buffer));
 
-					return Ok(buffer);
+					return Ok(app1_buffer);
 				},
 
 				0xd9	=> {                                                    // EOI marker

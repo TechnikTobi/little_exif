@@ -1,4 +1,5 @@
 use std::fs::copy;
+use std::fs::read;
 use std::fs::remove_file;
 use std::path::Path;
 
@@ -14,9 +15,12 @@ fn main()
 	for tag in Metadata::new_from_path(jpg_path).unwrap().data()
 	{
 		println!("{:?}", tag);
-		if tag.is_unknown()
-		{
-			println!("The previous unknown tag 0x{:x} has a u8 vec with {} elements\n", tag.as_u16(), tag.value_as_u8_vec(&little_exif::endian::Endian::Little).len());
-		}
+	}
+
+	// Read metadata from vec
+	let image_data = read(&jpg_path).unwrap();
+	for tag in Metadata::new_from_vec(&image_data, little_exif::filetype::FileExtension::JPEG).unwrap().data()
+	{
+		println!("{:?}", tag);
 	}
 }
