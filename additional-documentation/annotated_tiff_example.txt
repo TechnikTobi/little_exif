@@ -1,0 +1,295 @@
+0x0000 4D4D002A // Endian info + Magic number 42
+0x0004 00000152 // Offset to first IFD
+0x0008 0010     // Begin of EXIF data (???) with 16 tags
+
+0x000A 829A     // tag #1 ExposureTime
+0x000C 00050000 
+0x0010 00010000 
+0x0014 00CE     // Offset!
+
+0x0016 829D     // tag #2 FNumber
+0x0018 00050000 
+0x001C 00010000 
+0x0020 00D6     // Offset!
+
+0x0022 8822     // tag #3 ExposureProgram
+0x0024 00030000 
+0x0028 00010001 
+0x002C 0000
+
+0x002E 8827     // tag #4 ISO
+0x0030 00030000 
+0x0034 00010190 
+0x0038 0000
+
+0x003A 9003     // tag #5 DateTimeOriginal (String)
+0x003C 00020000 
+0x0040 00140000 
+0x0044 00DE     // Offset!
+
+0x0046 9204     // tag #6 ExposureCompensation
+0x0048 000A0000 
+0x004C 00010000 
+0x0050 00F2     // Offset!
+
+0x0052 9207     // tag #7
+0x0054 00030000 
+0x0058 00010005 
+0x005C 0000
+
+0x005E 9209     // tag #8
+0x0060 00030000 
+0x0064 00010009 
+0x0068 0000
+
+0x006A 920A     // tag #9 FocalLength
+0x006C 00050000 
+0x0070 00010000 
+0x0074 00FA     // Offset!
+
+0x0076 A001     // tag #10
+0x0078 00030000 
+0x007C 00010000 
+0x0080 0000
+
+0x0082 A002     // tag #11
+0x0084 00040000 
+0x0088 00010000 
+0x008C 0002
+
+0x008E A003     // tag #12
+0x0090 00040000 
+0x0094 00010000 
+0x0098 0002
+
+0x009A A403     // tag #13
+0x009C 00030000 
+0x00A0 00010000 
+0x00A4 0000
+
+0x00A6 A431     // tag #14 SerialNumber
+0x00A8 00020000 
+0x00AC 000C0000 
+0x00B0 0102     // Offset!
+
+0x00B2 A433     // tag #15
+0x00B4 00020000 
+0x00B8 00080000 
+0x00BC 010E     // Offset!
+
+0x00BE A434     // tag #16
+0x00C0 00020000 
+0x00C4 00180000 
+0x00C8 0116     // Offset!
+
+0x00CA 0000     // Link to next IFD (= zero)
+0x00CC 0000     // Link to next IFD (= zero)
+
+0x00CE 0000     // Data for tag #1
+0x00D0 0000     // (Set to zeros)
+0x00D2 0000     // 
+0x00D4 0000     // Data for tag #1
+
+0x00D6 0000     // Data for tag #2
+0x00D8 0000     // (Set to zeros)
+0x00DA 0000     // 
+0x00DC 0000     // Data for tag #2
+
+0x00DE 0000     // Data for tag #5
+0x00E0 0000     // (Set to zeros)
+0x00E2 0000     // 
+0x00E4 0000     // 
+0x00E6 0000     // 
+0x00E8 0000     // 
+0x00EA 0000     // 
+0x00EC 0000     // 
+0x00EE 0000     // 
+0x00F0 0000     // Data for tag #5
+
+0x00F2 0000     // Data for tag #6
+0x00F4 0000     // (Set to zeros)
+0x00F6 0000     // 
+0x00F8 0000     // Data for tag #6
+
+0x00FA 0000     // Data for tag #9
+0x00FC 0000     // (Set to zeros)
+0x00FE 0000     // 
+0x0100 0000     // Data for tag #9
+
+0x0102 0000     // Data for tag #14
+0x0104 0000     // (Set to zeros)
+0x0106 0000     //
+0x0108 0000     //
+0x010A 0000     //
+0x010C 0000     // Data for tag #14
+
+0x010E 0000     // Data for tag #15
+0x0110 0000     // (Set to zeros)
+0x0112 0000     // 
+0x0114 0000     // Data for tag #15
+
+0x0116 0000     // Data for tag #16
+0x0118 0000     // (Set to zeros)
+0x011A 0000     //
+0x011C 0000     // 
+0x011E 0000     //
+0x0120 0000     // 
+0x0122 0000     //
+0x0124 0000     // 
+0x0126 0000     //
+0x0128 0000     // 
+0x012A 0000     // 
+0x012C 0000     // Data for tag #16
+
+0x012E 0000     // Start of unknown data
+0x0130 0000     // (Set to zeros)
+0x0132 0000     //
+0x0134 0000     //
+0x0136 0000     //
+0x0138 0000     //
+0x013A 0000     //
+0x013C 0000     //
+0x013E 0000     //
+0x0140 0000     //
+0x0142 0000     //
+0x0144 0000     //
+0x0146 0000     //
+0x0148 0000     //
+0x014A 0000     //
+0x014C 0000     //
+0x014E 0000     //
+0x0150 0000     // End of unknown data
+
+0x0152 0018     // Start of IFD at 0x0152 with 0x18 (=24) tags
+0x0154 01000003 // tag 01 0x0100: ImageWidth
+0x0158 00000001 
+0x015C 00020000 
+0x0160 01010003 // tag 02 0x0101: ImageHeight
+0x0164 00000001 
+0x0168 00020000 
+0x016C 01020003 // tag 03 0x0102: BitsPerSample
+0x0170 00000004 
+0x0174 00000288 // Offset!
+0x0178 01030003 // tag 04 0x0103: Compression
+0x017C 00000001 
+0x0180 00080000 
+0x0184 01060003 // tag 05 0x0106: PhotometricInterpretation
+0x0188 00000001 
+0x018C 00020000 
+0x0190 010A0003 // tag 06 0x010A: FillOrder (not yet in little_exif!)
+0x0194 00000001 
+0x0198 00010000 
+0x019C 010F0002 // tag 07 0x010F: Make
+0x01A0 0000000A 
+0x01A4 00000298 // Offset!
+0x01A8 01100002 // tag 08 0x0110: Model
+0x01AC 00000009 
+0x01B0 000002A2 // Offset!
+0x01B4 01110004 // tag 09 0x0111: StripOffsets
+0x01B8 00000001 
+0x01BC 0000012E // An offset value but not an offset to the IFD entry data. A bit confusing...
+0x01C0 01120003 // tag 10 0x0112: Orientation
+0x01C4 00000001 
+0x01C8 00010000 
+0x01CC 01150003 // tag 11 0x0115: SamplesPerPixel
+0x01D0 00000001 
+0x01D4 00040000 
+0x01D8 01160003 // tag 12 0x0116: RowsPerStrip
+0x01DC 00000001 
+0x01E0 00020000 
+0x01E4 01170004 // tag 13 0x0117: StripByteCounts
+0x01E8 00000001 
+0x01EC 00000024 
+0x01F0 011A0005 // tag 14 0x011A: XResolution
+0x01F4 00000001 
+0x01F8 00000278 // Offset!
+0x01FC 011B0005 // tag 15 0x011B: YResolution
+0x0200 00000001 
+0x0204 00000280 // Offset!
+0x0208 011C0003 // tag 16 0x011C: PlanarConfiguration
+0x020C 00000001 
+0x0210 00010000 
+0x0214 01280003 // tag 17 0x0128: ResolutionUnit
+0x0218 00000001 
+0x021C 00020000 
+0x0220 01310002 // tag 18 0x0131: Software
+0x0224 0000000E 
+0x0228 000002AC // Offset!
+0x022C 01520003 // tag 19 0x0152: ExtraSamples (not in little_exif!)
+0x0230 00000001 
+0x0234 00010000 
+0x0238 01530003 // tag 20 0x0153: SampleFormat (not in little_exif!)
+0x023C 00000004 
+0x0240 00000290 // Offset!
+0x0244 02BC0001 // tag 21 0x02BC: ?
+0x0248 000003F9 
+0x024C 000002E6 // Offset!
+0x0250 83BB0007 // tag 22 0x83BB: ?
+0x0254 0000002C 
+0x0258 000002BA // Offset!
+0x025C 87690004 // tag 23 0x8769: ExifOffset
+0x0260 00000001 
+0x0264 00000008 
+0x0268 87730007 // tag 24 0x8773: ?
+0x026C 000001F0 
+0x0270 000006E0 // Offset!
+0x0274 00000000 // Link offset to next IFD: All zeros -> no next IFD!
+
+0x0278 0000     // Data for IFD0 tag 14
+0x027A 0000     // (Set to zeros)
+0x027C 0000     // 
+0x027E 0000     // Data for IFD0 tag 14
+
+0x0280 0000     // Data for IFD0 tag 15
+0x0282 0000     // (Set to zeros)
+0x0284 0000     // 
+0x0286 0000     // Data for IFD0 tag 14
+
+0x0288 00000000 // Data for IFD0 tag 03 (Set to zeros)
+0x028C 00000000 // Data for IFD0 tag 03
+
+0x0290 00000000 // Data for IFD0 tag 20 (Set to zeros)
+0x0294 00000000 // Data for IFD0 tag 20
+
+0x0298 00000000 // Data for IFD0 tag 07
+0x029C 00000000 // (Set to zeros)
+0x02A0 0000     // Data for IFD0 tag 07
+
+0x02A2 0000     // Data for IFD0 tag 08
+0x02A4 00000000 // (Set to zeros)
+0x02A8 00000000 // Data for IFD0 tag 08
+
+0x02AC 00000000 // Data for IFD0 tag 18
+0x02B0 00000000 // (Set to zeros)
+0x02B4 00000000 // 
+0x02B8 0000     // Data for IFD0 tag 18
+
+0x02BA 0000     // Start of data for IFD0 tag 22 (44 bytes?)
+0x02BC 00000000 // (Set to zeros)
+0x02C0 00000000 //
+0x02C4 00000000 //
+0x02C8 00000000 //
+0x02CC 00000000 //
+0x02D0 00000000 //
+0x02D4 00000000 //
+0x02D8 00000000 //
+0x02DC 00000000 //
+0x02E0 00000000 //
+0x02E4 0000     // End of data for IFD0 tag 22 
+
+0x02E6 0000     // Start of data for IFD0 tag 21 (1017 bytes?)
+0x02E8 00000000 // (Set to zeros & removed lines in between)
+0x02EC 00000000 //
+...             //
+0x06D0 00000000 //
+0x06D4 00000000 //
+0x06D8 00000000 //
+0x06DC 00000000 // End of data for IFD0 tag 21 ( bytes?)
+
+0x06E0 00000000 // Start of data for IFD0 tag 24 ( bytes?)
+0x06E4 00000000 // (Set to zeros & removed lines in between)
+0x06E8 00000000 //
+...             //
+0x08C4 00000000 //
+0x08C8 00000000 //
+0x08CC 00000000 // End of data for IFD0 tag 24
