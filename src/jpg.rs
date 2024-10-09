@@ -2,6 +2,7 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::fs::File;
+use std::io::BufReader;
 use std::io::Cursor;
 use std::io::Seek;
 use std::io::SeekFrom;
@@ -310,10 +311,9 @@ file_read_metadata
 )
 -> Result<Vec<u8>, std::io::Error>
 {
-	// Setup of variables necessary for going through the file
-	let mut file = file_check_signature(path)?;                                 // The struct for interacting with the file
-	
-	return generic_read_metadata(&mut file);
+	// Use a buffered reader to speed up operations, see issue #21
+	let mut buffered_file = BufReader::new(file_check_signature(path)?);
+	return generic_read_metadata(&mut buffered_file);
 }
 
 /// Skips the entropy-coded segment (ECS) that is followed by a start of scan
