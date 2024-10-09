@@ -522,11 +522,14 @@ Metadata
 		// Decode all the tags
 		let mut all_tags = Vec::new();
 
+		// Get offset to first IFD
+		let ifd0_offset = from_u8_vec_macro!(u32, &encoded_data[10..14].to_vec(), &endian);
+
 		// Start with IFD0
 		let ifd0_decode_result = Self::decode_ifd(
-			&encoded_data[14..].to_vec(),
+			&encoded_data[6..].to_vec(),
 			&ExifTagGroup::IFD0,
-			8,                                                                  // TODO: What if IFD0 is at another offset? Can this even happen?
+			ifd0_offset as usize,
 			&endian
 		);
 
@@ -548,33 +551,33 @@ Metadata
 	(
 		encoded_data: &Vec<u8>,
 		group: &ExifTagGroup,
-		given_offset: u32,
+		ifd_start: usize,
 		endian: &Endian
 	)
 	-> Result<Vec<ExifTag>, std::io::Error>
 	{
 		// Return an empty vector if there is not enough data to decode an IFD
-		if encoded_data.len() <= 1
+		if encoded_data.len() <= 8
 		{
 			return Ok(Vec::new());
 		}
 
 		// The first two bytes give us the number of entries in this IFD
-		let number_of_entries = from_u8_vec_macro!(u16, &encoded_data[0..2].to_vec(), endian);
+		let number_of_entries = from_u8_vec_macro!(u16, &encoded_data[ifd_start..ifd_start+2].to_vec(), endian);
 
 		// Assert that we have enough data to unpack
-		assert!(2 + IFD_ENTRY_LENGTH as usize * number_of_entries as usize + IFD_END.len() <= encoded_data.len());
+		assert!(2 + IFD_ENTRY_LENGTH as usize * number_of_entries as usize + IFD_END.len() <= encoded_data.len() - ifd_start);
 
 		let mut tags: Vec<ExifTag> = Vec::new();
 		for i in 0..number_of_entries
 		{
 			// index within the given data where the current entry starts
-			let ifd_start_index = (2 + (i as u32)*IFD_ENTRY_LENGTH) as usize;
+			let entry_start_index = ifd_start + (2 + (i as u32)*IFD_ENTRY_LENGTH) as usize;
 
 			// Decode the first 8 bytes with the tag, format and component number
-			let hex_tag              = from_u8_vec_macro!(u16, &encoded_data[(ifd_start_index  )..(ifd_start_index+2)].to_vec(), endian);
-			let hex_format           = from_u8_vec_macro!(u16, &encoded_data[(ifd_start_index+2)..(ifd_start_index+4)].to_vec(), endian);
-			let hex_component_number = from_u8_vec_macro!(u32, &encoded_data[(ifd_start_index+4)..(ifd_start_index+8)].to_vec(), endian);
+			let hex_tag              = from_u8_vec_macro!(u16, &encoded_data[(entry_start_index  )..(entry_start_index+2)].to_vec(), endian);
+			let hex_format           = from_u8_vec_macro!(u16, &encoded_data[(entry_start_index+2)..(entry_start_index+4)].to_vec(), endian);
+			let hex_component_number = from_u8_vec_macro!(u32, &encoded_data[(entry_start_index+4)..(entry_start_index+8)].to_vec(), endian);
 
 			// Decoding the format
 			let format;
@@ -600,15 +603,15 @@ Metadata
 			if byte_count > 4
 			{
 				// Compute the offset
-				let hex_offset = from_u8_vec_macro!(u32, &encoded_data[(ifd_start_index+8)..(ifd_start_index+12)].to_vec(), endian) - given_offset;
+				let hex_offset = from_u8_vec_macro!(u32, &encoded_data[(entry_start_index+8)..(entry_start_index+12)].to_vec(), endian);
 				raw_data = encoded_data[(hex_offset as usize)..((hex_offset+byte_count) as usize)].to_vec();
 			}
 			else
 			{
 				// The 4 bytes are the actual data
 				// Note: This may actually be *less* than 4 bytes! This is why
-				// The second index isn't just ifd_start_index+12
-				raw_data = encoded_data[(ifd_start_index+8)..(ifd_start_index+8+byte_count as usize)].to_vec();
+				// The second index isn't just entry_start_index+12
+				raw_data = encoded_data[(entry_start_index+8)..(entry_start_index+8+byte_count as usize)].to_vec();
 			}
 
 			// If this is a known tag...
@@ -618,11 +621,10 @@ Metadata
 				if let Some(subifd_group) = tag.is_offset_tag()
 				{
 					// ...perform a recursive call
-					let offset = from_u8_vec_macro!(u32, &raw_data, endian);
-					let relative_offset = (offset - given_offset) as usize;
+					let offset = from_u8_vec_macro!(u32, &raw_data, endian) as usize;
 
 					let subifd_decode_result = Self::decode_ifd(
-						&encoded_data[relative_offset..].to_vec(),
+						&encoded_data,
 						&subifd_group,
 						offset,
 						endian
