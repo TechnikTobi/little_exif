@@ -300,52 +300,20 @@ read_metadata
 	let mut cursor = Cursor::new(file_buffer);
 	cursor.set_position(2);
 
-	let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
-	let mut previous_byte_was_marker_prefix = false;
+	return generic_read_metadata(&mut cursor);
+}
 
-	loop
-	{
-		cursor.read_exact(&mut byte_buffer)?;
-
-		if previous_byte_was_marker_prefix
-		{
-			// Read in the length of the segment
-			// (which follows immediately after the marker)
-			let mut length_buffer = [0u8; 2];
-			cursor.read_exact(&mut length_buffer)?;
-
-			// Decode the length to determine how much more data there is
-			let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
-			let remaining_length = (length - 2) as usize;
-
-			match byte_buffer[0]
-			{
-				0xe1	=> {                                                    // APP1 marker
-					// Read in & return the remaining data
-					let mut app1_buffer = vec![0u8; remaining_length];
-					cursor.read_exact(&mut app1_buffer)?;
-
-					return Ok(app1_buffer);
-				},
-
-				0xd9	=> {                                                    // EOI marker
-					// No more data to read in
-					return io_error!(Other, "No EXIF data found!");
-				},
-
-				_		=> {                                                    // Every other marker
-					// Skip this segment
-					cursor.seek_relative(remaining_length as i64)?;
-				},
-			}
-
-			previous_byte_was_marker_prefix = false;
-		}
-		else
-		{
-			previous_byte_was_marker_prefix = byte_buffer[0] == JPG_MARKER_PREFIX;
-		}
-	}
+pub(crate) fn
+file_read_metadata
+(
+	path: &Path
+)
+-> Result<Vec<u8>, std::io::Error>
+{
+	// Setup of variables necessary for going through the file
+	let mut file = file_check_signature(path)?;                                 // The struct for interacting with the file
+	
+	return generic_read_metadata(&mut file);
 }
 
 /// Skips the entropy-coded segment (ECS) that is followed by a start of scan
@@ -394,22 +362,23 @@ skip_ecs
 	}
 }
 
-pub(crate) fn
-file_read_metadata
+
+fn
+generic_read_metadata
+<T: Seek + Read>
 (
-	path: &Path
+	cursor: &mut T
 )
 -> Result<Vec<u8>, std::io::Error>
 {
-	// Setup of variables necessary for going through the file
-	let mut file = file_check_signature(path)?;                                 // The struct for interacting with the file
+	// Setup of variables necessary for going through the data
 	let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
 	let mut previous_byte_was_marker_prefix = false;                            // A boolean for remembering if the previous byte was a marker prefix (0xFF)
 
 	loop
 	{
 		// Read next byte into buffer
-		perform_file_action!(file.read(&mut byte_buffer));
+		cursor.read_exact(&mut byte_buffer)?;
 
 		if previous_byte_was_marker_prefix
 		{
@@ -425,7 +394,7 @@ file_read_metadata
 			// Read in the length of the segment
 			// (which follows immediately after the marker)
 			let mut length_buffer = [0u8; 2];
-			perform_file_action!(file.read(&mut length_buffer));
+			cursor.read_exact(&mut length_buffer)?;
 
 			// Decode the length to determine how much more data there is
 			let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
@@ -436,7 +405,7 @@ file_read_metadata
 				0xe1 => {                                                       // APP1 marker
 					// Read in & return the remaining data
 					let mut app1_buffer = vec![0u8; remaining_length];
-					perform_file_action!(file.read(&mut app1_buffer));
+					cursor.read_exact(&mut app1_buffer)?;
 
 					return Ok(app1_buffer);
 				},
@@ -453,15 +422,15 @@ file_read_metadata
 					// - a data FF (followed by 00)
 
 					// So, start by skipping the SOS segment
-					file.seek_relative(remaining_length as i64)?;
+					cursor.seek_relative(remaining_length as i64)?;
 
 					// And skip the ECS
-					skip_ecs(&mut file)?;
+					skip_ecs(cursor)?;
 				}
 
 				_ => {                                                          // Every other marker
 					// Skip this segment
-					file.seek_relative(remaining_length as i64)?;
+					cursor.seek_relative(remaining_length as i64)?;
 				},
 			}
 
