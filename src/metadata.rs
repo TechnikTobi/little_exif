@@ -6,6 +6,7 @@ use std::path::Path;
 use crate::endian::*;
 use crate::exif_tag_format::INT16U;
 use crate::jxl;
+use crate::tiff;
 use crate::u8conversion::*;
 use crate::exif_tag::ExifTag;
 use crate::exif_tag::ExifTagGroup;
@@ -155,6 +156,8 @@ Metadata
 				=>  jxl::file_read_metadata(&path),
 			FileExtension::PNG { as_zTXt_chunk: _ } 
 				=>  png::file::read_metadata(&path),
+			FileExtension::TIFF
+				=> tiff::file::read_metadata(&path),
 			FileExtension::WEBP 
 				=> webp::file::read_metadata(&path),
 			_
@@ -556,6 +559,8 @@ Metadata
 	)
 	-> Result<Vec<ExifTag>, std::io::Error>
 	{
+		println!("");
+
 		// Return an empty vector if there is not enough data to decode an IFD
 		if encoded_data.len() <= 8
 		{
@@ -564,6 +569,13 @@ Metadata
 
 		// The first two bytes give us the number of entries in this IFD
 		let number_of_entries = from_u8_vec_macro!(u16, &encoded_data[ifd_start..ifd_start+2].to_vec(), endian);
+
+		println!("{:?}", group);
+		println!("ifd_start: {:x}", ifd_start);
+		println!("{} {}",
+			2 + IFD_ENTRY_LENGTH as usize * number_of_entries as usize + IFD_END.len(),
+			encoded_data.len() - ifd_start
+		);
 
 		// Assert that we have enough data to unpack
 		assert!(2 + IFD_ENTRY_LENGTH as usize * number_of_entries as usize + IFD_END.len() <= encoded_data.len() - ifd_start);
