@@ -563,6 +563,11 @@ Metadata
 		}
 
 		// The first two bytes give us the number of entries in this IFD
+		println!("");
+		println!("group {:?}", group);
+		println!("ifd_start {}", ifd_start);
+		println!("ifd_start+2 {}", ifd_start+2);
+		println!("encoded_data.len() {}", encoded_data.len());
 		let number_of_entries = from_u8_vec_macro!(u16, &encoded_data[ifd_start..ifd_start+2].to_vec(), endian);
 
 		// Assert that we have enough data to unpack
