@@ -627,7 +627,7 @@ Metadata
 			}
 
 			// If this is a known tag...
-			if let Ok(tag) = ExifTag::from_u16(hex_tag)
+			if let Ok(tag) = ExifTag::from_u16(hex_tag, *group)
 			{
 				// ...for a SubIFD...
 				if let Some(subifd_group) = tag.is_offset_tag()
@@ -663,7 +663,7 @@ Metadata
 			// Check if the tag is known and compatible with the given format
 			// Return error if incompatible and not a special case
 			// Use one of the unknown tags if unknown
-			if let Ok(tag) = ExifTag::from_u16(hex_tag)
+			if let Ok(tag) = ExifTag::from_u16(hex_tag, *group)
 			{
 				if tag.format().as_u16() != format.as_u16()
 				{
