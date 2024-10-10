@@ -29,6 +29,8 @@
 #![crate_name = "little_exif"]
 
 mod general_file_io;
+mod ifd;
+
 mod png;
 mod jpg;
 mod jxl;
@@ -43,3 +45,4 @@ pub mod exif_tag;
 pub mod exif_tag_format;
 pub mod filetype;
 pub mod metadata;
+pub mod tiffdata;
