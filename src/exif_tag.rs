@@ -19,6 +19,7 @@ ExifTagGroup
 			MakerNotesIFD,
 		GPSIFD,
 	IFD1,
+	Other,
 }
 
 macro_rules! build_tag_enum {
@@ -450,41 +451,48 @@ macro_rules! build_tag_enum {
 // (Source: https://exiftool.org/TagNames/EXIF.html )
 
 build_tag_enum![
-	// Tag                        Tag ID  Format         Nr. Components     Writable   Group
+	// Tag                        Tag ID  Format         Nr. Components     Writable   Group                                Required by        bilevel grayscale palette-color full-color
 	(InteroperabilityIndex,       0x0001, STRING,        Some::<u32>(4),    true,      InteropIFD),
 
-	(ImageWidth,                  0x0100, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
-	(ImageHeight,                 0x0101, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
-	(BitsPerSample,               0x0102, INT16U,        Some::<u32>(3),    true,      IFD0),       // IFD1?
-	(Compression,                 0x0103, INT16U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
+	(ImageWidth,                  0x0100, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1?            // Not EXIF but TIFF   x       x         x             x 
+	(ImageHeight,                 0x0101, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1?            // Not EXIF but TIFF   x       x         x             x 
+	(BitsPerSample,               0x0102, INT16U,        Some::<u32>(3),    true,      IFD0),       // IFD1?            // Not EXIF but TIFF           x         x             x 
+	(Compression,                 0x0103, INT16U,        Some::<u32>(1),    true,      IFD0),       // IFD1?            // Not EXIF but TIFF   x       x         x             x 
 
-	(PhotometricInterpretation,   0x0106, INT16U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
+	(PhotometricInterpretation,   0x0106, INT16U,        Some::<u32>(1),    true,      IFD0),       // IFD1?            // Not EXIF but TIFF   x       x         x             x 
+
+	(CellWidth,                   0x0108, INT16U,        Some::<u32>(1),    true,      IFD0),                           // Not EXIF but TIFF
+	(CellHeight,                  0x0109, INT16U,        Some::<u32>(1),    true,      IFD0),                           // Not EXIF but TIFF
 
 	(ImageDescription,            0x010e, STRING,        None::<u32>,       true,      IFD0),
 	(Make,                        0x010f, STRING,        None::<u32>,       true,      IFD0),
 	(Model,                       0x0110, STRING,        None::<u32>,       true,      IFD0),
-	(StripOffsets,                0x0111, INT32U,        None::<u32>,       false,     NO_GROUP),   // IFD1?
+	(StripOffsets,                0x0111, INT32U,        None::<u32>,       false,     NO_GROUP),   // IFD1?            // Not EXIF but TIFF   x       x         x             x 
 	(Orientation,                 0x0112, INT16U,        Some::<u32>(1),    true,      IFD0),
 
-	(SamplesPerPixel,             0x0115, INT16U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
-	(RowsPerStrip,                0x0116, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
-	(StripByteCounts,             0x0117, INT32U,        None::<u32>,       false,     NO_GROUP),   // IFD1?
+	(SamplesPerPixel,             0x0115, INT16U,        Some::<u32>(1),    true,      IFD0),       // IFD1?            // Not EXIF but TIFF                                   x 
+	(RowsPerStrip,                0x0116, INT32U,        Some::<u32>(1),    true,      IFD0),       // IFD1?            // Not EXIF but TIFF   x       x         x             x 
+	(StripByteCounts,             0x0117, INT32U,        None::<u32>,       false,     NO_GROUP),   // IFD1?            // Not EXIF but TIFF   x       x         x             x 
 
-	(XResolution,                 0x011a, RATIONAL64U,   Some::<u32>(1),    true,      IFD0),
-	(YResolution,                 0x011b, RATIONAL64U,   Some::<u32>(1),    true,      IFD0),
+	(XResolution,                 0x011a, RATIONAL64U,   Some::<u32>(1),    true,      IFD0),                           // Not EXIF but TIFF   x       x         x             x 
+	(YResolution,                 0x011b, RATIONAL64U,   Some::<u32>(1),    true,      IFD0),                           // Not EXIF but TIFF   x       x         x             x 
 	(PlanarConfiguration,         0x011c, INT16U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
 
-	(ResolutionUnit,              0x0128, INT16U,        Some::<u32>(1),    true,      IFD0),       // IFD1?
+	(ResolutionUnit,              0x0128, INT16U,        Some::<u32>(1),    true,      IFD0),       // IFD1?            // Not EXIF but TIFF   x       x         x             x 
 
 	(TransferFunction,            0x012d, INT16U,        Some::<u32>(3),    true,      IFD0),
 
 	(Software,                    0x0131, STRING,        None::<u32>,       true,      IFD0),
 	(ModifyDate,                  0x0132, STRING,        Some::<u32>(20),   true,      IFD0),
 
-	(Artist,                      0x013b, STRING,        None::<u32>,       true,      IFD0),
+	(Artist,                      0x013b, STRING,        None::<u32>,       true,      IFD0),                           // Not EXIF but TIFF
 
 	(WhitePoint,                  0x013e, RATIONAL64U,   Some::<u32>(2),    true,      IFD0),
 	(PrimaryChromaticities,       0x013f, RATIONAL64U,   Some::<u32>(6),    true,      IFD0),
+
+	(ColorMap,                    0x0140, INT16U,        None::<u32>,       true,      IFD0),                           // Not EXIF but TIFF                     x               
+
+	// End of TIFF only tags (?)
 
 	(ThumbnailOffset,             0x0201, INT32U,        Some::<u32>(1),    true,      IFD1),       // oh boy, this one seems complicated - the group depends on the file type???
 	(ThumbnailLength,             0x0202, INT32U,        Some::<u32>(1),    true,      IFD1),       // same problems as 0x0201
@@ -616,6 +624,7 @@ impl ExifTag
 		{
 			ExifTag::ExifOffset(_)		=> Some(ExifTagGroup::ExifIFD),
 			ExifTag::GPSInfo(_)			=> Some(ExifTagGroup::GPSIFD),
+			// ExifTag::StripOffsets(_)    => Some(ExifTagGroup::Other),
 			// ExifTag::MakerNote(_)		=> Some(ExifTagGroup::MakerNotesIFD),
 			ExifTag::InteropOffset(_)	=> Some(ExifTagGroup::InteropIFD),
 			_ => None
