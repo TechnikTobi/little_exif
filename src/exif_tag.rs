@@ -148,10 +148,10 @@ macro_rules! build_tag_enum {
 			)
 			-> Result<ExifTag, String>
 			{
-				match hex_value
+				match (hex_value, group)
 				{
 					$(
-						$hex_value => Ok(ExifTag::$tag(
+						($hex_value, ExifTagGroup::$group) => Ok(ExifTag::$tag(
 							<paste!{[<$format_enum>]} as U8conversion<paste!{[<$format_enum>]}>>::from_u8_vec(raw_data, endian)
 						)),
 					)*
@@ -451,6 +451,46 @@ macro_rules! build_tag_enum {
 // (Source: https://exiftool.org/TagNames/EXIF.html )
 
 build_tag_enum![
+	// Tag                        Tag ID  Format         Nr. Components     Writable   Group
+
+	(GPSVersionID,                0x0000, INT8U,         Some::<u32>(4),    true,      GPSIFD),
+	(GPSLatitudeRef,              0x0001, STRING,        Some::<u32>(2),    true,      GPSIFD),
+	(GPSLatitude,                 0x0002, RATIONAL64U,   Some::<u32>(3),    true,      GPSIFD),
+	(GPSLongitudeRef,             0x0003, STRING,        Some::<u32>(2),    true,      GPSIFD),
+	(GPSLongitude,                0x0004, RATIONAL64U,   Some::<u32>(3),    true,      GPSIFD),
+
+	(GPSAltitudeRef,              0x0005, INT8U,         Some::<u32>(1),    true,      GPSIFD),
+	(GPSAltitude,                 0x0006, RATIONAL64U,   Some::<u32>(1),    true,      GPSIFD),
+	(GPSTimeStamp,                0x0007, RATIONAL64U,   Some::<u32>(3),    true,      GPSIFD),
+	(GPSSatellites,               0x0008, STRING,        None::<u32>,       true,      GPSIFD),
+	(GPSStatus,                   0x0009, STRING,        Some::<u32>(2),    true,      GPSIFD),
+	(GPSMeasureMode,              0x000a, STRING,        Some::<u32>(2),    true,      GPSIFD),
+
+	(GPSDOP,                      0x000b, RATIONAL64U,   Some::<u32>(1),    true,      GPSIFD),
+	(GPSSpeedRef,                 0x000c, STRING,        Some::<u32>(2),    true,      GPSIFD),
+	(GPSSpeed,                    0x000d, RATIONAL64U,   Some::<u32>(1),    true,      GPSIFD),
+	(GPSTrackRef,                 0x000e, STRING,        Some::<u32>(2),    true,      GPSIFD),
+	(GPSTrack,                    0x000f, RATIONAL64U,   Some::<u32>(1),    true,      GPSIFD),
+
+	(GPSImgDirectionRef,          0x0010, STRING,        Some::<u32>(2),    true,      GPSIFD),
+	(GPSImgDirection,             0x0011, RATIONAL64U,   Some::<u32>(1),    true,      GPSIFD),
+	(GPSMapDatum,                 0x0012, STRING,        None::<u32>,       true,      GPSIFD),
+
+	(GPSDestLatitudeRef,          0x0013, STRING,        Some::<u32>(2),    true,      GPSIFD),
+	(GPSDestLatitude,             0x0014, RATIONAL64U,   Some::<u32>(3),    true,      GPSIFD),
+	(GPSDestLongitudeRef,         0x0015, STRING,        Some::<u32>(2),    true,      GPSIFD),
+	(GPSDestLongitude,            0x0016, RATIONAL64U,   Some::<u32>(3),    true,      GPSIFD),
+	(GPSDestBearingRef,           0x0017, STRING,        Some::<u32>(2),    true,      GPSIFD),
+	(GPSDestBearing,              0x0018, RATIONAL64U,   Some::<u32>(1),    true,      GPSIFD),
+	(GPSDestDistanceRef,          0x0019, STRING,        Some::<u32>(2),    true,      GPSIFD),
+	(GPSDestDistance,             0x001a, RATIONAL64U,   Some::<u32>(1),    true,      GPSIFD),
+
+	(GPSProcessingMethod,         0x001b, UNDEF,         None::<u32>,       true,      GPSIFD),
+	(GPSAreaInformation,          0x001c, UNDEF,         None::<u32>,       true,      GPSIFD),
+	(GPSDateStamp,                0x001d, STRING,        Some::<u32>(11),   true,      GPSIFD),
+	(GPSDifferential,             0x001e, INT16U,        Some::<u32>(1),    true,      GPSIFD),
+	(GPSHPositioningError,        0x001f, RATIONAL64U,   Some::<u32>(1),    true,      GPSIFD),
+
 	// Tag                        Tag ID  Format         Nr. Components     Writable   Group                                Required by        bilevel grayscale palette-color full-color
 	(InteroperabilityIndex,       0x0001, STRING,        Some::<u32>(4),    true,      InteropIFD),
 
