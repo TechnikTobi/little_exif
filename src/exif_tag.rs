@@ -102,15 +102,16 @@ macro_rules! build_tag_enum {
 			pub fn
 			from_u16
 			(
-				hex_value: u16
+				hex_value: u16,
+				group:     ExifTagGroup
 			)
 			-> Result<ExifTag, String>
 			{
 				
-				match hex_value
+				match (hex_value, group)
 				{
 					$(
-						$hex_value => Ok(ExifTag::$tag(<paste!{[<$format_enum>]}>::new())),
+						($hex_value, ExifTagGroup::$group) => Ok(ExifTag::$tag(<paste!{[<$format_enum>]}>::new())),
 					)*
 					_ => Err(String::from("Invalid hex value for EXIF tag - Use 'Unknown...' instead")),
 				}
@@ -248,7 +249,7 @@ macro_rules! build_tag_enum {
 			{
 				if self.is_unknown()
 				{
-					if let Ok(_) = Self::from_u16(self.as_u16())
+					if let Ok(_) = Self::from_u16(self.as_u16(), self.get_group())
 					{
 						return false;
 					}
