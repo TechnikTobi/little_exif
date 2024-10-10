@@ -32,6 +32,7 @@ mod general_file_io;
 mod png;
 mod jpg;
 mod jxl;
+mod tiff;
 mod webp;
 mod util;
 
