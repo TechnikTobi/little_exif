@@ -9,6 +9,7 @@ use crate::endian::*;
 use crate::exif_tag::ExifTag;
 use crate::exif_tag::TagType;
 use crate::exif_tag_format::ExifTagFormat;
+use crate::exif_tag_format::INT16U;
 use crate::general_file_io::io_error;
 use crate::u8conversion::from_u8_vec_macro;
 use crate::u8conversion::U8conversion;
@@ -26,8 +27,7 @@ const IFD_END_NO_LINK:  [u8; 4] = [0x00, 0x00, 0x00, 0x00];
 /// without further specialization, like e.g. IFD0. The generic IFDs start
 /// with IFD0, which is located via the offset at the start of the TIFF data. 
 /// The next IFD (in this case: IFD1) is then located via the link offset at
-/// the end of IFD0. The generic IFD variant comes with an ID field that 
-/// indicates the position of the IFD (e.g. 0u32 for IFD0).
+/// the end of IFD0. 
 /// Other IFDs, like e.g. the ExifIFD, are linked via offset tags (in case of 
 /// the ExifIFD offset: 0x8769) that are located in the respective generic IFD 
 /// (most of them in IFD0).
@@ -65,28 +65,31 @@ ExifTagGroup
 */
 
 
+/// The value of `belongs_to_generic_ifd_nr` tells us what generic IFD this
+/// specific IFD belongs to, e.g. `0` would indicate that it belongs (or is)
+/// IFD0. 
 pub struct
 ImageFileDirectory
 {
-	tags:     Vec<ExifTag>,
-	ifd_type: ExifTagGroup,
+	tags:                      Vec<ExifTag>,
+	ifd_type:                  ExifTagGroup,
+	belongs_to_generic_ifd_nr: u32,
 }
 
 impl
 ImageFileDirectory
 {
 	/// If everything goes Ok and there is enough data to unpack, this returns
-	/// a vector with offsets to other IFDs that need to be processed
-	/// This goes against the previous approach of recursive decoding
-	/// HOWEVER: Not sure yet if this really is a good idea as there could, in
-	/// theory, be multiple IFDs, some but not all of them with an EXIF SubIFD
+	/// the offset to the next generic IFD that needs to be processed.
 	pub(crate) fn
-	generic_decode_ifd
+	decode_ifd
 	(
 		data_cursor:         &mut Cursor<Vec<u8>>,
 		data_begin_position:      usize,                                        // Stays the same for all calls to this function while decoding
 		endian:              &    Endian,
-		group:               &    ExifTagGroup
+		group:               &    ExifTagGroup,
+		generic_ifd_nr:           u32,                                          // Reuse value for recursive calls; only gets incremented by caller
+		insert_into:         &mut Vec<ImageFileDirectory>,                      // Stays the same for all calls to this function while decoding
 	)
 	-> Result<Option<Vec<usize>>, std::io::Error>
 	{
@@ -210,87 +213,104 @@ ImageFileDirectory
 			}
 
 			// We can now safely unwrap the result as it can't be an error
-			let tag = tag_result.unwrap();
+			let mut tag = tag_result.unwrap();
 
-			// If this is an IFD offset tag, 
-
-
-
-
-
-			// If this is a known tag ...
-			if let Ok(tag) = ExifTag::from_u16(hex_tag, group)
+			// If this is an IFD offset tag, perform a recursive call
+			if let TagType::IFD_OFFSET(subifd_group) = tag.get_tag_type()
 			{
-				// ... check its type
-				match tag.get_tag_type()
+				let offset = from_u8_vec_macro!(u32, &raw_data, endian) as usize;
+
+				let subifd_decode_result = Self::decode_ifd(
+					data_cursor,
+					data_begin_position,
+					endian,
+					&subifd_group,
+					generic_ifd_nr,
+					insert_into,
+				);
+
+				if let Ok(subifd_result) = subifd_decode_result
 				{
-					TagType::VALUE => {
-						()
-					},
+					assert_eq!(subifd_result, None);
+					continue;
+				}
+				else
+				{
+					return io_error!(Other, format!("Could not decode SubIFD:\n  {}", subifd_decode_result.err().unwrap()));
+				}
+			}
 
-					TagType::IFD_OFFSET(exif_tag_group) => {
+			// At this point we check if the format is actually what we expect
+			// it to be.
+			let mut decoded_u32_data = None;
+			if tag.format().as_u16() != format.as_u16()
+			{
+				// The expected format and the given format in the file
+				// do *not* match. Check special cases (INT16U -> INT32U)
+				// If no special cases match, return an error
+				if 
+					tag.format() == ExifTagFormat::INT32U &&
+					format       == ExifTagFormat::INT16U
+				{
+					let int16u_data = <INT16U as U8conversion<INT16U>>::from_u8_vec(&raw_data, endian);
+					let int32u_data = int16u_data.into_iter().map(|x| x as u32).collect::<Vec<u32>>();
 
-					},
+					decoded_u32_data = Some(int32u_data);
 
-					TagType::DATA_OFFSET => {
-						// Most difficult case. 
-						// Problem: In case of e.g. StripOffsets and
-						// StripByteCounts both of them are needed the same
-						// time for decoding...
-						// Idea: Post pone them after the end of the loop
-						match tag
-						{
-							ExifTag::StripByteCounts(_) => {
-
-							},
-
-							_ => {
-								todo!()
-							}
-						}
-					},
+					tags.push(tag.set_value_to_int32u_vec(int32u_data).unwrap());
+					continue;
+				}
+				// Other special cases
+				else
+				{
+					return io_error!(Other, format!("Illegal format for known tag! Tag: {:?} Expected: {:?} Got: {:?}", tag, tag.format(), format));
 				}
 			}
 
 
 
 
-			// At this point we have established that the tag is *not* a 
-			// SubIFD offset Tag like e.g. GPSInfo
-			// But: The tag
-			// - may be unknown 
-			// - may require conversion, e.g. INT16U -> INT32U
 
-			// Check if the tag is known and compatible with the given format
-			// Return error if incompatible and not a special case
-			// Use one of the unknown tags if unknown
-			if let Ok(tag) = ExifTag::from_u16(hex_tag, *group)
-			{
-				if tag.format().as_u16() != format.as_u16()
-				{
-					// The expected format and the given format in the file
-					// do *not* match. Check special cases (INT16U -> INT32U)
-					// If no special cases match, return an error
-					if 
-						tag.format() == ExifTagFormat::INT32U &&
-						format       == ExifTagFormat::INT16U
-					{
-						let int16u_data = <INT16U as U8conversion<INT16U>>::from_u8_vec(&raw_data, endian);
-						let int32u_data = int16u_data.into_iter().map(|x| x as u32).collect::<Vec<u32>>();
-						tags.push(tag.set_value_to_int32u_vec(int32u_data).unwrap());
-						continue;
-					}
-					// Other special cases
-					else
-					{
-						return io_error!(Other, format!("Illegal format for known tag! Tag: {:?} Expected: {:?} Got: {:?}", tag, tag.format(), format));
-					}
-				}
-			}
+			// // If this is a known tag ...
+			// if let Ok(tag) = ExifTag::from_u16(hex_tag, group)
+			// {
+			// 	// ... check its type
+			// 	match tag.get_tag_type()
+			// 	{
+			// 		TagType::VALUE => {
+			// 			()
+			// 		},
 
-			tags.push(ExifTag::from_u16_with_data(hex_tag, &format, &raw_data, &endian, group).unwrap());
+			// 		TagType::IFD_OFFSET(exif_tag_group) => {
+
+			// 		},
+
+			// 		TagType::DATA_OFFSET => {
+			// 			// Most difficult case. 
+			// 			// Problem: In case of e.g. StripOffsets and
+			// 			// StripByteCounts both of them are needed the same
+			// 			// time for decoding...
+			// 			// Idea: Post pone them after the end of the loop
+			// 			match tag
+			// 			{
+			// 				ExifTag::StripByteCounts(_) => {
+
+			// 				},
+
+			// 				_ => {
+			// 					todo!()
+			// 				}
+			// 			}
+			// 		},
+			// 	}
+			// }
+
+			
 
 
+
+
+			
 			
 
 		}

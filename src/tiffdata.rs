@@ -53,7 +53,30 @@ Tiffdata
 		// Get offset to IFD0
 		let mut ifd0_offset_buffer = vec![0u8; 4];
 		data_cursor.read_exact(&mut ifd0_offset_buffer)?;
-		let ifd0_offset = from_u8_vec_macro!(u32, &ifd0_offset_buffer.to_vec(), &endian);
+		let mut ifd_offset_option = Some(from_u8_vec_macro!(u32, &ifd0_offset_buffer.to_vec(), &endian));
+
+		// Decode all the IFDs
+		let mut ifds = Vec::new();
+		loop
+		{
+			if let Some(ifd_offset) = ifd_offset_option
+			{
+				data_cursor.set_position(pos);
+
+				decode_ifd(
+					data_cursor:         &mut Cursor<Vec<u8>>,
+					data_begin_position:      usize,                                        // Stays the same for all calls to this function while decoding
+					endian:              &    Endian,
+					group:               &    ExifTagGroup,
+					generic_ifd_nr:           u32,                                          // Reuse value for recursive calls; only gets incremented by caller
+					insert_into:         &mut Vec<ImageFileDirectory>,                      // Stays the same for all calls to this function while decoding
+				)
+			}
+			else
+			{
+				break;
+			}
+		}
 
 
 
