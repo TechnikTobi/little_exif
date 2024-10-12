@@ -9,6 +9,7 @@ use crate::exif_tag_format::*;
 use crate::ifd::ExifTagGroup;
 
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub enum
 TagType
 {
