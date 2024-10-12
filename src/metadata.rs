@@ -9,7 +9,7 @@ use crate::jxl;
 use crate::tiff;
 use crate::u8conversion::*;
 use crate::exif_tag::ExifTag;
-use crate::exif_tag::ExifTagGroup;
+use crate::ifd::ExifTagGroup;
 use crate::exif_tag_format::ExifTagFormat;
 use crate::filetype::FileExtension;
 use crate::filetype::get_file_type;
@@ -531,7 +531,7 @@ Metadata
 		// Start with IFD0
 		let ifd0_decode_result = Self::decode_ifd(
 			&encoded_data[6..].to_vec(),
-			&ExifTagGroup::IFD0,
+			&ExifTagGroup::GENERIC,
 			ifd0_offset as usize,
 			&endian
 		);
@@ -626,11 +626,12 @@ Metadata
 				raw_data = encoded_data[(entry_start_index+8)..(entry_start_index+8+byte_count as usize)].to_vec();
 			}
 
+			/*
 			// If this is a known tag...
 			if let Ok(tag) = ExifTag::from_u16(hex_tag, *group)
 			{
 				// ...for a SubIFD...
-				if let Some(subifd_group) = tag.is_offset_tag()
+				if let Some(subifd_group) = tag.is_ifd_offset_tag()
 				{
 					// ...perform a recursive call
 					let offset = from_u8_vec_macro!(u32, &raw_data, endian) as usize;
@@ -653,6 +654,7 @@ Metadata
 					}
 				}
 			}
+			*/
 
 			// At this point we have established that the tag is *not* a 
 			// SubIFD offset Tag like e.g. GPSInfo
@@ -663,7 +665,7 @@ Metadata
 			// Check if the tag is known and compatible with the given format
 			// Return error if incompatible and not a special case
 			// Use one of the unknown tags if unknown
-			if let Ok(tag) = ExifTag::from_u16(hex_tag, *group)
+			if let Ok(tag) = ExifTag::from_u16(hex_tag, group)
 			{
 				if tag.format().as_u16() != format.as_u16()
 				{
@@ -831,7 +833,7 @@ Metadata
 
 		// IFD0
 		if let Some((offset_post_ifd0, ifd0_data)) = self.encode_ifd(
-			ExifTagGroup::IFD0,
+			ExifTagGroup::GENERIC,
 			current_offset,                                                     // For the TIFF header
 			&[0x00, 0x00, 0x00, 0x00],                                          // For now no link to IFD1
 			Some(ExifTag::ExifOffset(vec![0]))
@@ -843,7 +845,7 @@ Metadata
 
 		// ExifIFD
 		if let Some((offset_post_exififd, exififd_data)) = self.encode_ifd(
-			ExifTagGroup::ExifIFD,
+			ExifTagGroup::EXIF,
 			current_offset,                                                     // Don't need +8 as already accounted for in this value due to previous function call
 			&[0x00, 0x00, 0x00, 0x00],
 			Some(ExifTag::InteropOffset(vec![0]))
@@ -855,7 +857,7 @@ Metadata
 
 		// InteropIFD
 		if let Some((offset_post_interopifd, interopifd_data)) = self.encode_ifd(
-			ExifTagGroup::InteropIFD,
+			ExifTagGroup::INTEROP,
 			current_offset,                                                     // Don't need +8 as already accounted for in this value due to previous function call
 			&[0x00, 0x00, 0x00, 0x00],
 			None

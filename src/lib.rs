@@ -29,7 +29,7 @@
 #![crate_name = "little_exif"]
 
 mod general_file_io;
-mod ifd;
+pub mod ifd;
 
 mod png;
 mod jpg;
