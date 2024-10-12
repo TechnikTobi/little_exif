@@ -8,20 +8,14 @@ use crate::u8conversion::*;
 use crate::exif_tag_format::*;
 use crate::ifd::ExifTagGroup;
 
-// #[allow(non_camel_case_types)]
-// #[derive(Debug, Eq, PartialEq, PartialOrd, Hash, Clone, Copy)]
-// pub enum
-// ExifTagGroup
-// {
-// 	NO_GROUP,
-// 	IFD0,
-// 		ExifIFD,
-// 			InteropIFD,
-// 			MakerNotesIFD,
-// 		GPSIFD,
-// 	IFD1,
-// 	Other,
-// }
+#[allow(non_camel_case_types)]
+pub enum
+TagType
+{
+	VALUE,
+	IFD_OFFSET(ExifTagGroup),
+	DATA_OFFSET
+}
 
 macro_rules! build_tag_enum {
 	( 
@@ -47,7 +41,8 @@ macro_rules! build_tag_enum {
 				$tag(paste!{[<$format_enum>]}),
 			)*
 			
-			StripByteCounts(    INT32U,         Vec::<u8>),
+			StripOffsets(       Vec::<Vec::<u8>>),
+			StripByteCounts(    Vec::<Vec::<u8>>),
 
 			UnknownINT8U(       INT8U,          u16, ExifTagGroup),
 			UnknownSTRING(      STRING,         u16, ExifTagGroup),
@@ -79,7 +74,8 @@ macro_rules! build_tag_enum {
 						ExifTag::$tag(_) => $hex_value,
 					)*
 
-					ExifTag::StripByteCounts(_, _)             => 0x0117,
+					ExifTag::StripOffsets(          _,       ) => 0x0111,
+					ExifTag::StripByteCounts(       _,       ) => 0x0117,
 
 					ExifTag::UnknownINT8U(          _, tag, _) => tag,
 					ExifTag::UnknownSTRING(         _, tag, _) => tag,
@@ -110,7 +106,7 @@ macro_rules! build_tag_enum {
 			from_u16
 			(
 				hex_value: u16,
-				group:     ExifTagGroup
+				group:     &ExifTagGroup
 			)
 			-> Result<ExifTag, String>
 			{
@@ -121,7 +117,8 @@ macro_rules! build_tag_enum {
 						($hex_value, ExifTagGroup::$group) => Ok(ExifTag::$tag(<paste!{[<$format_enum>]}>::new())),
 					)*
 
-					(0x0117, _) => Ok(ExifTag::StripByteCounts(vec![0], Vec::new())),
+					(0x0111, _) => Ok(ExifTag::StripOffsets(   Vec::new())),
+					(0x0117, _) => Ok(ExifTag::StripByteCounts(Vec::new())),
 
 					_ => Err(String::from("Invalid hex value for EXIF tag - Use 'Unknown...' instead")),
 				}
@@ -166,6 +163,10 @@ macro_rules! build_tag_enum {
 							<paste!{[<$format_enum>]} as U8conversion<paste!{[<$format_enum>]}>>::from_u8_vec(raw_data, endian)
 						)),
 					)*
+
+					(0x0111, _) => Ok(ExifTag::StripOffsets(   Vec::new())),
+					(0x0117, _) => Ok(ExifTag::StripByteCounts(Vec::new())),
+
 					_ => {
 						// In this case, the given hex_value represents a tag that is unknown
 						match *format
@@ -182,7 +183,6 @@ macro_rules! build_tag_enum {
 							ExifTagFormat::RATIONAL64S => Ok(ExifTag::UnknownRATIONAL64S(<RATIONAL64S as U8conversion<RATIONAL64S>>::from_u8_vec(raw_data, endian), hex_value, *group)),
 							ExifTagFormat::FLOAT       => Ok(ExifTag::UnknownFLOAT(      <FLOAT       as U8conversion<FLOAT      >>::from_u8_vec(raw_data, endian), hex_value, *group)),
 							ExifTagFormat::DOUBLE      => Ok(ExifTag::UnknownDOUBLE(     <DOUBLE      as U8conversion<DOUBLE     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
-							
 						}
 					},
 				}
@@ -232,17 +232,17 @@ macro_rules! build_tag_enum {
 			{
 				match *self
 				{
-					ExifTag::UnknownINT8U(          _, _, _) => true,
-					ExifTag::UnknownSTRING(         _, _, _) => true,
-					ExifTag::UnknownINT16U(         _, _, _) => true,
-					ExifTag::UnknownINT32U(         _, _, _) => true,
-					ExifTag::UnknownRATIONAL64U(    _, _, _) => true,
-					ExifTag::UnknownINT8S(          _, _, _) => true,
-					ExifTag::UnknownUNDEF(          _, _, _) => true,
-					ExifTag::UnknownINT16S(         _, _, _) => true,
-					ExifTag::UnknownINT32S(         _, _, _) => true,
-					ExifTag::UnknownRATIONAL64S(    _, _, _) => true,
-					ExifTag::UnknownFLOAT(          _, _, _) => true,
+					ExifTag::UnknownINT8U(          _, _, _) |
+					ExifTag::UnknownSTRING(         _, _, _) |
+					ExifTag::UnknownINT16U(         _, _, _) |
+					ExifTag::UnknownINT32U(         _, _, _) |
+					ExifTag::UnknownRATIONAL64U(    _, _, _) |
+					ExifTag::UnknownINT8S(          _, _, _) |
+					ExifTag::UnknownUNDEF(          _, _, _) |
+					ExifTag::UnknownINT16S(         _, _, _) |
+					ExifTag::UnknownINT32S(         _, _, _) |
+					ExifTag::UnknownRATIONAL64S(    _, _, _) |
+					ExifTag::UnknownFLOAT(          _, _, _) |
 					ExifTag::UnknownDOUBLE(         _, _, _) => true,
 					_                                        => false
 				}
@@ -259,7 +259,7 @@ macro_rules! build_tag_enum {
 			{
 				if self.is_unknown()
 				{
-					if let Ok(_) = Self::from_u16(self.as_u16(), self.get_group())
+					if let Ok(_) = Self::from_u16(self.as_u16(), &self.get_group())
 					{
 						return false;
 					}
@@ -283,7 +283,8 @@ macro_rules! build_tag_enum {
 						ExifTag::$tag(_) => ExifTagGroup::$group,
 					)*
 
-					ExifTag::StripByteCounts(_, _)               => ExifTagGroup::GENERIC,
+					ExifTag::StripOffsets(          _          ) => ExifTagGroup::GENERIC,
+					ExifTag::StripByteCounts(       _          ) => ExifTagGroup::GENERIC,
 
 					ExifTag::UnknownINT8U(          _, _, group) => group,
 					ExifTag::UnknownSTRING(         _, _, group) => group,
@@ -314,7 +315,8 @@ macro_rules! build_tag_enum {
 						ExifTag::$tag(_) => ExifTagFormat::$format_enum,
 					)*
 
-					ExifTag::StripByteCounts(_, _)           => ExifTagFormat::INT32U,
+					ExifTag::StripOffsets(          _      ) => ExifTagFormat::INT32U,
+					ExifTag::StripByteCounts(       _      ) => ExifTagFormat::INT32U,
 
 					ExifTag::UnknownINT8U(          _, _, _) => ExifTagFormat::INT8U,
 					ExifTag::UnknownSTRING(         _, _, _) => ExifTagFormat::STRING,
@@ -363,7 +365,8 @@ macro_rules! build_tag_enum {
 						},
 					)*
 
-					ExifTag::StripByteCounts(_, _)               => 1,
+					ExifTag::StripOffsets(          value      ) => value.len() as u32,
+					ExifTag::StripByteCounts(       value      ) => value.len() as u32,
 
 					ExifTag::UnknownINT8U(          value, _, _) => value.len() as u32,
 					ExifTag::UnknownSTRING(         value, _, _) => value.len() as u32 + 1,
@@ -416,7 +419,7 @@ macro_rules! build_tag_enum {
 				{
 					ExifTag::ImageWidth(_)      => Ok(ExifTag::ImageWidth(     data)),
 					ExifTag::ImageHeight(_)     => Ok(ExifTag::ImageHeight(    data)),
-					ExifTag::StripOffsets(_)    => Ok(ExifTag::StripOffsets(   data)),
+					// ExifTag::StripOffsets(_)    => Ok(ExifTag::StripOffsets(   data)),
 					ExifTag::RowsPerStrip(_)    => Ok(ExifTag::RowsPerStrip(   data)),
 					// ExifTag::StripByteCounts(_) => Ok(ExifTag::StripByteCounts(data)),
 					ExifTag::ExifImageWidth(_)  => Ok(ExifTag::ExifImageWidth( data)),
@@ -441,7 +444,8 @@ macro_rules! build_tag_enum {
 						ExifTag::$tag(value) => value.to_u8_vec(endian),
 					)*
 
-					ExifTag::StripByteCounts(_, value)           => value.clone(),
+					ExifTag::StripOffsets(          value      ) => Vec::new(),
+					ExifTag::StripByteCounts(       value      ) => Vec::new(),
 
 					ExifTag::UnknownINT8U(          value, _, _) => value.to_u8_vec(endian),
 					ExifTag::UnknownSTRING(         value, _, _) => value.to_u8_vec(endian),
@@ -530,12 +534,12 @@ build_tag_enum![
 	(ImageDescription,            0x010e, STRING,        None::<u32>,       true,      GENERIC),
 	(Make,                        0x010f, STRING,        None::<u32>,       true,      GENERIC),
 	(Model,                       0x0110, STRING,        None::<u32>,       true,      GENERIC),
-	(StripOffsets,                0x0111, INT32U,        None::<u32>,       false,     NO_GROUP),                       // Not EXIF but TIFF   x       x         x             x 
+//  (StripOffsets,                0x0111, INT32U,        None::<u32>,       false,     NO_GROUP),                       // Not EXIF but TIFF   x       x         x             x 
 	(Orientation,                 0x0112, INT16U,        Some::<u32>(1),    true,      GENERIC),
 
 	(SamplesPerPixel,             0x0115, INT16U,        Some::<u32>(1),    true,      GENERIC),                        // Not EXIF but TIFF                                   x 
 	(RowsPerStrip,                0x0116, INT32U,        Some::<u32>(1),    true,      GENERIC),                        // Not EXIF but TIFF   x       x         x             x 
-	// (StripByteCounts,             0x0117, INT32U,        None::<u32>,       false,     NO_GROUP),                       // Not EXIF but TIFF   x       x         x             x 
+//  (StripByteCounts,             0x0117, INT32U,        None::<u32>,       false,     NO_GROUP),                       // Not EXIF but TIFF   x       x         x             x 
 
 	(XResolution,                 0x011a, RATIONAL64U,   Some::<u32>(1),    true,      GENERIC),                        // Not EXIF but TIFF   x       x         x             x 
 	(YResolution,                 0x011b, RATIONAL64U,   Some::<u32>(1),    true,      GENERIC),                        // Not EXIF but TIFF   x       x         x             x 
@@ -672,25 +676,32 @@ build_tag_enum![
 
 impl ExifTag
 {
-	/// Checks if a tag is for representing the offset to a SubIFD (e.g. EXIF).
-	/// Needed for generating the exif data for writing, as the value stored in 
-	/// the tag variables is useless because it needs to be computed during
-	/// the writing process.
+	/// Tells us what type of tag this is. The majority of tags is 
+	/// simply for storing values (either within the 4 bytes of an IFD
+	/// entry or at some offset position). The other two types are
+	/// - IFD Offsets: For representing the offset to a SubIFD (e.g. EXIF). 
+	///   Needed for generating the exif data for writing, as the value stored
+	///   in the tag variables is useless because it needs to be computed
+	///   during the writing process.
+	/// - Data Offsets: They are somewhat similar to the case of value tags
+	///   where the value is stored at an offset position. This offset position
+	///   is either in the data 
 	pub fn
-	is_offset_tag
+	get_tag_type
 	(
 		&self
 	)
-	-> Option<ExifTagGroup>
+	-> TagType
 	{
 		match *self
 		{
-			ExifTag::ExifOffset(_)    => Some(ExifTagGroup::EXIF),
-			ExifTag::GPSInfo(_)       => Some(ExifTagGroup::GPS),
-			// ExifTag::StripOffsets(_, _)  => Some(ExifTagGroup::Other),
-			// ExifTag::MakerNote(_, _)     => Some(ExifTagGroup::MakerNotesIFD),
-			// ExifTag::InteropOffset(_, _) => Some(ExifTagGroup::InteropIFD),
-			_ => None
+			ExifTag::ExifOffset(_)       => TagType::IFD_OFFSET(ExifTagGroup::EXIF),
+			ExifTag::GPSInfo(_)          => TagType::IFD_OFFSET(ExifTagGroup::GPS),
+
+			ExifTag::StripOffsets(_)     => TagType::DATA_OFFSET,
+			ExifTag::StripByteCounts(_)  => TagType::DATA_OFFSET,
+
+			_ => TagType::VALUE
 		}
 	}
 }
