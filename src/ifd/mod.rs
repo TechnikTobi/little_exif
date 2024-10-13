@@ -68,10 +68,11 @@ ExifTagGroup
 /// The value of `belongs_to_generic_ifd_nr` tells us what generic IFD this
 /// specific IFD belongs to, e.g. `0` would indicate that it belongs (or is)
 /// IFD0. 
+#[derive(Clone)]
 pub struct
 ImageFileDirectory
 {
-	tags:                      Vec<ExifTag>,
+	pub tags:                      Vec<ExifTag>,
 	ifd_type:                  ExifTagGroup,
 	belongs_to_generic_ifd_nr: u32,
 }
@@ -84,7 +85,7 @@ ImageFileDirectory
 	pub(crate) fn
 	decode_ifd
 	(
-		data_cursor:         &mut Cursor<Vec<u8>>,
+		data_cursor:         &mut Cursor<&Vec<u8>>,
 		data_begin_position:      u64,                                          // Stays the same for all calls to this function while decoding
 		endian:              &    Endian,
 		group:               &    ExifTagGroup,
@@ -115,7 +116,7 @@ ImageFileDirectory
 			+ 2
 			+ IFD_ENTRY_LENGTH as usize * number_of_entries as usize 
 			+ IFD_END_NO_LINK.len()
-		) <= (
+		) > (
 			data_cursor.get_ref().len() as i64 - data_cursor_entry_position as i64
 		) as usize
 		{
@@ -171,16 +172,11 @@ ImageFileDirectory
 			// the exif specification. 
 			let byte_count = format.bytes_per_component() * hex_component_number;
 
-			// Read the value into a buffer
-			// Note: This may actually be *less* than 4 bytes! 
-			let mut value_buffer = vec![0u8; std::cmp::min(4, byte_count as usize)];
-			data_cursor.read_exact(&mut value_buffer)?;
-
 			let raw_data;
 			if byte_count > 4
 			{
 				// Compute the offset
-				let hex_offset = from_u8_vec_macro!(u32, &value_buffer, endian);
+				let hex_offset = from_u8_vec_macro!(u32, &entry_buffer[8..12].to_vec(), endian);
 
 				// Backup current position & go to offset position
 				let backup_position = data_cursor.position();
@@ -198,7 +194,8 @@ ImageFileDirectory
 			else
 			{
 				// The 4 bytes are the actual data
-				raw_data = value_buffer.to_vec();
+				// Note: This may actually be *less* than 4 bytes! 
+				raw_data = entry_buffer[8..(8+byte_count as usize)].to_vec();
 			}
 
 			// Try to get the tag via its hex value
@@ -346,10 +343,10 @@ ImageFileDirectory
 				for (offset, byte_count) in offsets.iter().zip(byte_counts.iter())
 				{
 					data_cursor.set_position(data_begin_position);
-					data_cursor.seek_relative(*offset as i64);
+					data_cursor.seek_relative(*offset as i64)?;
 
 					let mut data_buffer = vec![0u8; *byte_count as usize];
-					data_cursor.read_exact(&mut data_buffer);
+					data_cursor.read_exact(&mut data_buffer)?;
 					strip_data.push(data_buffer);
 				}
 
@@ -364,7 +361,7 @@ ImageFileDirectory
 		// Other offset tags here in the future...
 
 		// At this point we are done with decoding the tags of this IFD and its
-		// associated SubIFDs!
+		// associated SubIFDs! 
 
 		// Put the current IFD into the given, referenced vector
 		insert_into.push(ImageFileDirectory { 
@@ -375,7 +372,7 @@ ImageFileDirectory
 
 		// Read in the link to the next IFD and check if its zero
 		let mut next_ifd_link_buffer = vec![0u8; 4];
-		data_cursor.read_exact(&mut next_ifd_link_buffer);
+		data_cursor.read_exact(&mut next_ifd_link_buffer)?;
 
 		let link_is_zero = next_ifd_link_buffer.iter()
 			.zip(IFD_END_NO_LINK.iter())

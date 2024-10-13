@@ -7,6 +7,7 @@ use crate::endian::*;
 use crate::exif_tag_format::INT16U;
 use crate::jxl;
 use crate::tiff;
+use crate::tiffdata::Tiffdata;
 use crate::u8conversion::*;
 use crate::exif_tag::ExifTag;
 use crate::ifd::ExifTagGroup;
@@ -491,7 +492,6 @@ Metadata
 	)
 	-> Result<(Endian, Vec<ExifTag>), std::io::Error>
 	{
-
 		// Ensure that we have enough data
 		if encoded_data.len() < (EXIF_HEADER.len() + Endian::Big.header().len() + 2 + IFD_END.len())
 		{
@@ -506,6 +506,8 @@ Metadata
 				return io_error!(Other, "Could not validate EXIF header!");
 			}
 		}
+
+		return Tiffdata::as_metadata_adapter(encoded_data);
 
 		// Determine endian
 		let endian;

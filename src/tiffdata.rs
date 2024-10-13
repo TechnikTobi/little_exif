@@ -3,9 +3,12 @@
 
 use std::io::Cursor;
 use std::io::Read;
+use std::io::Seek;
 
 use crate::endian::*;
+use crate::exif_tag::ExifTag;
 use crate::general_file_io::io_error;
+use crate::ifd::ExifTagGroup;
 use crate::ifd::ImageFileDirectory;
 use crate::u8conversion::from_u8_vec_macro;
 use crate::u8conversion::U8conversion;
@@ -14,20 +17,46 @@ use crate::u8conversion::U8conversion;
 pub struct
 Tiffdata
 {
-	endian: Endian,
+	endian:                 Endian,
+	image_file_directories: Vec<ImageFileDirectory>
 }
 
 impl
 Tiffdata
 {
+	// THIS FUNCTION IS ONLY TEMPORARY FOR TEST PURPOSES
+	pub(crate) fn
+	as_metadata_adapter
+	(
+		encoded_data: &Vec<u8>
+	)
+	-> Result<(Endian, Vec<ExifTag>), std::io::Error>
+	{
+		let mut cursor = Cursor::new(encoded_data);
+		cursor.set_position(6);
+
+		let (endian, dirs) = Self::generic_decode_data(&mut cursor)?;
+
+		let mut all_tags = Vec::new();
+
+		for dir in dirs
+		{
+			all_tags.extend(dir.tags);
+		}
+
+		return Ok((endian, all_tags));
+	}
+
 	pub(crate) fn
 	generic_decode_data
 	(
-		data_cursor: &mut Cursor<Vec<u8>>
+		data_cursor: &mut Cursor<&Vec<u8>>
 	)
-	// -> Result<(Endian, Vec<ImageFileDirectory>), std::io::Error>
-	-> Result<(), std::io::Error>
+	-> Result<(Endian, Vec<ImageFileDirectory>), std::io::Error>
 	{
+		// Get the start position
+		let data_start_position = data_cursor.position();
+
 		// Determine endian
 		let mut endian_buffer = vec![0u8; 2];
 		data_cursor.read_exact(&mut endian_buffer)?;
@@ -57,34 +86,44 @@ Tiffdata
 
 		// Decode all the IFDs
 		let mut ifds = Vec::new();
+		let mut generic_ifd_nr = 0;
 		loop
 		{
 			if let Some(ifd_offset) = ifd_offset_option
 			{
-				data_cursor.set_position(pos);
+				data_cursor.set_position(data_start_position);
+				data_cursor.seek_relative(ifd_offset as i64)?;
 
-				decode_ifd(
-					data_cursor:         &mut Cursor<Vec<u8>>,
-					data_begin_position:      usize,                                        // Stays the same for all calls to this function while decoding
-					endian:              &    Endian,
-					group:               &    ExifTagGroup,
-					generic_ifd_nr:           u32,                                          // Reuse value for recursive calls; only gets incremented by caller
-					insert_into:         &mut Vec<ImageFileDirectory>,                      // Stays the same for all calls to this function while decoding
-				)
+				let decode_result = ImageFileDirectory::decode_ifd(
+					data_cursor,
+					data_start_position,
+					&endian,
+					&ExifTagGroup::GENERIC,
+					generic_ifd_nr,
+					&mut ifds
+				);
+
+				if let Ok(new_ifd_offset_option) = decode_result
+				{
+					ifd_offset_option = new_ifd_offset_option;
+				}
+				else
+				{
+					return Err(decode_result.err().unwrap());
+				}
 			}
 			else
 			{
 				break;
 			}
+
+			generic_ifd_nr += 1;
 		}
 
 
 
-		Ok(())
+		return Ok((endian, ifds));
 	}
-
-
-
 }
 
 
@@ -103,7 +142,7 @@ use super::Tiffdata;
 	{
 		let image_data = read("tests/read_sample.tif").unwrap();
 
-		Tiffdata::generic_decode_data(&mut Cursor::new(image_data))?;
+		Tiffdata::generic_decode_data(&mut Cursor::new(&image_data))?;
 
 		Ok(())
 	}
