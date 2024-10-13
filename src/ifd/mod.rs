@@ -80,6 +80,26 @@ ImageFileDirectory
 impl
 ImageFileDirectory
 {
+	pub fn
+	get_generic_ifd_nr
+	(
+		&self
+	)
+	-> u32
+	{
+		return self.belongs_to_generic_ifd_nr;
+	}
+
+	pub fn
+	get_ifd_type
+	(
+		&self
+	)
+	-> ExifTagGroup
+	{
+		return self.ifd_type;
+	}
+
 	/// If everything goes Ok and there is enough data to unpack, this returns
 	/// the offset to the next generic IFD that needs to be processed.
 	pub(crate) fn

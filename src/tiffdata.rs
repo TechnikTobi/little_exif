@@ -48,6 +48,37 @@ Tiffdata
 	}
 
 	pub(crate) fn
+	generic_encode_data
+	(
+		&mut self
+	)
+	{
+		// Start by sorting the IFDs - Sorting of tags happens later
+		self.image_file_directories.sort_by(
+			|a, b|
+			if a.get_generic_ifd_nr() != b.get_generic_ifd_nr()
+			{
+				a.get_generic_ifd_nr().cmp(&b.get_generic_ifd_nr())
+			}
+			else
+			{
+				if a.get_ifd_type() == b.get_ifd_type()
+				{
+					panic!("Should not have two different IFDs with same group & number!");
+				}
+				if a.get_ifd_type() < b.get_ifd_type()
+				{
+					std::cmp::Ordering::Less
+				}
+				else
+				{
+					std::cmp::Ordering::Greater
+				}
+			}
+		);
+	}
+ 
+	pub(crate) fn
 	generic_decode_data
 	(
 		data_cursor: &mut Cursor<&Vec<u8>>
