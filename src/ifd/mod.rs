@@ -85,14 +85,17 @@ ImageFileDirectory
 	decode_ifd
 	(
 		data_cursor:         &mut Cursor<Vec<u8>>,
-		data_begin_position:      usize,                                        // Stays the same for all calls to this function while decoding
+		data_begin_position:      u64,                                          // Stays the same for all calls to this function while decoding
 		endian:              &    Endian,
 		group:               &    ExifTagGroup,
 		generic_ifd_nr:           u32,                                          // Reuse value for recursive calls; only gets incremented by caller
 		insert_into:         &mut Vec<ImageFileDirectory>,                      // Stays the same for all calls to this function while decoding
 	)
-	-> Result<Option<Vec<usize>>, std::io::Error>
+	-> Result<Option<u32>, std::io::Error>
 	{
+		////////////////////////////////////////////////////////////////////////
+		// PREPARATION 
+
 		// Backup the entry position where this IFD started
 		let data_cursor_entry_position = data_cursor.position();
 
@@ -125,6 +128,10 @@ ImageFileDirectory
 		// For example, for decoding the StripOffsets we also need the 
 		// StripByteCounts to know how many bytes each strip has
 		let mut strip_tags: (Option<ExifTag>, Option<ExifTag>) = (None, None);
+		// Others following here in the future...
+
+		////////////////////////////////////////////////////////////////////////
+		// TAG-DECODING
 
 		// Storing all tags while decoding
 		let mut tags = Vec::new();
@@ -164,7 +171,9 @@ ImageFileDirectory
 			// the exif specification. 
 			let byte_count = format.bytes_per_component() * hex_component_number;
 
-			let mut value_buffer = vec![0u8; 4];
+			// Read the value into a buffer
+			// Note: This may actually be *less* than 4 bytes! 
+			let mut value_buffer = vec![0u8; std::cmp::min(4, byte_count as usize)];
 			data_cursor.read_exact(&mut value_buffer)?;
 
 			let raw_data;
@@ -175,7 +184,7 @@ ImageFileDirectory
 
 				// Backup current position & go to offset position
 				let backup_position = data_cursor.position();
-				data_cursor.set_position(data_begin_position as u64);
+				data_cursor.set_position(data_begin_position);
 				data_cursor.seek_relative(hex_offset as i64)?;
 
 				// Read the raw data
@@ -189,11 +198,7 @@ ImageFileDirectory
 			else
 			{
 				// The 4 bytes are the actual data
-				// Note: This may actually be *less* than 4 bytes! This is why
-				// The second index isn't just entry_start_index+12
-				let mut raw_data_buffer = vec![0u8; byte_count as usize];
-				data_cursor.read_exact(&mut raw_data_buffer)?;
-				raw_data = raw_data_buffer.to_vec();
+				raw_data = value_buffer.to_vec();
 			}
 
 			// Try to get the tag via its hex value
@@ -202,6 +207,9 @@ ImageFileDirectory
 			// Start of by checking if this is an unknown tag
 			if tag_result.is_err()
 			{
+				// Note: `from_u16_with_data` can NOT be called initially due
+				// to some possible conversion of data needed, e.g. INT16U to
+				// INT32U, which is not accounted for yet at this stage
 				tags.push(ExifTag::from_u16_with_data(
 					hex_tag, 
 					&format, 
@@ -218,7 +226,13 @@ ImageFileDirectory
 			// If this is an IFD offset tag, perform a recursive call
 			if let TagType::IFD_OFFSET(subifd_group) = tag.get_tag_type()
 			{
-				let offset = from_u8_vec_macro!(u32, &raw_data, endian) as usize;
+				// Compute the offset to the SubIFD and save the current position
+				let offset          = from_u8_vec_macro!(u32, &raw_data, endian) as usize;
+				let backup_position = data_cursor.position();
+
+				// Go to the SubIFD offset and decode that
+				data_cursor.set_position(data_begin_position);
+				data_cursor.seek_relative(offset as i64);
 
 				let subifd_decode_result = Self::decode_ifd(
 					data_cursor,
@@ -229,9 +243,12 @@ ImageFileDirectory
 					insert_into,
 				);
 
+				// Check that this actually worked
 				if let Ok(subifd_result) = subifd_decode_result
 				{
+					// Assert result, restore old cursor position & continue
 					assert_eq!(subifd_result, None);
+					data_cursor.set_position(backup_position);
 					continue;
 				}
 				else
@@ -241,8 +258,7 @@ ImageFileDirectory
 			}
 
 			// At this point we check if the format is actually what we expect
-			// it to be.
-			let mut decoded_u32_data = None;
+			// it to be and convert it if possible
 			if tag.format().as_u16() != format.as_u16()
 			{
 				// The expected format and the given format in the file
@@ -255,10 +271,7 @@ ImageFileDirectory
 					let int16u_data = <INT16U as U8conversion<INT16U>>::from_u8_vec(&raw_data, endian);
 					let int32u_data = int16u_data.into_iter().map(|x| x as u32).collect::<Vec<u32>>();
 
-					decoded_u32_data = Some(int32u_data);
-
-					tags.push(tag.set_value_to_int32u_vec(int32u_data).unwrap());
-					continue;
+					tag = tag.set_value_to_int32u_vec(int32u_data).unwrap();
 				}
 				// Other special cases
 				else
@@ -266,57 +279,113 @@ ImageFileDirectory
 					return io_error!(Other, format!("Illegal format for known tag! Tag: {:?} Expected: {:?} Got: {:?}", tag, tag.format(), format));
 				}
 			}
+			else
+			{
+				// Format is as expected; set the data by replacing the tag
+				tag = ExifTag::from_u16_with_data(
+					hex_tag, 
+					&format, 
+					&raw_data, 
+					&endian, 
+					group
+				).unwrap();
+			}
 
+			// Now we have at least confirmed that the format is ok (or has
+			// been corrected). Next, we need to differ between the two other
+			// tag types:
+			if let TagType::DATA_OFFSET(_) = tag.get_tag_type()
+			{
+				match tag
+				{
+					ExifTag::StripOffsets(_, _) => {
+						strip_tags.0 = Some(tag)
+					},
+					ExifTag::StripByteCounts(_, _) => {
+						strip_tags.1 = Some(tag)
+					}
+					_ => ()
+				}
 
+				// do NOT push these tags to the tags vector yet!
+			}
+			else // TagType::VALUE
+			{
+				// Simply push this tag onto the vector
+				tags.push(tag);
+			}
 
+		} // end of for-loop
 
+		////////////////////////////////////////////////////////////////////////
+		// POST TAG-DECODING
 
-			// // If this is a known tag ...
-			// if let Ok(tag) = ExifTag::from_u16(hex_tag, group)
-			// {
-			// 	// ... check its type
-			// 	match tag.get_tag_type()
-			// 	{
-			// 		TagType::VALUE => {
-			// 			()
-			// 		},
+		// At this stage we have decoded the tags themselves. 
+		// However, the data offset tags need further processing (i.e. their 
+		// data needs to be read as well)
+		if strip_tags.0.is_some() && strip_tags.1.is_some()
+		{
+			// 0 -> offsets
+			// 1 -> byte counts
+			if let 
+				(
+					TagType::DATA_OFFSET(offsets),
+					TagType::DATA_OFFSET(byte_counts)
+				)
+				= 
+				(
+					strip_tags.0.unwrap().get_tag_type(),
+					strip_tags.1.unwrap().get_tag_type()
+				)
+			{
+				let backup_position = data_cursor.position();
 
-			// 		TagType::IFD_OFFSET(exif_tag_group) => {
+				let mut strip_data = Vec::new();
 
-			// 		},
+				// Gather the data from the offsets
+				for (offset, byte_count) in offsets.iter().zip(byte_counts.iter())
+				{
+					data_cursor.set_position(data_begin_position);
+					data_cursor.seek_relative(*offset as i64);
 
-			// 		TagType::DATA_OFFSET => {
-			// 			// Most difficult case. 
-			// 			// Problem: In case of e.g. StripOffsets and
-			// 			// StripByteCounts both of them are needed the same
-			// 			// time for decoding...
-			// 			// Idea: Post pone them after the end of the loop
-			// 			match tag
-			// 			{
-			// 				ExifTag::StripByteCounts(_) => {
+					let mut data_buffer = vec![0u8; *byte_count as usize];
+					data_cursor.read_exact(&mut data_buffer);
+					strip_data.push(data_buffer);
+				}
 
-			// 				},
+				// Push StipOffset tag to tags vector
+				tags.push(ExifTag::StripOffsets(Vec::new(), strip_data));
 
-			// 				_ => {
-			// 					todo!()
-			// 				}
-			// 			}
-			// 		},
-			// 	}
-			// }
-
-			
-
-
-
-
-			
-			
-
+				// Restore backup position
+				data_cursor.set_position(backup_position);
+			}
 		}
-		
 
+		// Other offset tags here in the future...
 
-		todo!()
+		// At this point we are done with decoding the tags of this IFD and its
+		// associated SubIFDs!
+
+		// Put the current IFD into the given, referenced vector
+		insert_into.push(ImageFileDirectory { 
+			tags: tags, 
+			ifd_type: *group, 
+			belongs_to_generic_ifd_nr: generic_ifd_nr
+		});
+
+		// Read in the link to the next IFD and check if its zero
+		let mut next_ifd_link_buffer = vec![0u8; 4];
+		data_cursor.read_exact(&mut next_ifd_link_buffer);
+
+		let link_is_zero = next_ifd_link_buffer.iter()
+			.zip(IFD_END_NO_LINK.iter())
+			.filter(|&(read, constant)| read == constant)
+			.count() == IFD_END_NO_LINK.len();
+
+		if link_is_zero
+		{
+			return Ok(None);
+		}
+		return Ok(Some(from_u8_vec_macro!(u32, &next_ifd_link_buffer, endian)));
 	}
 }

@@ -15,7 +15,7 @@ TagType
 {
 	VALUE,
 	IFD_OFFSET(ExifTagGroup),
-	DATA_OFFSET
+	DATA_OFFSET(Vec<u32>)
 }
 
 macro_rules! build_tag_enum {
@@ -42,8 +42,8 @@ macro_rules! build_tag_enum {
 				$tag(paste!{[<$format_enum>]}),
 			)*
 			
-			StripOffsets(       Vec::<Vec::<u8>>),
-			StripByteCounts(    Vec::<Vec::<u8>>),
+			StripOffsets(       Vec::<u32>, Vec::<Vec::<u8>>),
+			StripByteCounts(    Vec::<u32>, Vec::<Vec::<u8>>),
 
 			UnknownINT8U(       INT8U,          u16, ExifTagGroup),
 			UnknownSTRING(      STRING,         u16, ExifTagGroup),
@@ -75,8 +75,8 @@ macro_rules! build_tag_enum {
 						ExifTag::$tag(_) => $hex_value,
 					)*
 
-					ExifTag::StripOffsets(          _,       ) => 0x0111,
-					ExifTag::StripByteCounts(       _,       ) => 0x0117,
+					ExifTag::StripOffsets(       _, _,       ) => 0x0111,
+					ExifTag::StripByteCounts(    _, _,       ) => 0x0117,
 
 					ExifTag::UnknownINT8U(          _, tag, _) => tag,
 					ExifTag::UnknownSTRING(         _, tag, _) => tag,
@@ -118,8 +118,8 @@ macro_rules! build_tag_enum {
 						($hex_value, ExifTagGroup::$group) => Ok(ExifTag::$tag(<paste!{[<$format_enum>]}>::new())),
 					)*
 
-					(0x0111, _) => Ok(ExifTag::StripOffsets(   Vec::new())),
-					(0x0117, _) => Ok(ExifTag::StripByteCounts(Vec::new())),
+					(0x0111, _) => Ok(ExifTag::StripOffsets(   Vec::new(), Vec::new())),
+					(0x0117, _) => Ok(ExifTag::StripByteCounts(Vec::new(), Vec::new())),
 
 					_ => Err(String::from("Invalid hex value for EXIF tag - Use 'Unknown...' instead")),
 				}
@@ -165,8 +165,8 @@ macro_rules! build_tag_enum {
 						)),
 					)*
 
-					(0x0111, _) => Ok(ExifTag::StripOffsets(   Vec::new())),
-					(0x0117, _) => Ok(ExifTag::StripByteCounts(Vec::new())),
+					(0x0111, _) => Ok(ExifTag::StripOffsets(   Vec::new(), Vec::new())),
+					(0x0117, _) => Ok(ExifTag::StripByteCounts(Vec::new(), Vec::new())),
 
 					_ => {
 						// In this case, the given hex_value represents a tag that is unknown
@@ -284,8 +284,8 @@ macro_rules! build_tag_enum {
 						ExifTag::$tag(_) => ExifTagGroup::$group,
 					)*
 
-					ExifTag::StripOffsets(          _          ) => ExifTagGroup::GENERIC,
-					ExifTag::StripByteCounts(       _          ) => ExifTagGroup::GENERIC,
+					ExifTag::StripOffsets(       _, _          ) => ExifTagGroup::GENERIC,
+					ExifTag::StripByteCounts(    _, _          ) => ExifTagGroup::GENERIC,
 
 					ExifTag::UnknownINT8U(          _, _, group) => group,
 					ExifTag::UnknownSTRING(         _, _, group) => group,
@@ -316,8 +316,8 @@ macro_rules! build_tag_enum {
 						ExifTag::$tag(_) => ExifTagFormat::$format_enum,
 					)*
 
-					ExifTag::StripOffsets(          _      ) => ExifTagFormat::INT32U,
-					ExifTag::StripByteCounts(       _      ) => ExifTagFormat::INT32U,
+					ExifTag::StripOffsets(       _, _      ) => ExifTagFormat::INT32U,
+					ExifTag::StripByteCounts(    _, _      ) => ExifTagFormat::INT32U,
 
 					ExifTag::UnknownINT8U(          _, _, _) => ExifTagFormat::INT8U,
 					ExifTag::UnknownSTRING(         _, _, _) => ExifTagFormat::STRING,
@@ -366,8 +366,8 @@ macro_rules! build_tag_enum {
 						},
 					)*
 
-					ExifTag::StripOffsets(          value      ) => value.len() as u32,
-					ExifTag::StripByteCounts(       value      ) => value.len() as u32,
+					ExifTag::StripOffsets(       _, value      ) => value.len() as u32,
+					ExifTag::StripByteCounts(    _, value      ) => value.len() as u32,
 
 					ExifTag::UnknownINT8U(          value, _, _) => value.len() as u32,
 					ExifTag::UnknownSTRING(         value, _, _) => value.len() as u32 + 1,
@@ -404,31 +404,6 @@ macro_rules! build_tag_enum {
 				}
 			}
 
-			/// For handling special case tags that need to be able to accept
-			/// both INT16U and INT32U
-			/// See subsections 4.6.5 and 4.6.6 of CIPA DC-008-2023, which is
-			/// the EXIF specification in Version 3.0
-			pub fn
-			set_value_to_int32u_vec
-			(
-				&self,
-				data: Vec<u32>
-			)
-			-> Result<ExifTag, String>
-			{
-				match self
-				{
-					ExifTag::ImageWidth(_)      => Ok(ExifTag::ImageWidth(     data)),
-					ExifTag::ImageHeight(_)     => Ok(ExifTag::ImageHeight(    data)),
-					// ExifTag::StripOffsets(_)    => Ok(ExifTag::StripOffsets(   data)),
-					ExifTag::RowsPerStrip(_)    => Ok(ExifTag::RowsPerStrip(   data)),
-					// ExifTag::StripByteCounts(_) => Ok(ExifTag::StripByteCounts(data)),
-					ExifTag::ExifImageWidth(_)  => Ok(ExifTag::ExifImageWidth( data)),
-					ExifTag::ExifImageHeight(_) => Ok(ExifTag::ExifImageHeight(data)),
-					_ => Err(String::from("Not a INT32U compatible tag!"))
-				}
-			}
-
 			/// Gets the value stored in the tag as an u8 vector, using the 
 			/// given endianness for conversion.
 			pub fn
@@ -445,8 +420,8 @@ macro_rules! build_tag_enum {
 						ExifTag::$tag(value) => value.to_u8_vec(endian),
 					)*
 
-					ExifTag::StripOffsets(          value      ) => Vec::new(),
-					ExifTag::StripByteCounts(       value      ) => Vec::new(),
+					ExifTag::StripOffsets(       _,     _      ) => Vec::new(),
+					ExifTag::StripByteCounts(    _,     _      ) => Vec::new(),
 
 					ExifTag::UnknownINT8U(          value, _, _) => value.to_u8_vec(endian),
 					ExifTag::UnknownSTRING(         value, _, _) => value.to_u8_vec(endian),
@@ -694,15 +669,40 @@ impl ExifTag
 	)
 	-> TagType
 	{
-		match *self
+		match self
 		{
-			ExifTag::ExifOffset(_)       => TagType::IFD_OFFSET(ExifTagGroup::EXIF),
-			ExifTag::GPSInfo(_)          => TagType::IFD_OFFSET(ExifTagGroup::GPS),
+			ExifTag::ExifOffset(_)                    => TagType::IFD_OFFSET(ExifTagGroup::EXIF),
+			ExifTag::GPSInfo(_)                       => TagType::IFD_OFFSET(ExifTagGroup::GPS),
 
-			ExifTag::StripOffsets(_)     => TagType::DATA_OFFSET,
-			ExifTag::StripByteCounts(_)  => TagType::DATA_OFFSET,
+			ExifTag::StripOffsets(   offset_data, _)  => TagType::DATA_OFFSET(offset_data.clone()),
+			ExifTag::StripByteCounts(byte_counts, _)  => TagType::DATA_OFFSET(byte_counts.clone()),
 
 			_ => TagType::VALUE
+		}
+	}
+
+	/// For handling special case tags that need to be able to accept
+	/// both INT16U and INT32U
+	/// See subsections 4.6.5 and 4.6.6 of CIPA DC-008-2023, which is
+	/// the EXIF specification in Version 3.0
+	pub fn
+	set_value_to_int32u_vec
+	(
+		&self,
+		data: Vec<u32>
+	)
+	-> Result<ExifTag, String>
+	{
+		match self
+		{
+			ExifTag::ImageWidth(_)         => Ok(ExifTag::ImageWidth(     data)),
+			ExifTag::ImageHeight(_)        => Ok(ExifTag::ImageHeight(    data)),
+			ExifTag::StripOffsets(_, _)    => Ok(ExifTag::StripOffsets(   data, Vec::new())),
+			ExifTag::RowsPerStrip(_)       => Ok(ExifTag::RowsPerStrip(   data)),
+			ExifTag::StripByteCounts(_, _) => Ok(ExifTag::StripByteCounts(data, Vec::new())),
+			ExifTag::ExifImageWidth(_)     => Ok(ExifTag::ExifImageWidth( data)),
+			ExifTag::ExifImageHeight(_)    => Ok(ExifTag::ExifImageHeight(data)),
+			_ => Err(String::from("Not a INT32U compatible tag!"))
 		}
 	}
 }
