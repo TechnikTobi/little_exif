@@ -100,8 +100,9 @@ macro_rules! build_tag_enum {
 			/// # Examples
 			/// ```no_run
 			/// use little_exif::exif_tag::ExifTag;
+			/// use little_exif::ifd::ExifTagGroup;
 			/// 
-			/// let tag = ExifTag::from_u16(0x010e).unwrap();
+			/// let tag = ExifTag::from_u16(0x010e, &ExifTagGroup::GENERIC).unwrap();
 			/// ```
 			pub fn
 			from_u16
@@ -135,7 +136,7 @@ macro_rules! build_tag_enum {
 			/// ```no_run
 			/// use little_exif::endian::Endian;
 			/// use little_exif::exif_tag::ExifTag;
-			/// use little_exif::exif_tag::ExifTagGroup;
+			/// use little_exif::ifd::ExifTagGroup;
 			/// use little_exif::exif_tag_format::ExifTagFormat;
 			/// 
 			/// let tag = ExifTag::from_u16_with_data(
