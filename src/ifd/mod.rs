@@ -40,7 +40,6 @@ ExifTagGroup
 	EXIF,
 	INTEROP,
 	GPS,
-	NO_GROUP
 }
 
 /*
@@ -52,7 +51,6 @@ LEGACY VERSION
 pub enum
 ExifTagGroup
 {
-	NO_GROUP,
 	IFD0,
 		ExifIFD,
 			InteropIFD,
@@ -98,6 +96,23 @@ ImageFileDirectory
 	-> ExifTagGroup
 	{
 		return self.ifd_type;
+	}
+
+	pub fn
+	get_offset_tag_for_parent_ifd
+	(
+		&self
+	)
+	-> (ExifTagGroup, ExifTag)
+	{
+		match self.ifd_type
+		{
+			ExifTagGroup::GENERIC  => todo!(),
+			ExifTagGroup::EXIF     => todo!(),
+			ExifTagGroup::INTEROP  => todo!(),
+			ExifTagGroup::GPS      => todo!(),
+		}
+		todo!()
 	}
 
 	/// If everything goes Ok and there is enough data to unpack, this returns
@@ -413,7 +428,7 @@ ImageFileDirectory
 	)
 	-> Result<Vec<u8>, std::io::Error>
 	{
-		
+
 		todo!()
 	}
 }

@@ -144,7 +144,7 @@ macro_rules! build_tag_enum {
 			///     &ExifTagFormat::INT8U,
 			///     &vec![1u8],
 			///     &Endian::Little,
-			///     &ExifTagGroup::NO_GROUP
+			///     &ExifTagGroup::GENERIC
 			/// );
 			/// ```
 			pub fn
@@ -511,12 +511,12 @@ build_tag_enum![
 	(ImageDescription,            0x010e, STRING,        None::<u32>,       true,      GENERIC),
 	(Make,                        0x010f, STRING,        None::<u32>,       true,      GENERIC),
 	(Model,                       0x0110, STRING,        None::<u32>,       true,      GENERIC),
-//  (StripOffsets,                0x0111, INT32U,        None::<u32>,       false,     NO_GROUP),                       // Not EXIF but TIFF   x       x         x             x 
+//  (StripOffsets,                0x0111, INT32U,        None::<u32>,       false,     GENERIC),                        // Not EXIF but TIFF   x       x         x             x 
 	(Orientation,                 0x0112, INT16U,        Some::<u32>(1),    true,      GENERIC),
 
 	(SamplesPerPixel,             0x0115, INT16U,        Some::<u32>(1),    true,      GENERIC),                        // Not EXIF but TIFF                                   x 
 	(RowsPerStrip,                0x0116, INT32U,        Some::<u32>(1),    true,      GENERIC),                        // Not EXIF but TIFF   x       x         x             x 
-//  (StripByteCounts,             0x0117, INT32U,        None::<u32>,       false,     NO_GROUP),                       // Not EXIF but TIFF   x       x         x             x 
+//  (StripByteCounts,             0x0117, INT32U,        None::<u32>,       false,     GENERIC),                        // Not EXIF but TIFF   x       x         x             x 
 
 	(XResolution,                 0x011a, RATIONAL64U,   Some::<u32>(1),    true,      GENERIC),                        // Not EXIF but TIFF   x       x         x             x 
 	(YResolution,                 0x011b, RATIONAL64U,   Some::<u32>(1),    true,      GENERIC),                        // Not EXIF but TIFF   x       x         x             x 
@@ -556,7 +556,7 @@ build_tag_enum![
 	(SpectralSensitivity,         0x8824, STRING,        None::<u32>,       true,      EXIF),
 	(GPSInfo,                     0x8825, INT32U,        Some::<u32>(1),    true,      GENERIC),       // -> GPS Tags: https://exiftool.org/TagNames/GPS.html
 	(ISO,                         0x8827, INT16U,        None::<u32>,       true,      EXIF),
-	(OECF,                        0x8828, UNDEF,         None::<u32>,       false,     NO_GROUP),
+	(OECF,                        0x8828, UNDEF,         None::<u32>,       false,     EXIF),
 	(SensitivityType,             0x8830, INT16U,        Some::<u32>(1),    true,      EXIF),
 	(StandardOutputSensitivity,   0x8831, INT32U,        Some::<u32>(1),    true,      EXIF),
 	(RecommendedExposureIndex,    0x8832, INT32U,        Some::<u32>(1),    true,      EXIF),
@@ -608,7 +608,7 @@ build_tag_enum![
 	(RelatedSoundFile,            0xa004, STRING,        None::<u32>,       true,      EXIF),
 	(InteropOffset,               0xa005, INT32U,        Some::<u32>(1),    true,      EXIF),
 	(FlashEnergy,                 0xa20b, RATIONAL64U,   Some::<u32>(1),    true,      EXIF),
-	(SpatialFrequencyResponse,    0xa20c, INT16U,        Some::<u32>(1),    false,     NO_GROUP),
+	(SpatialFrequencyResponse,    0xa20c, INT16U,        Some::<u32>(1),    false,     EXIF),
 	(FocalPlaneXResolution,       0xa20e, RATIONAL64U,   Some::<u32>(1),    true,      EXIF),
 	(FocalPlaneYResolution,       0xa20f, RATIONAL64U,   Some::<u32>(1),    true,      EXIF),
 	(FocalPlaneResolutionUnit,    0xa210, INT16U,        Some::<u32>(1),    true,      EXIF),
@@ -631,7 +631,7 @@ build_tag_enum![
 	(Contrast,                    0xa408, INT16U,        Some::<u32>(1),    true,      EXIF),
 	(Saturation,                  0xa409, INT16U,        Some::<u32>(1),    true,      EXIF),
 	(Sharpness,                   0xa40a, INT16U,        Some::<u32>(1),    true,      EXIF),
-	(DeviceSettingDescription,    0xa40b, UNDEF,         None::<u32>,       false,     NO_GROUP),
+	(DeviceSettingDescription,    0xa40b, UNDEF,         None::<u32>,       false,     EXIF),
 
 	(SubjectDistanceRange,        0xa40c, INT16U,        Some::<u32>(1),    true,      EXIF),
 
