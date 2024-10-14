@@ -405,4 +405,15 @@ ImageFileDirectory
 		}
 		return Ok(Some(from_u8_vec_macro!(u32, &next_ifd_link_buffer, endian)));
 	}
+
+	pub(crate) fn
+	encode_generic_ifd
+	(
+		&self
+	)
+	-> Result<Vec<u8>, std::io::Error>
+	{
+		
+		todo!()
+	}
 }
