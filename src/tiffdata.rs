@@ -53,7 +53,16 @@ Tiffdata
 		&mut self
 	)
 	{
-		// Start by sorting the IFDs - Sorting of tags happens later
+		// Assumes that the data is sorted according to `sort_data`
+
+	}
+
+	fn
+	sort_data
+	(
+		&mut self
+	)
+	{
 		self.image_file_directories.sort_by(
 			|a, b|
 			if a.get_generic_ifd_nr() != b.get_generic_ifd_nr()
@@ -78,7 +87,7 @@ Tiffdata
 		);
 	}
  
-	pub(crate) fn
+	fn
 	generic_decode_data
 	(
 		data_cursor: &mut Cursor<&Vec<u8>>
