@@ -66,7 +66,7 @@ ExifTagGroup
 /// The value of `belongs_to_generic_ifd_nr` tells us what generic IFD this
 /// specific IFD belongs to, e.g. `0` would indicate that it belongs (or is)
 /// IFD0. 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct
 ImageFileDirectory
 {
@@ -103,16 +103,53 @@ ImageFileDirectory
 	(
 		&self
 	)
-	-> (ExifTagGroup, ExifTag)
+	-> Option<(ExifTagGroup, ExifTag)>
 	{
 		match self.ifd_type
 		{
-			ExifTagGroup::GENERIC  => todo!(),
-			ExifTagGroup::EXIF     => todo!(),
-			ExifTagGroup::INTEROP  => todo!(),
-			ExifTagGroup::GPS      => todo!(),
+			ExifTagGroup::GENERIC  => None,
+			ExifTagGroup::EXIF     => Some((ExifTagGroup::GENERIC, ExifTag::ExifOffset(Vec::new()))),
+			ExifTagGroup::GPS      => Some((ExifTagGroup::GENERIC, ExifTag::GPSInfo(   Vec::new()))),
+			ExifTagGroup::INTEROP  => panic!("INTEROP NOT YET SUPPORT - PLEASE CONTACT THE LITTLE_EXIF DEVELOPER!"),
 		}
-		todo!()
+	}
+
+	pub fn
+	new_with_tags
+	(
+		tags:  Vec<ExifTag>,
+		group: ExifTagGroup,
+		nr:    u32
+	)
+	-> Self
+	{
+		ImageFileDirectory { tags: tags, ifd_type: group, belongs_to_generic_ifd_nr: nr }
+	}
+
+	pub fn
+	add_tag
+	(
+		&mut self,
+		tag: ExifTag
+	)
+	{
+		self.tags.push(tag);
+		self.sort_tags();
+	}
+
+	/// Sorts the tags according to their hex value
+	/// See TIFF 6.0 Specification: "The entries in an IFD must be sorted in 
+	/// ascending order by Tag." (page 15/121)
+	pub(crate) fn
+	sort_tags
+	(
+		&mut self
+	)
+	{
+		self.tags.sort_by(
+			|a, b|
+			a.as_u16().cmp(&b.as_u16())
+		);
 	}
 
 	/// If everything goes Ok and there is enough data to unpack, this returns
