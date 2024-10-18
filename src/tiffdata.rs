@@ -53,6 +53,26 @@ Tiffdata
 		return Ok((endian, all_tags));
 	}
 
+	pub fn
+	get_endian
+	(
+		&self
+	)
+	-> Endian
+	{
+		self.endian.clone()
+	}
+
+	pub fn
+	get_ifds
+	(
+		&self
+	)
+	-> &Vec<ImageFileDirectory>
+	{
+		&self.image_file_directories
+	}
+
 	/// Assumes that the data is sorted according to `sort_data`
 	pub fn
 	generic_encode_data
