@@ -491,8 +491,10 @@ ImageFileDirectory
 		encode_vec:                 &mut Vec<u8>,
 		current_offset:             &mut u32
 	)
-	-> Result<(u32, Vec<u8>), std::io::Error>
+	-> Result<(u64, Vec<u8>), std::io::Error>
 	{
+		println!("{:?} {}", self.get_ifd_type(), self.get_generic_ifd_nr());
+
 		// Get the offset information for this IFD's SubIFDs
 		let ifd_with_offset_info_only = ifds_with_offset_info_only
 			.iter()
@@ -522,7 +524,7 @@ ImageFileDirectory
 					)
 				{
 					// Update the offset tag for later
-					&ifds_with_offset_info_only
+					ifds_with_offset_info_only
 						.iter_mut()
 						.filter(|ifd| 
 							ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
@@ -672,6 +674,6 @@ ImageFileDirectory
 		encode_vec.extend(IFD_END_NO_LINK.iter());
 		encode_vec.extend(ifd_offset_area.iter());
 
-		return Ok((ifd_offset + 2 + IFD_ENTRY_LENGTH * count_entries as u32, ifd_offset_vec));
+		return Ok(((ifd_offset + 2 + IFD_ENTRY_LENGTH * count_entries as u32) as u64, ifd_offset_vec));
 	}
 }
