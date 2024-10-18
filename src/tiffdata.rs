@@ -1,6 +1,7 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+use core::panic;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
@@ -10,6 +11,7 @@ use crate::exif_tag::ExifTag;
 use crate::general_file_io::io_error;
 use crate::ifd::ExifTagGroup;
 use crate::ifd::ImageFileDirectory;
+use crate::tiff;
 use crate::u8conversion::from_u8_vec_macro;
 use crate::u8conversion::U8conversion;
 
@@ -39,21 +41,109 @@ Tiffdata
 
 		let mut all_tags = Vec::new();
 
-		for dir in dirs
+		for dir in &dirs
 		{
-			all_tags.extend(dir.tags);
+			all_tags.extend(dir.tags.clone());
 		}
+
+
+		let tiffdata = Tiffdata {endian: endian.clone(), image_file_directories: dirs};
+		tiffdata.generic_encode_data();
 
 		return Ok((endian, all_tags));
 	}
 
-	pub(crate) fn
+	/// Assumes that the data is sorted according to `sort_data`
+	pub fn
 	generic_encode_data
 	(
-		&mut self
+		self
 	)
 	{
-		// Assumes that the data is sorted according to `sort_data`
+		// Prepare offset information
+		let mut generic_ifd_count = 0;
+		let mut ifds_with_offset_info_only: Vec<ImageFileDirectory> = Vec::new();
+
+		for ifd in self.image_file_directories.iter() // .rev()
+		{
+			// Insert all IFDs as empty IFDs
+			ifds_with_offset_info_only.push(
+				ImageFileDirectory::new_with_tags(
+					vec![], 
+					ifd.get_ifd_type(), 
+					ifd.get_generic_ifd_nr()
+				)
+			);
+
+			generic_ifd_count = std::cmp::max(ifd.get_generic_ifd_nr(), generic_ifd_count);
+
+			if let Some((parent_ifd_group, offset_tag)) = ifd.get_offset_tag_for_parent_ifd()
+			{
+				// Check if the parent IFD is already in the vector
+				if let Some(parent_ifd) = ifds_with_offset_info_only
+					.iter_mut()
+					.find(|parent_ifd| 
+						parent_ifd.get_ifd_type() == parent_ifd_group && 
+						parent_ifd.get_generic_ifd_nr() == ifd.get_generic_ifd_nr()
+					)
+				{
+					parent_ifd.add_tag(offset_tag);
+				}
+				else
+				{
+					panic!("THIS SHOULD NOT HAPPEN! (generic_encode_data)")
+				}
+			}
+		}
+
+		// Now traverse the IFDs, starting with the SubIFDs associated with 
+		// IFD0, then IFD0 itself. Next, SubIFDs for IFD1, IFD1 itself, and
+		// so on up to IFD-n.
+		let generic_ifd_count = self.image_file_directories.iter()
+			.filter(|ifd| ifd.get_ifd_type() == ExifTagGroup::GENERIC)
+			.max_by(|ifd1, ifd2| ifd1.get_generic_ifd_nr().cmp(&ifd2.get_generic_ifd_nr()))
+			.unwrap()
+			.get_generic_ifd_nr();
+		
+		// let mut processed_ifd_indices: Vec<usize> = Vec::new();
+		for n in 0..generic_ifd_count
+		{
+			// self.image_file_directories.iter()
+			// 	.enumerate()
+			// 	.filter(|(_, ifd)| ifd.get_generic_ifd_nr() == n)
+			// 	.filter(|(index, _)| !processed_ifd_indices.contains(&index));
+
+			loop 
+			{
+				let next_ifds_to_process: Vec<&ImageFileDirectory> = ifds_with_offset_info_only
+					.iter()
+					.filter(|ifd| ifd.get_generic_ifd_nr() == n)
+					.filter(|ifd| ifd.tags.len() == 0)
+					.collect();
+
+				if next_ifds_to_process.is_empty()
+				{
+					break;
+				}
+
+				for current_ifd in next_ifds_to_process
+				{
+
+
+
+					current_ifd.get_offset_tag_for_parent_ifd()
+				}
+			}
+		}
+
+
+
+		for offset_ifd in &ifds_with_offset_info_only
+		{
+			println!("{:?} {:?}", offset_ifd, offset_ifd.tags);
+		}
+
+		println!("DONE\n");
 
 	}
 
