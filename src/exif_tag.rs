@@ -421,8 +421,8 @@ macro_rules! build_tag_enum {
 						ExifTag::$tag(value) => value.to_u8_vec(endian),
 					)*
 
-					ExifTag::StripOffsets(       _,     _      ) => Vec::new(),
-					ExifTag::StripByteCounts(    _,     _      ) => Vec::new(),
+					ExifTag::StripOffsets(          _,     _   ) => Vec::new(),
+					ExifTag::StripByteCounts( byte_counts, _   ) => byte_counts.to_u8_vec(endian),
 
 					ExifTag::UnknownINT8U(          value, _, _) => value.to_u8_vec(endian),
 					ExifTag::UnknownSTRING(         value, _, _) => value.to_u8_vec(endian),
@@ -463,7 +463,7 @@ build_tag_enum![
 	(GPSLongitudeRef,             0x0003, STRING,        Some::<u32>(2),    true,      GPS),
 	(GPSLongitude,                0x0004, RATIONAL64U,   Some::<u32>(3),    true,      GPS),
 
-	(GPSAltitudeRef,              0x0005, INT8U,         Some::<u32>(1),    true,      GPS),
+	(GPSAltitudeRef,              0x0005, STRING,        Some::<u32>(1),    true,      GPS),
 	(GPSAltitude,                 0x0006, RATIONAL64U,   Some::<u32>(1),    true,      GPS),
 	(GPSTimeStamp,                0x0007, RATIONAL64U,   Some::<u32>(3),    true,      GPS),
 	(GPSSatellites,               0x0008, STRING,        None::<u32>,       true,      GPS),
