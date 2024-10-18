@@ -478,6 +478,10 @@ ImageFileDirectory
 		return Ok(Some(from_u8_vec_macro!(u32, &next_ifd_link_buffer, endian)));
 	}
 
+	/// Recursively encodes IFDs
+	/// Returns
+	/// - an index position where the 4 bytes for the link to the next IFD are located
+	/// - the offset of the encoded IFD, to be used for linking to this IFD
 	pub(crate) fn
 	encode_ifd
 	(
@@ -487,7 +491,7 @@ ImageFileDirectory
 		encode_vec:                 &mut Vec<u8>,
 		current_offset:             &mut u32
 	)
-	-> Result<u32, std::io::Error>
+	-> Result<(u32, Vec<u8>), std::io::Error>
 	{
 		// Get the offset information for this IFD's SubIFDs
 		let ifd_with_offset_info_only = ifds_with_offset_info_only
@@ -504,7 +508,7 @@ ImageFileDirectory
 			if let Some(group) = Self::get_ifd_type_for_offset_tag(offset_tag)
 			{
 				// Find that IFD in the parent struct and encode that
-				if let Ok(subifd_offset) = tiffdata.get_ifds()
+				if let Ok((_, subifd_offset)) = tiffdata.get_ifds()
 					.iter()
 					.filter(|ifd| 
 						ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
@@ -530,7 +534,8 @@ ImageFileDirectory
 						.for_each(|tag| { *tag = ExifTag::from_u16_with_data(
 							tag.as_u16(), 
 							&tag.format(), 
-							&to_u8_vec_macro!(u32, &subifd_offset, &tiffdata.get_endian()), 
+							// &to_u8_vec_macro!(u32, &subifd_offset, &tiffdata.get_endian()), 
+							&subifd_offset,
 							&tiffdata.get_endian(), 
 							&tag.get_group()
 						).unwrap()});
@@ -579,6 +584,11 @@ ImageFileDirectory
 			if let TagType::IFD_OFFSET(_) = tag.get_tag_type() { true } else { false } 
 		).count() as u16;
 		encode_vec.extend(to_u8_vec_macro!(u16, &count_entries, &tiffdata.get_endian()).iter());
+
+		// Remember the current offset as this is needed to address this IFD
+		// and link to it from other IFDs
+		let ifd_offset     = current_offset.clone();
+		let ifd_offset_vec = to_u8_vec_macro!(u32, &ifd_offset, &tiffdata.get_endian());
 
 		// Advance offset address to the point after the entries and provide
 		// offset area vector
@@ -656,12 +666,12 @@ ImageFileDirectory
 					encode_vec.push(0x00);
 				}
 			}
-
-			
-			
 		}
 
-		
-		todo!()
+		// Write link and offset data
+		encode_vec.extend(IFD_END_NO_LINK.iter());
+		encode_vec.extend(ifd_offset_area.iter());
+
+		return Ok((ifd_offset + 2 + IFD_ENTRY_LENGTH * count_entries as u32, ifd_offset_vec));
 	}
 }
