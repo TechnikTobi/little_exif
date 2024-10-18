@@ -115,14 +115,7 @@ Tiffdata
 				}
 				else
 				{
-					panic!("AH");
-					// ifds_with_offset_info_only.push(
-					// 	ImageFileDirectory::new_with_tags(
-					// 		vec![offset_tag], 
-					// 		parent_ifd_group, 
-					// 		ifd.get_generic_ifd_nr()
-					// 	)
-					// );
+					panic!("THIS SHOULD NOT HAPPEN!");
 				}
 			}
 		}
@@ -143,8 +136,7 @@ Tiffdata
 		
 		let mut index_of_previous_ifds_link_section: Option<u64> = None;
 
-		let mut encode_vec     = Vec::new();
-		// TODO: Endian!
+		let mut encode_vec     = Vec::from(self.endian.header());
 		let mut current_offset = 8;
 
 		for n in 0..=generic_ifd_count
@@ -174,24 +166,7 @@ Tiffdata
 			}
 		}
 
-
-
-
-
-		for byte in &encode_vec
-		{
-			print!("{:3} ", byte);
-			if *byte >= 48 && *byte <= 122
-			{
-				print!("{}", *byte as char);
-			}
-			print!("\n");
-		}
-
-		println!("DONE\n");
-
 		Ok(())
-
 	}
 
 	fn
@@ -320,6 +295,24 @@ use super::Tiffdata;
 		let image_data = read("tests/read_sample.tif").unwrap();
 
 		Tiffdata::generic_decode_data(&mut Cursor::new(&image_data))?;
+
+		Ok(())
+	}
+
+	#[test]
+	fn
+	new_test_2()
+	-> Result<(), std::io::Error>
+	{
+		// let image_data = read("tests/multi_page.tif").unwrap();
+		let image_data = read("tests/multi_page_mod.tif").unwrap();
+
+		let data = Tiffdata::generic_decode_data(&mut Cursor::new(&image_data))?;
+
+		for ifd in data.1
+		{
+			println!("{:?}", ifd);
+		}
 
 		Ok(())
 	}
