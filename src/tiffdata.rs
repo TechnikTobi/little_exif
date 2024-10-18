@@ -5,6 +5,7 @@ use core::panic;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
+use std::io::Write;
 
 use crate::endian::*;
 use crate::exif_tag::ExifTag;
@@ -79,6 +80,7 @@ Tiffdata
 	(
 		self
 	)
+	-> Result<(), std::io::Error>
 	{
 		// Prepare offset information
 		let mut generic_ifd_count = 0;
@@ -86,7 +88,6 @@ Tiffdata
 
 		for ifd in self.image_file_directories.iter() // .rev()
 		{
-			// Insert all IFDs as empty IFDs
 			ifds_with_offset_info_only.push(
 				ImageFileDirectory::new_with_tags(
 					vec![], 
@@ -94,7 +95,10 @@ Tiffdata
 					ifd.get_generic_ifd_nr()
 				)
 			);
+		}
 
+		for ifd in self.image_file_directories.iter()
+		{
 			generic_ifd_count = std::cmp::max(ifd.get_generic_ifd_nr(), generic_ifd_count);
 
 			if let Some((parent_ifd_group, offset_tag)) = ifd.get_offset_tag_for_parent_ifd()
@@ -111,9 +115,21 @@ Tiffdata
 				}
 				else
 				{
-					panic!("THIS SHOULD NOT HAPPEN! (generic_encode_data)")
+					panic!("AH");
+					// ifds_with_offset_info_only.push(
+					// 	ImageFileDirectory::new_with_tags(
+					// 		vec![offset_tag], 
+					// 		parent_ifd_group, 
+					// 		ifd.get_generic_ifd_nr()
+					// 	)
+					// );
 				}
 			}
+		}
+
+		for offset_ifd in &ifds_with_offset_info_only
+		{
+			println!("{:?} {:?}", offset_ifd, offset_ifd.tags);
 		}
 
 		// Now traverse the IFDs, starting with the SubIFDs associated with 
@@ -125,45 +141,56 @@ Tiffdata
 			.unwrap()
 			.get_generic_ifd_nr();
 		
-		// let mut processed_ifd_indices: Vec<usize> = Vec::new();
-		for n in 0..generic_ifd_count
+		let mut index_of_previous_ifds_link_section: Option<u64> = None;
+
+		let mut encode_vec     = Vec::new();
+		// TODO: Endian!
+		let mut current_offset = 8;
+
+		for n in 0..=generic_ifd_count
 		{
-			// self.image_file_directories.iter()
-			// 	.enumerate()
-			// 	.filter(|(_, ifd)| ifd.get_generic_ifd_nr() == n)
-			// 	.filter(|(index, _)| !processed_ifd_indices.contains(&index));
+			let filter_result = self.image_file_directories.iter().filter(|ifd|
+				ifd.get_generic_ifd_nr() == n &&
+				ifd.get_ifd_type()       == ExifTagGroup::GENERIC
+			).collect::<Vec<&ImageFileDirectory>>();
 
-			loop 
+			assert!(filter_result.len() <= 1);
+
+			if let Ok((next_link_section, link_vec)) = filter_result.last().unwrap().encode_ifd(
+				&self, 
+				&mut ifds_with_offset_info_only, 
+				&mut encode_vec, 
+				&mut current_offset
+			)
 			{
-				let next_ifds_to_process: Vec<&ImageFileDirectory> = ifds_with_offset_info_only
-					.iter()
-					.filter(|ifd| ifd.get_generic_ifd_nr() == n)
-					.filter(|ifd| ifd.tags.len() == 0)
-					.collect();
-
-				if next_ifds_to_process.is_empty()
+				if let Some(index) = index_of_previous_ifds_link_section
 				{
-					break;
+					let mut cursor = Cursor::new(&mut encode_vec);
+					cursor.set_position(index);
+					cursor.write_all(&link_vec)?;
 				}
 
-				for current_ifd in next_ifds_to_process
-				{
-
-
-
-					current_ifd.get_offset_tag_for_parent_ifd()
-				}
+				index_of_previous_ifds_link_section = Some(next_link_section);
 			}
 		}
 
 
 
-		for offset_ifd in &ifds_with_offset_info_only
+
+
+		for byte in &encode_vec
 		{
-			println!("{:?} {:?}", offset_ifd, offset_ifd.tags);
+			print!("{:3} ", byte);
+			if *byte >= 48 && *byte <= 122
+			{
+				print!("{}", *byte as char);
+			}
+			print!("\n");
 		}
 
 		println!("DONE\n");
+
+		Ok(())
 
 	}
 
