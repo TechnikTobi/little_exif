@@ -2,28 +2,22 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 pub mod metadata_io;
+pub mod iterator;
+pub mod get;
+pub mod set;
 
 use core::panic;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
 use std::io::Write;
-use std::path::Path;
 
 use crate::endian::*;
-use crate::filetype::get_file_type;
-use crate::filetype::FileExtension;
 use crate::general_file_io::io_error;
 use crate::ifd::ExifTagGroup;
 use crate::ifd::ImageFileDirectory;
 use crate::u8conversion::from_u8_vec_macro;
 use crate::u8conversion::U8conversion;
-
-use crate::jpg;
-use crate::jxl;
-use crate::png;
-use crate::tiff;
-use crate::webp;
 
 #[derive(Clone)]
 pub struct
@@ -36,6 +30,7 @@ Metadata
 impl
 Metadata
 {
+
 	/// Constructs a new, empty `Metadata` object.
 	/// 
 	/// This uses little endian notation by default.
@@ -86,36 +81,6 @@ Metadata
 		return Ok(Metadata::new());
 	}
 
-
-
-	/// Gets the endianness of the metadata
-	///
-	/// # Examples
-	/// ```no_run
-	/// use little_exif::metadata::Metadata;
-	/// 
-	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png")).unwrap();
-	/// let tag_data = metadata.get_tag_by_hex(0x010e).unwrap().value_as_u8_vec(metadata.get_endian());
-	/// ```
-	pub fn
-	get_endian
-	(
-		&self
-	)
-	-> Endian
-	{
-		self.endian.clone()
-	}
-
-	pub fn
-	get_ifds
-	(
-		&self
-	)
-	-> &Vec<ImageFileDirectory>
-	{
-		&self.image_file_directories
-	}
 
 	/// Assumes that the data is sorted according to `sort_data`
 	pub fn
