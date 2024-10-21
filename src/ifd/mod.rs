@@ -1,6 +1,9 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+pub mod get;
+pub mod set;
+
 use core::panic;
 use std::io::Cursor;
 use std::io::Read;
@@ -64,67 +67,6 @@ ImageFileDirectory
 {
 
 	pub fn
-	get_tags
-	(
-		&self
-	)
-	-> &Vec<ExifTag>
-	{
-		return &self.tags;
-	}
-
-	pub fn
-	get_generic_ifd_nr
-	(
-		&self
-	)
-	-> u32
-	{
-		return self.belongs_to_generic_ifd_nr;
-	}
-
-	pub fn
-	get_ifd_type
-	(
-		&self
-	)
-	-> ExifTagGroup
-	{
-		return self.ifd_type;
-	}
-
-	pub fn
-	get_offset_tag_for_parent_ifd
-	(
-		&self
-	)
-	-> Option<(ExifTagGroup, ExifTag)>
-	{
-		match self.ifd_type
-		{
-			ExifTagGroup::GENERIC  => None,
-			ExifTagGroup::EXIF     => Some((ExifTagGroup::GENERIC, ExifTag::ExifOffset(Vec::new()))),
-			ExifTagGroup::GPS      => Some((ExifTagGroup::GENERIC, ExifTag::GPSInfo(   Vec::new()))),
-			ExifTagGroup::INTEROP  => panic!("INTEROP NOT YET SUPPORT - PLEASE CONTACT THE LITTLE_EXIF DEVELOPER!"),
-		}
-	}
-
-	pub fn
-	get_ifd_type_for_offset_tag
-	(
-		tag: &ExifTag
-	)
-	-> Option<ExifTagGroup>
-	{
-		match tag
-		{
-			ExifTag::ExifOffset(_) => Some(ExifTagGroup::EXIF),
-			ExifTag::GPSInfo(_)    => Some(ExifTagGroup::GPS),
-			_ => None
-		}
-	}
-
-	pub fn
 	new_with_tags
 	(
 		tags:  Vec<ExifTag>,
@@ -134,18 +76,6 @@ ImageFileDirectory
 	-> Self
 	{
 		ImageFileDirectory { tags: tags, ifd_type: group, belongs_to_generic_ifd_nr: nr }
-	}
-
-	/// Add a tag to this IFD. Sorts all its tags after insert.
-	pub fn
-	add_tag
-	(
-		&mut self,
-		tag: ExifTag
-	)
-	{
-		self.tags.push(tag);
-		self.sort_tags();
 	}
 
 	/// Sorts the tags according to their hex value
