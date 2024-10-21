@@ -13,7 +13,7 @@ use crate::exif_tag::TagType;
 use crate::exif_tag_format::ExifTagFormat;
 use crate::exif_tag_format::INT16U;
 use crate::general_file_io::io_error;
-use crate::tiffdata::Tiffdata;
+use crate::metadata::Metadata;
 use crate::u8conversion::from_u8_vec_macro;
 use crate::u8conversion::to_u8_vec_macro;
 use crate::u8conversion::U8conversion;
@@ -477,7 +477,7 @@ ImageFileDirectory
 	encode_ifd
 	(
 		&self,
-		tiffdata:                   &Tiffdata,
+		data:                       &Metadata,
 		ifds_with_offset_info_only: &mut Vec<ImageFileDirectory>,
 		encode_vec:                 &mut Vec<u8>,
 		current_offset:             &mut u32
@@ -501,14 +501,14 @@ ImageFileDirectory
 			if let Some(group) = Self::get_ifd_type_for_offset_tag(offset_tag)
 			{
 				// Find that IFD in the parent struct and encode that
-				if let Ok((_, subifd_offset)) = tiffdata.get_ifds()
+				if let Ok((_, subifd_offset)) = data.get_ifds()
 					.iter()
 					.filter(|ifd| 
 						ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
 						ifd.get_ifd_type()       == group
 					)
 					.next().unwrap().encode_ifd(
-						tiffdata, 
+						data, 
 						ifds_with_offset_info_only, 
 						encode_vec, 
 						current_offset
@@ -527,9 +527,8 @@ ImageFileDirectory
 						.for_each(|tag| { *tag = ExifTag::from_u16_with_data(
 							tag.as_u16(), 
 							&tag.format(), 
-							// &to_u8_vec_macro!(u32, &subifd_offset, &tiffdata.get_endian()), 
 							&subifd_offset,
-							&tiffdata.get_endian(), 
+							&data.get_endian(), 
 							&tag.get_group()
 						).unwrap()});
 				}
@@ -575,7 +574,7 @@ ImageFileDirectory
 							// pushed, push the strip and account for its length
 							// in the offset variable
 							new_StripOffsets.extend(
-								to_u8_vec_macro!(u32, &current_offset.clone(), &tiffdata.get_endian())
+								to_u8_vec_macro!(u32, &current_offset.clone(), &data.get_endian())
 							);
 							encode_vec.extend(strip);
 							*current_offset += strip.len() as u32;
@@ -596,12 +595,12 @@ ImageFileDirectory
 
 		println!("I counted {} entries in {:?}", count_entries, self.get_ifd_type());
 
-		encode_vec.extend(to_u8_vec_macro!(u16, &count_entries, &tiffdata.get_endian()).iter());
+		encode_vec.extend(to_u8_vec_macro!(u16, &count_entries, &data.get_endian()).iter());
 
 		// Remember the current offset as this is needed to address this IFD
 		// and link to it from other IFDs
 		let ifd_offset     = current_offset.clone();
-		let ifd_offset_vec = to_u8_vec_macro!(u32, &ifd_offset, &tiffdata.get_endian());
+		let ifd_offset_vec = to_u8_vec_macro!(u32, &ifd_offset, &data.get_endian());
 
 		// Advance offset address to the point after the entries and provide
 		// offset area vector
@@ -632,16 +631,16 @@ ImageFileDirectory
 			}
 			else
 			{
-				&tag.value_as_u8_vec(&tiffdata.get_endian())
+				&tag.value_as_u8_vec(&data.get_endian())
 			};
 			
 			// Add Tag & Data Format /                                          2 + 2 bytes
-			encode_vec.extend(to_u8_vec_macro!(u16, &tag.as_u16(),          &tiffdata.get_endian()).iter());
-			encode_vec.extend(to_u8_vec_macro!(u16, &tag.format().as_u16(), &tiffdata.get_endian()).iter());
+			encode_vec.extend(to_u8_vec_macro!(u16, &tag.as_u16(),          &data.get_endian()).iter());
+			encode_vec.extend(to_u8_vec_macro!(u16, &tag.format().as_u16(), &data.get_endian()).iter());
 
 			// Add number of components /                                       4 bytes
 			let number_of_components: u32 = tag.number_of_components();
-			encode_vec.extend(to_u8_vec_macro!(u32, &number_of_components, &tiffdata.get_endian()).iter());
+			encode_vec.extend(to_u8_vec_macro!(u32, &number_of_components, &data.get_endian()).iter());
 
 			// Optional string padding (i.e. string is shorter than it should be)
 			let mut string_padding: Vec<u8> = Vec::new();
@@ -659,7 +658,7 @@ ImageFileDirectory
 			let byte_count: u32 = number_of_components * tag.format().bytes_per_component();
 			if byte_count > 4
 			{
-				encode_vec.extend(to_u8_vec_macro!(u32, current_offset, &tiffdata.get_endian()).iter());
+				encode_vec.extend(to_u8_vec_macro!(u32, current_offset, &data.get_endian()).iter());
 				ifd_offset_area.extend(value.iter());
 				ifd_offset_area.extend(string_padding.iter());
 
