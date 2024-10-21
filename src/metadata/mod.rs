@@ -14,7 +14,6 @@ use std::io::Write;
 
 use crate::endian::*;
 use crate::general_file_io::io_error;
-use crate::general_file_io::EXIF;
 use crate::general_file_io::EXIF_HEADER;
 use crate::ifd::ExifTagGroup;
 use crate::ifd::ImageFileDirectory;

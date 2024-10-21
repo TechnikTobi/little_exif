@@ -365,7 +365,7 @@ ImageFileDirectory
 					strip_data.push(data_buffer);
 				}
 
-				// Push StipOffset tag to tags vector
+				// Push StripOffset tag to tags vector
 				tags.push(ExifTag::StripOffsets(Vec::new(), strip_data));
 
 				// Restore backup position
@@ -488,6 +488,7 @@ ImageFileDirectory
 		// described by data offset tags, such as StripOffsets
 		// As we can't modify the tags directly, store their relevant data
 		// that results from these write operations in new vectors
+		#[allow(non_snake_case)]
 		let mut new_StripOffsets = Vec::new();
 		// let mut new_TODO ...
 

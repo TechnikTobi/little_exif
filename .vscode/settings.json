@@ -11,11 +11,13 @@
 		"HDLC",
 		"ICCP",
 		"IEND",
+		"ifds",
 		"IHDR",
 		"jxlc",
 		"miniz",
 		"nonoverlapping",
 		"Prisching",
+		"rsrc",
 		"subifd",
 		"Testcam"
 	]
