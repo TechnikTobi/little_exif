@@ -119,7 +119,7 @@ Metadata
 						parent_ifd.get_generic_ifd_nr() == ifd.get_generic_ifd_nr()
 					)
 				{
-					parent_ifd.add_tag(offset_tag);
+					parent_ifd.set_tag(offset_tag);
 				}
 				else
 				{
