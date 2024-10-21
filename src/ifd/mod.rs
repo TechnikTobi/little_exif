@@ -12,7 +12,6 @@ use crate::exif_tag::TagType;
 use crate::exif_tag_format::ExifTagFormat;
 use crate::exif_tag_format::INT16U;
 use crate::general_file_io::io_error;
-use crate::tiff;
 use crate::tiffdata::Tiffdata;
 use crate::u8conversion::from_u8_vec_macro;
 use crate::u8conversion::to_u8_vec_macro;
@@ -43,29 +42,9 @@ ExifTagGroup
 	GENERIC,
 	EXIF,
 	INTEROP,
+	// MAKERNOTES, // TODO: Decide what to do with maker notes stuff...
 	GPS,
 }
-
-/*
-
-LEGACY VERSION
-
-#[allow(non_camel_case_types)]
-#[derive(Debug, Eq, PartialEq, PartialOrd, Hash, Clone, Copy)]
-pub enum
-ExifTagGroup
-{
-	IFD0,
-		ExifIFD,
-			InteropIFD,
-			MakerNotesIFD,
-		GPSIFD,
-	IFD1,
-	Other,
-}
-
-*/
-
 
 /// The value of `belongs_to_generic_ifd_nr` tells us what generic IFD this
 /// specific IFD belongs to, e.g. `0` would indicate that it belongs (or is)
@@ -74,7 +53,7 @@ ExifTagGroup
 pub struct
 ImageFileDirectory
 {
-	pub tags:                  Vec<ExifTag>,
+	tags:                      Vec<ExifTag>,
 	ifd_type:                  ExifTagGroup,
 	belongs_to_generic_ifd_nr: u32,
 }
@@ -82,6 +61,17 @@ ImageFileDirectory
 impl
 ImageFileDirectory
 {
+
+	pub fn
+	get_tags
+	(
+		&self
+	)
+	-> &Vec<ExifTag>
+	{
+		return &self.tags;
+	}
+
 	pub fn
 	get_generic_ifd_nr
 	(
@@ -231,7 +221,7 @@ ImageFileDirectory
 
 		// loop through the entries - assumes that the value stored in
 		// `number_of_entries` is correct
-		for i in 0..number_of_entries
+		for _ in 0..number_of_entries
 		{
 			// Read the entry into a buffer
 			let mut entry_buffer = vec![0u8; IFD_ENTRY_LENGTH as usize];

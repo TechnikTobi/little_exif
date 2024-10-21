@@ -12,7 +12,6 @@ use crate::exif_tag::ExifTag;
 use crate::general_file_io::io_error;
 use crate::ifd::ExifTagGroup;
 use crate::ifd::ImageFileDirectory;
-use crate::tiff;
 use crate::u8conversion::from_u8_vec_macro;
 use crate::u8conversion::U8conversion;
 
@@ -38,18 +37,18 @@ Tiffdata
 		let mut cursor = Cursor::new(encoded_data);
 		cursor.set_position(6);
 
-		let (endian, dirs) = Self::generic_decode_data(&mut cursor)?;
+		let (endian, dirs) = Self::decode(&mut cursor)?;
 
 		let mut all_tags = Vec::new();
 
 		for dir in &dirs
 		{
-			all_tags.extend(dir.tags.clone());
+			all_tags.extend(dir.get_tags().clone());
 		}
 
 
 		let tiffdata = Tiffdata {endian: endian.clone(), image_file_directories: dirs};
-		tiffdata.generic_encode_data();
+		tiffdata.encode()?;
 
 		return Ok((endian, all_tags));
 	}
@@ -76,7 +75,7 @@ Tiffdata
 
 	/// Assumes that the data is sorted according to `sort_data`
 	pub fn
-	generic_encode_data
+	encode
 	(
 		self
 	)
@@ -120,10 +119,10 @@ Tiffdata
 			}
 		}
 
-		for offset_ifd in &ifds_with_offset_info_only
-		{
-			println!("{:?} {:?}", offset_ifd, offset_ifd.tags);
-		}
+		// for offset_ifd in &ifds_with_offset_info_only
+		// {
+		// 	println!("{:?} {:?}", offset_ifd, offset_ifd.get_tags());
+		// }
 
 		// Now traverse the IFDs, starting with the SubIFDs associated with 
 		// IFD0, then IFD0 itself. Next, SubIFDs for IFD1, IFD1 itself, and
@@ -200,7 +199,7 @@ Tiffdata
 	}
  
 	fn
-	generic_decode_data
+	decode
 	(
 		data_cursor: &mut Cursor<&Vec<u8>>
 	)
@@ -294,7 +293,7 @@ use super::Tiffdata;
 	{
 		let image_data = read("tests/read_sample.tif").unwrap();
 
-		Tiffdata::generic_decode_data(&mut Cursor::new(&image_data))?;
+		Tiffdata::decode(&mut Cursor::new(&image_data))?;
 
 		Ok(())
 	}
@@ -307,7 +306,7 @@ use super::Tiffdata;
 		// let image_data = read("tests/multi_page.tif").unwrap();
 		let image_data = read("tests/multi_page_mod.tif").unwrap();
 
-		let data = Tiffdata::generic_decode_data(&mut Cursor::new(&image_data))?;
+		let data = Tiffdata::decode(&mut Cursor::new(&image_data))?;
 
 		for ifd in data.1
 		{
