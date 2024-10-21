@@ -12,7 +12,7 @@ fn main()
 
 	let metadata = Metadata::new_from_path(&jpg_path).unwrap();
 
-	for tag in metadata.data()
+	for tag in &metadata
 	{
 		println!("{:?}", tag);
 	}

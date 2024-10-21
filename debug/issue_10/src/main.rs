@@ -30,7 +30,7 @@ fn main()
 	metadata.write_to_file(Path::new("./rsrc/copy.jpg"));
 
 	// Read metadata from file
-	for tag in Metadata::new_from_path(jpg_path).unwrap().data()
+	for tag in &Metadata::new_from_path(jpg_path).unwrap()
 	{
 		println!("{:?}", tag);
 	}

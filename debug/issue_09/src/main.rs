@@ -10,7 +10,7 @@ fn main()
 	let image_path = Path::new("./rsrc/image.jpeg");
 	let mut metadata = Metadata::new_from_path(&image_path).unwrap();
 
-	for tag in metadata.data()
+	for tag in &metadata
 	{
 		println!("{:?}", tag);
 	}

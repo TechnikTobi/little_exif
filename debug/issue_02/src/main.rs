@@ -20,11 +20,11 @@ fn main()
 
 	let metadata1 = Metadata::new_from_path(&path_orig).unwrap();
 
-	for tag in metadata1.data()
+	for tag in &metadata1
 	{
 		println!("{:?}", tag);
 	}
-	println!("COUNTED {} EXIF TAGS", metadata1.data().len());
+	println!("COUNTED {} EXIF TAGS", metadata1.into_iter().count());
 
 	let mut metadata2 = metadata1.clone();
 	metadata2.set_tag(
@@ -38,10 +38,10 @@ fn main()
 	let metadata3 = Metadata::new_from_path(path_copy).unwrap();
 
 	// Read metadata from file
-	for tag1 in metadata1.data()
+	for tag1 in &metadata1
 	{
 		let mut found = false;
-		for tag2 in metadata3.data()
+		for tag2 in &metadata3
 		{
 			if tag1 == tag2
 			{
@@ -55,7 +55,7 @@ fn main()
 		}
 		// println!("{:?}", tag);
 	}
-	println!("COUNTED {} EXIF TAGS", metadata3.data().len());
+	println!("COUNTED {} EXIF TAGS", metadata3.into_iter().count());
 
 
 }

@@ -21,7 +21,7 @@ measure_time_for_path
 
 	for i in 0..1
 	{
-		data_len_sum += Metadata::new_from_path(path).unwrap().data().len();
+		data_len_sum += Metadata::new_from_path(path).unwrap().into_iter().count();
 	}
 
 	let elapsed = now.elapsed();
