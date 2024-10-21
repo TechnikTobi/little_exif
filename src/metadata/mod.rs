@@ -51,6 +51,33 @@ Metadata
 		Metadata { endian: Endian::Little, image_file_directories: Vec::new() }
 	}
 
+	/// Creates an IFD in this struct if it does not exist yet.
+	/// Also handles that parent IFDs are properly created if they don't exist
+	/// yet but are required later on for the encoding process.
+	pub fn
+	create_ifd
+	(
+		&mut self,
+		ifd_type:       ExifTagGroup,
+		generic_ifd_nr: u32,
+	)
+	{
+		if let Some(_) = self.get_ifd(ifd_type, generic_ifd_nr)
+		{
+			return;
+		}
+
+		let new_ifd = ImageFileDirectory::new_with_tags(Vec::new(), ifd_type, generic_ifd_nr);
+		
+		if let Some((parent_ifd_group, _)) = new_ifd.get_offset_tag_for_parent_ifd()
+		{
+			self.create_ifd(parent_ifd_group, generic_ifd_nr);
+		}
+
+		self.image_file_directories.push(new_ifd);
+		self.sort_data();
+	}
+
 
 	fn
 	general_decoding_wrapper
@@ -116,24 +143,30 @@ Metadata
 				// Check if the parent IFD is already in the vector
 				if let Some(parent_ifd) = ifds_with_offset_info_only
 					.iter_mut()
-					.find(|parent_ifd| 
-						parent_ifd.get_ifd_type() == parent_ifd_group && 
-						parent_ifd.get_generic_ifd_nr() == ifd.get_generic_ifd_nr()
+					.find(|candidate_ifd| 
+						candidate_ifd.get_ifd_type()       == parent_ifd_group && 
+						candidate_ifd.get_generic_ifd_nr() == ifd.get_generic_ifd_nr()
 					)
 				{
 					parent_ifd.set_tag(offset_tag);
 				}
 				else
 				{
-					panic!("THIS SHOULD NOT HAPPEN!");
+					// This *can* happen! For example, take a new Metadata
+					// struct that is empty and insert a tag that belongs to
+					// the Exif SubIFD. Then, IFD0 is still missing in self,
+					// does *not* get inserted into `ifds_with_offset_info_only`
+					// and can thus not be found in the if let above. 
+					ifds_with_offset_info_only.push(
+						ImageFileDirectory::new_with_tags(
+							vec![offset_tag], 
+							parent_ifd_group,
+							ifd.get_generic_ifd_nr()
+						)
+					);
 				}
 			}
 		}
-
-		// for offset_ifd in &ifds_with_offset_info_only
-		// {
-		// 	println!("{:?} {:?}", offset_ifd, offset_ifd.get_tags());
-		// }
 
 		// Now traverse the IFDs, starting with the SubIFDs associated with 
 		// IFD0, then IFD0 itself. Next, SubIFDs for IFD1, IFD1 itself, and
