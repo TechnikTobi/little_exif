@@ -706,4 +706,21 @@ impl ExifTag
 			_ => Err(String::from("Not a INT32U compatible tag!"))
 		}
 	}
+
+	/// For handling special case tags that need to be able to accept
+	/// both INT16U and INT32U, but the other way around
+	pub fn
+	set_value_to_int16u_vec
+	(
+		&self,
+		data: Vec<u16>
+	)
+	-> Result<ExifTag, String>
+	{
+		match self
+		{
+			ExifTag::FocalLengthIn35mmFormat(_) => Ok(ExifTag::FocalLengthIn35mmFormat(data)),
+			_ => Err(String::from("Not a INT16U compatible tag!"))
+		}
+	}
 }
