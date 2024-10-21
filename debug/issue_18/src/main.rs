@@ -11,7 +11,7 @@ fn main()
 	let jpg_path = Path::new("./rsrc/x.jpg");
 
 	// Read metadata from file
-	for tag in Metadata::new_from_path(jpg_path).unwrap().data()
+	for tag in &Metadata::new_from_path(jpg_path).unwrap()
 	{
 		println!("{:?}", tag);
 	}
@@ -22,7 +22,7 @@ fn main()
 	let file_type = FileExtension::from_str(extension).unwrap();
 	let mut content = std::fs::read(jpg_path).unwrap();
 	let metadata = Metadata::new_from_vec(&content, file_type);
-	for tag in metadata.unwrap().data()
+	for tag in &metadata.unwrap()
 	{
 		println!("{:?}", tag);
 	}
