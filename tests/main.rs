@@ -29,7 +29,7 @@ fn
 new_from_path_no_data_jxl()
 {
 	let data = Metadata::new_from_path(Path::new("tests/no_exif.jxl")).unwrap();
-	assert_eq!(data.data().len(), 0);
+	assert_eq!(data.into_iter().count(), 0);
 }
 
 #[test]
@@ -37,7 +37,7 @@ fn
 new_from_path_no_data_jpg()
 {
 	let data = Metadata::new_from_path(Path::new("tests/no_exif.jpeg")).unwrap();
-	assert_eq!(data.data().len(), 0);
+	assert_eq!(data.into_iter().count(), 0);
 }
 
 #[test]
@@ -103,7 +103,7 @@ read_from_file_webp()
 
 	let metadata = raw_metadata.unwrap();
 
-	if let Some(iso_tag) = metadata.get_tag(&ExifTag::ISO(vec![0]))
+	if let Some(iso_tag) = metadata.get_tag(&ExifTag::ISO(vec![0])).next()
 	{
 		assert_eq!(from_u8_vec_to_u32_le(&iso_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)), 2706);
 	}
@@ -112,7 +112,7 @@ read_from_file_webp()
 		panic!("Could not read ISO tag!")
 	}
 
-	if let Some(image_description_tag) = metadata.get_tag(&ExifTag::ImageDescription(String::new()))
+	if let Some(image_description_tag) = metadata.get_tag(&ExifTag::ImageDescription(String::new())).next()
 	{
 		assert_eq!(String::from_utf8(image_description_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)).unwrap(), "Hello World!\0".to_string());
 	}
@@ -137,7 +137,7 @@ read_from_file_jxl()
 
 	let metadata = raw_metadata.unwrap();
 
-	if let Some(iso_tag) = metadata.get_tag(&ExifTag::ISO(vec![0]))
+	if let Some(iso_tag) = metadata.get_tag(&ExifTag::ISO(vec![0])).next()
 	{
 		assert_eq!(from_u8_vec_to_u32_le(&iso_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)), 2706);
 	}
@@ -162,7 +162,7 @@ read_from_file_tiff()
 
 	let metadata = raw_metadata.unwrap();
 
-	if let Some(iso_tag) = metadata.get_tag(&ExifTag::ISO(vec![0]))
+	if let Some(iso_tag) = metadata.get_tag(&ExifTag::ISO(vec![0])).next()
 	{
 		assert_eq!(from_u8_vec_to_u32_le(&iso_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)), 2706);
 	}
@@ -191,7 +191,21 @@ read_from_vec_generic
 
 	let metadata = raw_metadata.unwrap();
 
-	if let Some(iso_tag) = metadata.get_tag(&ExifTag::ISO(vec![0]))
+	// let mut found = false;
+	// for tag in &metadata
+	// {
+	// 	if tag.as_u16() == ExifTag::ISO(vec![0]).as_u16()
+	// 	{
+	// 		// assert_eq!(from_u8_vec_to_u32_le(&tag.value_as_u8_vec(&metadata.get_endian())), 2706);
+	// 		assert_eq!(from_u8_vec_to_u32_le(&tag.value_as_u8_vec(&little_exif::endian::Endian::Little)), 2706);
+	// 		found = true;
+	// 	}
+	// }
+
+	// assert!(found);
+
+	
+	if let Some(iso_tag) = metadata.get_tag(&ExifTag::ISO(vec![0])).next()
 	{
 		assert_eq!(from_u8_vec_to_u32_le(&iso_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)), 2706);
 	}
@@ -236,7 +250,7 @@ get_test_metadata()
 {
 	// Create new metadata struct and fill it
 	let mut metadata = Metadata::new();
-	assert_eq!(metadata.data().len(), 0);
+	assert_eq!(metadata.into_iter().count(), 0);
 
 	metadata.set_tag(
 		ExifTag::ImageDescription("Hello World!".to_string())
@@ -250,7 +264,7 @@ get_test_metadata()
 	metadata.set_tag(
 		ExifTag::Model("Testcam(1)".to_string())
 	);
-	assert_eq!(metadata.data().len(), 4);
+	assert_eq!(metadata.into_iter().count(), 4);
 
 	return Ok(metadata);
 }
@@ -264,6 +278,7 @@ as_u8_vec_png()
 		get_test_metadata()
 			.unwrap()
 			.as_u8_vec(little_exif::filetype::FileExtension::PNG { as_zTXt_chunk: false })
+			.unwrap()
 			.iter()
 			.map(|char_value| *char_value as char)
 			.into_iter()
@@ -281,6 +296,7 @@ as_u8_vec_png_zTXt()
 		get_test_metadata()
 			.unwrap()
 			.as_u8_vec(little_exif::filetype::FileExtension::PNG { as_zTXt_chunk: true })
+			.unwrap()
 			.iter()
 			.map(|char_value| *char_value as char)
 			.into_iter()

@@ -25,6 +25,6 @@ Metadata
 		input_tag: ExifTag
 	)
 	{
-		
+		self.get_ifd_mut(input_tag.get_group(), 0).set_tag(input_tag);
 	}
 }

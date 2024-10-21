@@ -14,6 +14,8 @@ use std::io::Write;
 
 use crate::endian::*;
 use crate::general_file_io::io_error;
+use crate::general_file_io::EXIF;
+use crate::general_file_io::EXIF_HEADER;
 use crate::ifd::ExifTagGroup;
 use crate::ifd::ImageFileDirectory;
 use crate::u8conversion::from_u8_vec_macro;
@@ -215,7 +217,30 @@ Metadata
 	-> Result<(Endian, Vec<ImageFileDirectory>), std::io::Error>
 	{
 		// Get the start position
-		let data_start_position = data_cursor.position();
+		let mut data_start_position = data_cursor.position();
+
+		// Check if this starts with the Exif header
+		let mut first_6_bytes = vec![0u8; 6];
+		data_cursor.read_exact(&mut first_6_bytes)?;
+
+		let starts_with_exif_signature = first_6_bytes[0..6].iter()
+			.zip(EXIF_HEADER.iter())
+			.filter(|&(read, constant)| read == constant)
+			.count() == EXIF_HEADER.len();
+
+		// If those 6 bytes are *not* "Exif  " then we need to rewind as these
+		// six bytes should then be the endian information and magic number
+		// Otherwise the cursor should now be advanced to this area
+		if !starts_with_exif_signature
+		{
+			data_cursor.seek_relative(-(EXIF_HEADER.len() as i64))?;
+		}
+		else
+		{
+			// Otherwise we need to adjust the start position
+			data_start_position += EXIF_HEADER.len() as u64;
+		}
+
 
 		// Determine endian
 		let mut endian_buffer = vec![0u8; 2];

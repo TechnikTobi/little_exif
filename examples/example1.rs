@@ -37,27 +37,27 @@ main()
 	
 	// Read in the metadata again & print it
 	println!("\nPNG read result:");
-	for tag in Metadata::new_from_path(png_path).unwrap().data()
+	for tag in &Metadata::new_from_path(png_path).unwrap()
 	{
 		println!("{:?}", tag);
 	}
 
 	println!("\nJPG read result:");
-	for tag in Metadata::new_from_path(jpg_path).unwrap().data()
+	for tag in &Metadata::new_from_path(jpg_path).unwrap()
 	{
 		println!("{:?}", tag);
 	}
 
 	// Explicitly read in the ImageDescription by tag or hex
 	let metadata = Metadata::new_from_path(jpg_path).unwrap();
-	let image_description_by_tag = metadata.get_tag(&ExifTag::ImageDescription(String::new())).unwrap();
-	let image_description_by_hex = metadata.get_tag_by_hex(0x010e).unwrap();
+	let image_description_by_tag = metadata.get_tag(&ExifTag::ImageDescription(String::new())).next().unwrap();
+	let image_description_by_hex = metadata.get_tag_by_hex(0x010e).next().unwrap();
 
 	// Print it as String
 	let endian = metadata.get_endian();
 	let image_description_string = String::from_u8_vec(
-		&image_description_by_tag.value_as_u8_vec(metadata.get_endian()),
-		endian
+		&image_description_by_tag.value_as_u8_vec(&metadata.get_endian()),
+		&endian
 	);
 
 	println!("{:?}", image_description_by_hex);
@@ -74,7 +74,8 @@ fill_metadata
 {
 	// Set the ImageDescription (IFD0) an ISO (ExifIFD) tag as examples
 	// as well as two (to little_exif) unknown tags
-	metadata.set_tag(
+	// metadata.set_tag(
+	metadata.get_ifd_mut(ExifTagGroup::GENERIC, 0).set_tag(
 		ExifTag::UnknownSTRING("test1".to_string(), 0x010d, ExifTagGroup::GENERIC)
 	);
 
