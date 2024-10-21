@@ -242,7 +242,7 @@ ImageFileDirectory
 
 				// Go to the SubIFD offset and decode that
 				data_cursor.set_position(data_begin_position);
-				data_cursor.seek_relative(offset as i64);
+				data_cursor.seek_relative(offset as i64)?;
 
 				let subifd_decode_result = Self::decode_ifd(
 					data_cursor,
