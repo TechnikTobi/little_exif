@@ -416,8 +416,6 @@ ImageFileDirectory
 	)
 	-> Result<(u64, Vec<u8>), std::io::Error>
 	{
-		println!("{:?} {}", self.get_ifd_type(), self.get_generic_ifd_nr());
-
 		// Get the offset information for this IFD's SubIFDs
 		let ifd_with_offset_info_only = ifds_with_offset_info_only
 			.iter()
@@ -525,8 +523,6 @@ ImageFileDirectory
 			if let TagType::IFD_OFFSET(_) = tag.get_tag_type() { true } else { false } 
 		).count() as u16;
 
-		println!("I counted {} entries in {:?}", count_entries, self.get_ifd_type());
-
 		encode_vec.extend(to_u8_vec_macro!(u16, &count_entries, &data.get_endian()).iter());
 
 		// Remember the current offset as this is needed to address this IFD
@@ -550,7 +546,7 @@ ImageFileDirectory
 			if !tag.is_writable()
 			{
 				// But don't skip tags that describe offsets to IFDs or Data!
-				if let TagType::IFD_OFFSET(_) = tag.get_tag_type() { println!("huhu"); }
+				if let TagType::IFD_OFFSET(_) = tag.get_tag_type() {}
 				else if let TagType::DATA_OFFSET(_) = tag.get_tag_type() {}
 				else { continue; }
 			}

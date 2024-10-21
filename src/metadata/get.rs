@@ -76,10 +76,7 @@ Metadata
 			ifd.get_ifd_type()       == group
 		).next().is_none()
 		{
-			self.image_file_directories.push(
-				ImageFileDirectory::new_with_tags(Vec::new(), group, generic_ifd_nr)
-			);
-			self.sort_data();
+			self.create_ifd(group, generic_ifd_nr);
 		}
 
 		return self.image_file_directories.iter_mut().filter(|ifd| 
