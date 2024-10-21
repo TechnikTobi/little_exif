@@ -11,7 +11,7 @@ fn main()
 	let jpg_path = Path::new("./rsrc/image.JPG");
 
 	// Read metadata from file
-	for tag in Metadata::new_from_path(jpg_path).unwrap().data()
+	for tag in &Metadata::new_from_path(jpg_path).unwrap()
 	{
 		println!("{:?}", tag);
 	}
