@@ -54,6 +54,19 @@ Tiffdata
 	}
 
 	pub fn
+	new_from
+	(
+		endian: Endian,
+		ifds:   Vec<ImageFileDirectory>
+	)
+	-> Self
+	{
+		let mut return_value = Tiffdata { endian: endian, image_file_directories: ifds };
+		return_value.sort_data();
+		return return_value;
+	}
+
+	pub fn
 	get_endian
 	(
 		&self
@@ -79,7 +92,7 @@ Tiffdata
 	(
 		self
 	)
-	-> Result<(), std::io::Error>
+	-> Result<Vec<u8>, std::io::Error>
 	{
 		// Prepare offset information
 		let mut generic_ifd_count = 0;
@@ -133,7 +146,7 @@ Tiffdata
 			.unwrap()
 			.get_generic_ifd_nr();
 		
-		let mut index_of_previous_ifds_link_section: Option<u64> = None;
+		let mut index_of_previous_ifds_link_section: Option<u64> = Some(4);
 
 		let mut encode_vec     = Vec::from(self.endian.header());
 		let mut current_offset = 8;
@@ -165,7 +178,7 @@ Tiffdata
 			}
 		}
 
-		Ok(())
+		Ok(encode_vec)
 	}
 
 	fn

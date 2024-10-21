@@ -1,6 +1,7 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+use core::panic;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
@@ -532,10 +533,27 @@ ImageFileDirectory
 							&tag.get_group()
 						).unwrap()});
 				}
+				else
+				{
+					panic!("Could not find IFD in parent struct!");
+				}
+			}
+			else
+			{
+				panic!("Could not determine type of SubIFD!");
 			}
 		}
 
-		
+		// Store all relevant tags (IFD tags + offset tags) in a temporary 
+		// location and sort them there
+		let all_relevant_tags = self.tags.iter().chain(ifds_with_offset_info_only
+			.iter()
+			.filter(|ifd| 
+				ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
+				ifd.get_ifd_type()       == self.get_ifd_type()
+			)
+			.next().unwrap().get_tags()
+			.iter()).cloned().collect::<Vec<ExifTag>>();
 
 		// SubIFDs are done; Now we need to handle data areas that are 
 		// described by data offset tags, such as StripOffsets
@@ -544,7 +562,7 @@ ImageFileDirectory
 		let mut new_StripOffsets = Vec::new();
 		// let mut new_TODO ...
 
-		for tag in &self.tags
+		for tag in &all_relevant_tags
 		{
 			if let TagType::DATA_OFFSET(_) = tag.get_tag_type()
 			{
@@ -571,10 +589,13 @@ ImageFileDirectory
 
 		// Now we can finally start by writing this IFD!
 		// Start by adding the number of entries
-		let count_entries = self.tags.iter().filter(
+		let count_entries = all_relevant_tags.iter().filter(
 			|tag| tag.is_writable() || 
 			if let TagType::IFD_OFFSET(_) = tag.get_tag_type() { true } else { false } 
 		).count() as u16;
+
+		println!("I counted {} entries in {:?}", count_entries, self.get_ifd_type());
+
 		encode_vec.extend(to_u8_vec_macro!(u16, &count_entries, &tiffdata.get_endian()).iter());
 
 		// Remember the current offset as this is needed to address this IFD
@@ -592,13 +613,13 @@ ImageFileDirectory
 		let mut ifd_offset_area: Vec<u8> = Vec::new();
 
 		// Write directory entries to the vector
-		for tag in &self.tags
+		for tag in &all_relevant_tags
 		{
 			// Skip tags that can't be written
 			if !tag.is_writable()
 			{
 				// But don't skip tags that describe offsets to IFDs or Data!
-				if let TagType::IFD_OFFSET(_) = tag.get_tag_type() {}
+				if let TagType::IFD_OFFSET(_) = tag.get_tag_type() { println!("huhu"); }
 				else if let TagType::DATA_OFFSET(_) = tag.get_tag_type() {}
 				else { continue; }
 			}
