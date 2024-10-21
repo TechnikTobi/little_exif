@@ -26,14 +26,14 @@ const IFD_END:          [u8; 4] = [0x00, 0x00, 0x00, 0x00];
 
 #[derive(Clone)]
 pub struct
-Metadata
+OldMetadata
 {
 	data:   Vec<ExifTag>,
 	endian: Endian 
 }
 
 impl
-Metadata
+OldMetadata
 {
 
 	/// Constructs a new, empty `Metadata` object.
@@ -49,9 +49,9 @@ Metadata
 	pub fn
 	new
 	()
-	-> Metadata
+	-> OldMetadata
 	{
-		Metadata { endian: Endian::Little, data: Vec::new() }
+		OldMetadata { endian: Endian::Little, data: Vec::new() }
 	}
 
 
@@ -61,14 +61,14 @@ Metadata
 	(
 		raw_pre_decode_general: Result<Vec<u8>, std::io::Error>
 	)
-	-> Result<Metadata, std::io::Error>
+	-> Result<OldMetadata, std::io::Error>
 	{
 		if let Ok(pre_decode_general) = raw_pre_decode_general
 		{
 			let decoding_result = Self::decode_metadata_general(&pre_decode_general);
 			if let Ok((endian, data)) = decoding_result
 			{
-				return Ok(Metadata { endian, data });
+				return Ok(OldMetadata { endian, data });
 			}
 			else
 			{
@@ -81,7 +81,7 @@ Metadata
 		}
 
 		eprintln!("WARNING: Can't read metadata - Create new & empty struct");
-		return Ok(Metadata::new());
+		return Ok(OldMetadata::new());
 	}
 
 	/// Constructs a new `Metadata` object with the metadata from an image that is stored as a `Vec<u8>`
@@ -103,7 +103,7 @@ Metadata
 		file_buffer: &Vec<u8>,
 		file_type:   FileExtension
 	)
-	-> Result<Metadata, std::io::Error>
+	-> Result<OldMetadata, std::io::Error>
 	{
 		let raw_pre_decode_general = match file_type
 		{
@@ -144,7 +144,7 @@ Metadata
 	(
 		path: &Path
 	)
-	-> Result<Metadata, std::io::Error>
+	-> Result<OldMetadata, std::io::Error>
 	{
 		let file_type = get_file_type(path)?;
 

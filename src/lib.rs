@@ -45,4 +45,3 @@ pub mod exif_tag;
 pub mod exif_tag_format;
 pub mod filetype;
 pub mod metadata;
-pub mod tiffdata;

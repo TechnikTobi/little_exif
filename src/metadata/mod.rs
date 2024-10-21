@@ -1,71 +1,102 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+pub mod metadata_io;
+
 use core::panic;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
 use std::io::Write;
+use std::path::Path;
 
 use crate::endian::*;
-use crate::exif_tag::ExifTag;
+use crate::filetype::get_file_type;
+use crate::filetype::FileExtension;
 use crate::general_file_io::io_error;
 use crate::ifd::ExifTagGroup;
 use crate::ifd::ImageFileDirectory;
 use crate::u8conversion::from_u8_vec_macro;
 use crate::u8conversion::U8conversion;
 
+use crate::jpg;
+use crate::jxl;
+use crate::png;
+use crate::tiff;
+use crate::webp;
+
 #[derive(Clone)]
 pub struct
-Tiffdata
+Metadata
 {
 	endian:                 Endian,
 	image_file_directories: Vec<ImageFileDirectory>
 }
 
 impl
-Tiffdata
+Metadata
 {
-	// THIS FUNCTION IS ONLY TEMPORARY FOR TEST PURPOSES
-	pub(crate) fn
-	as_metadata_adapter
-	(
-		encoded_data: &Vec<u8>
-	)
-	-> Result<(Endian, Vec<ExifTag>), std::io::Error>
+	/// Constructs a new, empty `Metadata` object.
+	/// 
+	/// This uses little endian notation by default.
+	/// 
+	/// # Examples
+	/// ```no_run
+	/// use little_exif::metadata::Metadata;
+	///
+	/// let mut metadata: Metadata = Metadata::new();
+	/// ```
+	pub fn
+	new
+	()
+	-> Metadata
 	{
-		let mut cursor = Cursor::new(encoded_data);
-		cursor.set_position(6);
+		Metadata { endian: Endian::Little, image_file_directories: Vec::new() }
+	}
 
-		let (endian, dirs) = Self::decode(&mut cursor)?;
 
-		let mut all_tags = Vec::new();
-
-		for dir in &dirs
+	fn
+	general_decoding_wrapper
+	(
+		raw_pre_decode_general: Result<Vec<u8>, std::io::Error>
+	)
+	-> Result<Metadata, std::io::Error>
+	{
+		if let Ok(pre_decode_general) = raw_pre_decode_general
 		{
-			all_tags.extend(dir.get_tags().clone());
+			let mut pre_decode_cursor = Cursor::new(&pre_decode_general);
+			let     decoding_result   = Self::decode(&mut pre_decode_cursor);
+			if let Ok((endian, image_file_directories)) = decoding_result
+			{
+				let mut data = Metadata { endian, image_file_directories };
+				data.sort_data();
+				return Ok(data);
+			}
+			else
+			{
+				eprintln!("{}", decoding_result.err().unwrap());
+			}
+		}
+		else
+		{
+			eprintln!("Error during decoding: {:?}", raw_pre_decode_general.err().unwrap());
 		}
 
-
-		let tiffdata = Tiffdata {endian: endian.clone(), image_file_directories: dirs};
-		tiffdata.encode()?;
-
-		return Ok((endian, all_tags));
+		eprintln!("WARNING: Can't read metadata - Create new & empty struct");
+		return Ok(Metadata::new());
 	}
 
-	pub fn
-	new_from
-	(
-		endian: Endian,
-		ifds:   Vec<ImageFileDirectory>
-	)
-	-> Self
-	{
-		let mut return_value = Tiffdata { endian: endian, image_file_directories: ifds };
-		return_value.sort_data();
-		return return_value;
-	}
 
+
+	/// Gets the endianness of the metadata
+	///
+	/// # Examples
+	/// ```no_run
+	/// use little_exif::metadata::Metadata;
+	/// 
+	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png")).unwrap();
+	/// let tag_data = metadata.get_tag_by_hex(0x010e).unwrap().value_as_u8_vec(metadata.get_endian());
+	/// ```
 	pub fn
 	get_endian
 	(
@@ -90,7 +121,7 @@ Tiffdata
 	pub fn
 	encode
 	(
-		self
+		&self
 	)
 	-> Result<Vec<u8>, std::io::Error>
 	{
@@ -297,7 +328,7 @@ mod tests
 	use std::fs::read;
 	use std::io::Cursor;
 
-use super::Tiffdata;
+use super::Metadata;
 
 	#[test]
 	fn
@@ -306,7 +337,7 @@ use super::Tiffdata;
 	{
 		let image_data = read("tests/read_sample.tif").unwrap();
 
-		Tiffdata::decode(&mut Cursor::new(&image_data))?;
+		Metadata::decode(&mut Cursor::new(&image_data))?;
 
 		Ok(())
 	}
@@ -319,7 +350,7 @@ use super::Tiffdata;
 		// let image_data = read("tests/multi_page.tif").unwrap();
 		let image_data = read("tests/multi_page_mod.tif").unwrap();
 
-		let data = Tiffdata::decode(&mut Cursor::new(&image_data))?;
+		let data = Metadata::decode(&mut Cursor::new(&image_data))?;
 
 		for ifd in data.1
 		{
