@@ -23,7 +23,7 @@ fn main()
 	metadata.set_tag(
 		ExifTag::FNumber(vec![2024.into()])                  // FAILS
 		// ExifTag::RecommendedExposureIndex(vec![2024]) // works
-		// ExifTag::SpectralSensitivity("awoooo wie viel text geht hier rein?".to_string()) // works
+		// ExifTag::SpectralSensitivity("how much text can I fit in here?".to_string()) // works
 	);
 
 	// Write metadata to file

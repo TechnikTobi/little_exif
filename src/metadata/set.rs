@@ -3,8 +3,6 @@
 
 use crate::exif_tag::ExifTag;
 
-use super::Endian;
-use super::ImageFileDirectory;
 use super::Metadata;
 
 impl
