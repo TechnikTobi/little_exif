@@ -15,6 +15,7 @@ use crate::exif_tag::ExifTag;
 use crate::exif_tag::TagType;
 use crate::exif_tag_format::ExifTagFormat;
 use crate::exif_tag_format::INT16U;
+use crate::exif_tag_format::INT32U;
 use crate::general_file_io::io_error;
 use crate::metadata::Metadata;
 use crate::u8conversion::from_u8_vec_macro;
@@ -284,6 +285,15 @@ ImageFileDirectory
 					let int32u_data = int16u_data.into_iter().map(|x| x as u32).collect::<Vec<u32>>();
 
 					tag = tag.set_value_to_int32u_vec(int32u_data).unwrap();
+				}
+				else if
+					tag.format() == ExifTagFormat::INT16U &&
+					format       == ExifTagFormat::INT32U
+				{
+					let int32u_data = <INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian);
+					let int16u_data = int32u_data.into_iter().map(|x| x as u16).collect::<Vec<u16>>();
+
+					tag = tag.set_value_to_int16u_vec(int16u_data).unwrap();
 				}
 				// Other special cases
 				else
