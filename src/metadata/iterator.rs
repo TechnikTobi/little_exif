@@ -8,7 +8,7 @@ use super::Metadata;
 impl<'a> IntoIterator 
 for &'a Metadata
 {
-	type Item = ExifTag;
+	type Item = &'a ExifTag;
 	type IntoIter = MetadataIterator<'a>;
 
 	fn
@@ -20,7 +20,9 @@ for &'a Metadata
 	{
 		MetadataIterator 
 		{
-			metadata: self
+			metadata:          self,
+			current_ifd_index: 0,
+			current_tag_index: 0
 		}
 	}
 }
@@ -28,14 +30,15 @@ for &'a Metadata
 pub struct
 MetadataIterator<'a>
 {
-	metadata:    &'a Metadata,
-	// current_ifd: 
+	metadata:          &'a Metadata,
+	current_ifd_index: usize,
+	current_tag_index: usize
 }
 
 impl<'a> Iterator
 for MetadataIterator<'a>
 {	
-	type Item = ExifTag;
+	type Item = &'a ExifTag;
 	
 	fn 
 	next
@@ -44,39 +47,19 @@ for MetadataIterator<'a>
 	) 
 	-> Option<Self::Item> 
 	{
-		todo!()
+		while self.current_ifd_index < self.metadata.image_file_directories.len()
+		{
+			if self.current_tag_index < self.metadata.image_file_directories[self.current_ifd_index].get_tags().len()
+			{
+				self.current_tag_index += 1;
+				return Some(&self.metadata.image_file_directories[self.current_ifd_index].get_tags()[self.current_tag_index-1]);
+			}
+			else
+			{
+				self.current_tag_index  = 0;
+				self.current_ifd_index += 1;
+			}
+		}
+		return None;
 	}
 }
-
-/*
-impl<'a> IntoIterator for &'a Pixel {
-    type Item = i8;
-    type IntoIter = PixelIterator<'a>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        PixelIterator {
-            pixel: self,
-            index: 0,
-        }
-    }
-}
-
-pub struct PixelIterator<'a> {
-    pixel: &'a Pixel,
-    index: usize,
-}
-
-impl<'a> Iterator for PixelIterator<'a> {
-    type Item = i8;
-    fn next(&mut self) -> Option<i8> {
-        let result = match self.index {
-            0 => self.pixel.r,
-            1 => self.pixel.g,
-            2 => self.pixel.b,
-            _ => return None,
-        };
-        self.index += 1;
-        Some(result)
-    }
-}
-*/
