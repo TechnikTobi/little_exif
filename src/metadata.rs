@@ -5,6 +5,7 @@ use std::path::Path;
 
 use crate::endian::*;
 use crate::exif_tag_format::INT16U;
+use crate::ifd::ImageFileDirectory;
 use crate::jxl;
 use crate::tiff;
 use crate::tiffdata::Tiffdata;
@@ -642,6 +643,21 @@ Metadata
 	)
 	-> Vec<u8>
 	{
+		let ifd0_vec    = self.data.iter().filter(|tag| tag.get_group() == ExifTagGroup::GENERIC).cloned().collect::<Vec<ExifTag>>();
+		let exif_vec    = self.data.iter().filter(|tag| tag.get_group() == ExifTagGroup::EXIF).cloned().collect::<Vec<ExifTag>>();
+		// let interop_vec = self.data.iter().filter(|tag| tag.get_group() == ExifTagGroup::INTEROP).cloned().collect::<Vec<ExifTag>>();
+		let gps_vec     = self.data.iter().filter(|tag| tag.get_group() == ExifTagGroup::GPS).cloned().collect::<Vec<ExifTag>>();
+
+		let ifd = ImageFileDirectory::new_with_tags(ifd0_vec, ExifTagGroup::GENERIC, 0);
+		let exf = ImageFileDirectory::new_with_tags(exif_vec, ExifTagGroup::EXIF, 0);
+		// let int = ImageFileDirectory::new_with_tags(interop_vec, ExifTagGroup::INTEROP, 0);
+		let gps = ImageFileDirectory::new_with_tags(gps_vec, ExifTagGroup::GPS, 0);
+
+		// let tiff = Tiffdata::new_from(self.endian.clone(), vec![ifd, exf, int, gps]);
+		let tiff = Tiffdata::new_from(self.endian.clone(), vec![ifd, exf, gps]);
+
+		return tiff.encode().unwrap();
+
 		// Start construction with TIFF header
 		let mut exif_vec: Vec<u8> = Vec::from(self.endian.header());
 		let mut current_offset: u32 = 8;
