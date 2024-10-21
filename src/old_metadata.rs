@@ -1,80 +1,12 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::path::Path;
 
-use crate::endian::*;
-use crate::exif_tag_format::INT16U;
-use crate::ifd::ImageFileDirectory;
-use crate::jxl;
-use crate::tiff;
-use crate::tiffdata::Tiffdata;
-use crate::u8conversion::*;
-use crate::exif_tag::ExifTag;
-use crate::ifd::ExifTagGroup;
-use crate::exif_tag_format::ExifTagFormat;
-use crate::filetype::FileExtension;
-use crate::filetype::get_file_type;
-use crate::general_file_io::*;
-
-use crate::jpg;
-use crate::png;
-use crate::webp;
-
-const IFD_ENTRY_LENGTH: u32     = 12;
-const IFD_END:          [u8; 4] = [0x00, 0x00, 0x00, 0x00];
-
-#[derive(Clone)]
-pub struct
-OldMetadata
-{
-	data:   Vec<ExifTag>,
-	endian: Endian 
-}
 
 impl
 OldMetadata
 {	
-	/// Gets a shared reference to the list of all tags currently stored in the object.
-	///
-	/// # Examples
-	/// ```no_run
-	/// use little_exif::metadata::Metadata;
-	/// 
-	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png")).unwrap();
-	/// for tag in metadata.data()
-	/// {
-	///     // do something with the tags	
-	/// }
-	/// ```
-	pub fn
-	data
-	(
-		&self
-	)
-	-> &Vec<ExifTag>
-	{
-		&self.data
-	}
 
-	/// Gets the endianness of the metadata
-	///
-	/// # Examples
-	/// ```no_run
-	/// use little_exif::metadata::Metadata;
-	/// 
-	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png")).unwrap();
-	/// let tag_data = metadata.get_tag_by_hex(0x010e).unwrap().value_as_u8_vec(metadata.get_endian());
-	/// ```
-	pub fn
-	get_endian
-	(
-		&self
-	)
-	-> &Endian
-	{
-		&self.endian
-	}
 
 	/// Gets the stored tag in the metadata for the given tag. 
 	/// Returns `None` if the tag is not present in the metadata struct.
@@ -184,37 +116,6 @@ OldMetadata
 		);
 	}
 
-	/// Converts the metadata into a file specific vector of bytes
-	/// Only to be used in combination with some other library/code that is
-	/// able to handle the specific file type.
-	/// Simply writing this to a file often is not enough, e.g. with WebP you
-	/// have to determine where to write this, update the file size information
-	/// and so on - check file type specific implementations or documentation
-	/// for further details
-	#[allow(unreachable_patterns)]
-	pub fn
-	as_u8_vec
-	(
-		&self,
-		for_file_type: FileExtension
-	)
-	-> Vec<u8>
-	{
-		let general_encoded_metadata = self.encode_metadata_general();
-
-		match for_file_type
-		{
-			FileExtension::PNG { as_zTXt_chunk } 
-				=>  png::as_u8_vec(&general_encoded_metadata, as_zTXt_chunk),
-			FileExtension::JPEG 
-				=>  jpg::as_u8_vec(&general_encoded_metadata),
-			FileExtension::WEBP 
-				=> webp::as_u8_vec(&general_encoded_metadata),
-			_
-				=> Vec::new(),
-		}
-	}
-
 	#[allow(unreachable_patterns)]
 	pub fn
 	clear_metadata
@@ -239,107 +140,6 @@ OldMetadata
 					Other, 
 					format!(
 						"Function 'clear_metadata' not yet implemented for {:?}", 
-						file_type
-					)
-				),
-		}
-	}
-
-	#[allow(unreachable_patterns)]
-	pub fn
-	file_clear_metadata
-	(
-		path: &Path
-	)
-	-> Result<(), std::io::Error>
-	{
-		let file_type = get_file_type(path)?;
-
-		match file_type
-		{
-			FileExtension::JPEG 
-				=>  jpg::file_clear_metadata(&path),
-			FileExtension::JXL
-				=>  jxl::file_clear_metadata(&path),
-			FileExtension::PNG { as_zTXt_chunk: _ }
-				=>  png::file::clear_metadata(&path),
-			FileExtension::WEBP 
-				=> webp::file::clear_metadata(&path),
-			_
-				=> return io_error!(
-					Other, 
-					format!(
-						"Function 'file_clear_metadata' not yet implemented for {:?}", 
-						file_type
-					)
-				),
-		}
-	}
-
-	/// Writes the metadata to an image stored as a Vec<u8>
-	/// For now, this only works for JPGs
-	#[allow(unreachable_patterns)]
-	pub fn
-	write_to_vec
-	(
-		&self,
-		file_buffer: &mut Vec<u8>,
-		file_type:   FileExtension
-	)
-	-> Result<(), std::io::Error>
-	{
-		match file_type
-		{
-			FileExtension::JPEG 
-				=>  jpg::write_metadata(file_buffer, &self.encode_metadata_general()),
-			FileExtension::JXL 
-				=>  jxl::write_metadata(file_buffer, &self.encode_metadata_general()),
-			FileExtension::PNG { as_zTXt_chunk: _ }
-				=>  png::vec::write_metadata(file_buffer, &self.encode_metadata_general()),
-			FileExtension::WEBP
-				=> webp::vec::write_metadata(file_buffer, &self.encode_metadata_general()),
-			_
-				=> return io_error!(
-					Other, 
-					format!(
-						"Function 'file_clear_metadata' not yet implemented for {:?}", 
-						file_type
-					)
-				),
-		}
-	}
-
-	/// Writes the metadata to the specified file.
-	/// This could return an error for multiple reasons:
-	/// - The file does not exist at the given path
-	/// - Interpreting the given path fails
-	/// - The file type is not supported
-	#[allow(unreachable_patterns)]
-	pub fn
-	write_to_file
-	(
-		&self,
-		path: &Path
-	)
-	-> Result<(), std::io::Error>
-	{
-		let file_type = get_file_type(path)?;
-
-		match file_type
-		{
-			FileExtension::JPEG 
-				=>  jpg::file_write_metadata(&path, &self.encode_metadata_general()),
-			FileExtension::JXL 
-				=>  jxl::file_write_metadata(&path, &self.encode_metadata_general()),
-			FileExtension::PNG { as_zTXt_chunk: _ }
-				=>  png::file::write_metadata(&path, &self.encode_metadata_general()),
-			FileExtension::WEBP 
-				=> webp::file::write_metadata(&path, &self.encode_metadata_general()),
-			_
-				=> return io_error!(
-					Other, 
-					format!(
-						"Function 'file_clear_metadata' not yet implemented for {:?}", 
 						file_type
 					)
 				),

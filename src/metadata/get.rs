@@ -1,6 +1,7 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+use crate::exif_tag::ExifTag;
 use crate::ifd::ExifTagGroup;
 
 use super::Endian;
@@ -18,7 +19,7 @@ Metadata
 	/// use little_exif::metadata::Metadata;
 	/// 
 	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png")).unwrap();
-	/// let tag_data = metadata.get_tag_by_hex(0x010e).unwrap().value_as_u8_vec(metadata.get_endian());
+	/// let tag_data = metadata.get_tag_by_hex(0x010e).next().unwrap().value_as_u8_vec(&metadata.get_endian());
 	/// ```
 	pub fn
 	get_endian
@@ -68,7 +69,7 @@ Metadata
 		group:          ExifTagGroup,
 		generic_ifd_nr: u32,
 	)
-	->  Option<&mut ImageFileDirectory>
+	->  &mut ImageFileDirectory
 	{
 		if self.image_file_directories.iter().filter(|ifd| 
 			ifd.get_generic_ifd_nr() == generic_ifd_nr &&
@@ -84,6 +85,94 @@ Metadata
 		return self.image_file_directories.iter_mut().filter(|ifd| 
 			ifd.get_generic_ifd_nr() == generic_ifd_nr &&
 			ifd.get_ifd_type()       == group
-		).next();
+		).next().unwrap();
+	}
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+impl Metadata
+{
+	pub fn
+	get_tag
+	(
+		&self,
+		tag:   &ExifTag
+	)
+	-> GetTagIterator
+	{
+		return self.get_tag_by_hex(tag.as_u16());
+	}
+
+	pub fn
+	get_tag_by_hex
+	(
+		&self,
+		hex:   u16
+	)
+	-> GetTagIterator
+	{
+		GetTagIterator 
+		{
+			metadata:          &self,
+			current_ifd_index: 0,
+			current_tag_index: 0,
+			tag_hex_value:     hex
+		}
+	}
+}
+
+pub struct
+GetTagIterator<'a>
+{
+	metadata:          &'a Metadata,
+	current_ifd_index: usize,
+	current_tag_index: usize,
+	tag_hex_value:     u16
+}
+
+impl<'a> Iterator
+for GetTagIterator<'a>
+{	
+	type Item = &'a ExifTag;
+	
+	fn 
+	next
+	(
+		&mut self
+	) 
+	-> Option<Self::Item> 
+	{
+		while self.current_ifd_index < self.metadata.image_file_directories.len()
+		{
+			if self.current_tag_index < self.metadata.image_file_directories[self.current_ifd_index].get_tags().len()
+			{
+				self.current_tag_index += 1;
+
+				if self.metadata.image_file_directories[self.current_ifd_index].get_tags()[self.current_tag_index-1].as_u16() == self.tag_hex_value
+				{
+					return Some(&self.metadata.image_file_directories[self.current_ifd_index].get_tags()[self.current_tag_index-1]);
+				}
+			}
+			else
+			{
+				self.current_tag_index  = 0;
+				self.current_ifd_index += 1;
+			}
+		}
+		return None;
 	}
 }

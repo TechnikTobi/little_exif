@@ -125,15 +125,17 @@ ImageFileDirectory
 		let number_of_entries = from_u8_vec_macro!(u16, &number_of_entries_buffer.to_vec(), endian);
 
 		// Check that there is enough data to unpack
-		if (0
+		let required = 0
 			+ 2
 			+ IFD_ENTRY_LENGTH as usize * number_of_entries as usize 
-			+ IFD_END_NO_LINK.len()
-		) > (
-			data_cursor.get_ref().len() as i64 - data_cursor_entry_position as i64
-		) as usize
+			+ IFD_END_NO_LINK.len();
+		let available = (0
+			+ data_cursor.get_ref().len() as i64 
+			- data_cursor_entry_position  as i64) as usize;
+
+		if required > available
 		{
-			return io_error!(Other, "Not enough data to decode IFD!");
+			return io_error!(Other, format!("Not enough data to decode IFD! Required: {} Available: {}", required, available));
 		}
 
 		// Temporarily storing specific tags that have been decoded
@@ -263,7 +265,7 @@ ImageFileDirectory
 				}
 				else
 				{
-					return io_error!(Other, format!("Could not decode SubIFD:\n  {}", subifd_decode_result.err().unwrap()));
+					return io_error!(Other, format!("Could not decode SubIFD {:?}:\n  {}", subifd_group, subifd_decode_result.err().unwrap()));
 				}
 			}
 

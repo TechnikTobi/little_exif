@@ -111,6 +111,36 @@ Metadata
 
 	#[allow(unreachable_patterns)]
 	pub fn
+	clear_metadata
+	(
+		file_buffer: &mut Vec<u8>,
+		file_type:   FileExtension
+	)
+	-> Result<(), std::io::Error>
+	{
+		match file_type
+		{
+			FileExtension::JPEG 
+				=>  jpg::clear_metadata(file_buffer),
+			FileExtension::JXL
+				=>  jxl::clear_metadata(file_buffer),
+			FileExtension::PNG { as_zTXt_chunk: _ }
+				=>  png::vec::clear_metadata(file_buffer),
+			FileExtension::WEBP
+				=> webp::vec::clear_metadata(file_buffer),
+			_
+				=> return io_error!(
+					Other, 
+					format!(
+						"Function 'clear_metadata' not yet implemented for {:?}", 
+						file_type
+					)
+				),
+		}
+	}
+
+	#[allow(unreachable_patterns)]
+	pub fn
 	file_clear_metadata
 	(
 		path: &Path
@@ -138,6 +168,37 @@ Metadata
 					)
 				),
 		}
+	}
+
+	/// Converts the metadata into a file specific vector of bytes
+	/// Only to be used in combination with some other library/code that is
+	/// able to handle the specific file type.
+	/// Simply writing this to a file often is not enough, e.g. with WebP you
+	/// have to determine where to write this, update the file size information
+	/// and so on - check file type specific implementations or documentation
+	/// for further details
+	#[allow(unreachable_patterns)]
+	pub fn
+	as_u8_vec
+	(
+		&self,
+		for_file_type: FileExtension
+	)
+	-> Result<Vec<u8>, std::io::Error>
+	{
+		let general_encoded_metadata = self.encode()?;
+
+		Ok(match for_file_type
+		{
+			FileExtension::PNG { as_zTXt_chunk } 
+				=>  png::as_u8_vec(&general_encoded_metadata, as_zTXt_chunk),
+			FileExtension::JPEG 
+				=>  jpg::as_u8_vec(&general_encoded_metadata),
+			FileExtension::WEBP 
+				=> webp::as_u8_vec(&general_encoded_metadata),
+			_
+				=> Vec::new(),
+		})
 	}
 
 	/// Writes the metadata to an image stored as a Vec<u8>
