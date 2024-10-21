@@ -18,16 +18,16 @@ fn main()
 	// 	println!("{:?}", tag);
 	// }
 
-	// // Read metadata from file
-	// for tag in &Metadata::new_from_path(wrong_format_path).unwrap()
-	// {
-	// 	println!("{:?}", tag);
-	// }
-
 	// Read metadata from file
-	for tag in &Metadata::new_from_path(buffer_problem_path).unwrap()
+	for tag in &Metadata::new_from_path(wrong_format_path).unwrap()
 	{
 		println!("{:?}", tag);
 	}
+
+	// // Read metadata from file
+	// for tag in &Metadata::new_from_path(buffer_problem_path).unwrap()
+	// {
+	// 	println!("{:?}", tag);
+	// }
 
 }
