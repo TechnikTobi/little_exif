@@ -260,7 +260,21 @@ ImageFileDirectory
 				if let Ok(subifd_result) = subifd_decode_result
 				{
 					// Assert result, restore old cursor position & continue
-					assert_eq!(subifd_result, None);
+
+					// Disabled assert as of issue #31
+					// The idea behind this assert was that, as we are decoding
+					// a SubIFD, there shouldn't be a link after the last entry
+					// to another IFD and those 4 bytes are expected to be zero
+					// and we get a Ok(None) from the recursive call back.
+					
+					// assert_eq!(subifd_result, None);
+
+					// However, it is possible that those 4 bytes don't exist
+					// at all and they are part of some offset data, possibly
+					// even from another IFD! 
+					// So, for now we just assume that `subifd_result` is not
+					// of relevance until evidence suggests otherwise.
+					
 					data_cursor.set_position(backup_position);
 					continue;
 				}
