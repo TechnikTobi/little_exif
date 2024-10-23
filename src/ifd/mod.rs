@@ -397,7 +397,12 @@ ImageFileDirectory
 
 		// Read in the link to the next IFD and check if its zero
 		let mut next_ifd_link_buffer = vec![0u8; 4];
-		data_cursor.read_exact(&mut next_ifd_link_buffer)?;
+		if data_cursor.read_exact(&mut next_ifd_link_buffer).is_err()
+		{
+			// Covers the case that this IFD is stored at the very end of the
+			// file and its a SubIFD that has no link at all
+			return Ok(None);
+		}
 
 		let link_is_zero = next_ifd_link_buffer.iter()
 			.zip(IFD_END_NO_LINK.iter())
