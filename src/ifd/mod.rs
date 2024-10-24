@@ -144,7 +144,8 @@ ImageFileDirectory
 		// other tags.
 		// For example, for decoding the StripOffsets we also need the 
 		// StripByteCounts to know how many bytes each strip has
-		let mut strip_tags: (Option<ExifTag>, Option<ExifTag>) = (None, None);
+		let mut strip_tags:     (Option<ExifTag>, Option<ExifTag>) = (None, None);
+		let mut thumbnail_info: (Option<ExifTag>, Option<ExifTag>) = (None, None);
 		// Others following here in the future...
 
 		////////////////////////////////////////////////////////////////////////
@@ -257,10 +258,24 @@ ImageFileDirectory
 				);
 
 				// Check that this actually worked
-				if let Ok(subifd_result) = subifd_decode_result
+				if let Ok(_subifd_result) = subifd_decode_result
 				{
 					// Assert result, restore old cursor position & continue
-					assert_eq!(subifd_result, None);
+
+					// Disabled assert as of issue #31
+					// The idea behind this assert was that, as we are decoding
+					// a SubIFD, there shouldn't be a link after the last entry
+					// to another IFD and those 4 bytes are expected to be zero
+					// and we get a Ok(None) from the recursive call back.
+					
+					// assert_eq!(subifd_result, None);
+
+					// However, it is possible that those 4 bytes don't exist
+					// at all and they are part of some offset data, possibly
+					// even from another IFD! 
+					// So, for now we just assume that `subifd_result` is not
+					// of relevance until evidence suggests otherwise.
+					
 					data_cursor.set_position(backup_position);
 					continue;
 				}
@@ -321,11 +336,17 @@ ImageFileDirectory
 				match tag
 				{
 					ExifTag::StripOffsets(_, _) => {
-						strip_tags.0 = Some(tag)
+						strip_tags.0 = Some(tag);
 					},
 					ExifTag::StripByteCounts(_, _) => {
-						strip_tags.1 = Some(tag)
-					}
+						strip_tags.1 = Some(tag);
+					},
+					ExifTag::ThumbnailOffset(_, _) => {
+						thumbnail_info.0 = Some(tag);
+					},
+					ExifTag::ThumbnailLength(_) => {
+						thumbnail_info.1 = Some(tag);
+					},
 					_ => ()
 				}
 
@@ -378,6 +399,51 @@ ImageFileDirectory
 				// Push StripOffset tag to tags vector
 				tags.push(ExifTag::StripOffsets(Vec::new(), strip_data));
 
+				// Push StripByteCounts tag to tags vector
+				tags.push(ExifTag::StripByteCounts(byte_counts, Vec::new()));
+
+				// Restore backup position
+				data_cursor.set_position(backup_position);
+			}
+		}
+
+		if thumbnail_info.0.is_some() && thumbnail_info.1.is_some()
+		{
+			// 0 -> offset
+			// 1 -> length
+			if let
+				(
+					TagType::DATA_OFFSET(offset),
+					TagType::DATA_OFFSET(length)
+				)
+				=
+				(
+					thumbnail_info.0.unwrap().get_tag_type(),
+					thumbnail_info.1.unwrap().get_tag_type()
+				)
+			{
+				let backup_position = data_cursor.position();
+
+				if offset.len() == 1 && length.len() == 1
+				{
+					let mut thumbnail_data = vec![0u8; length[0] as usize];
+
+					// Gather the data at the offset
+					data_cursor.set_position(data_begin_position);
+					data_cursor.seek_relative(offset[0] as i64)?;
+					data_cursor.read_exact(&mut thumbnail_data)?;
+
+					// Push ThumbnailOffset tag to tags vector
+					tags.push(ExifTag::ThumbnailOffset(Vec::new(), thumbnail_data));
+
+					// Also push ThumbnailLength tag to tags vector
+					tags.push(ExifTag::ThumbnailLength(length));
+				}
+				else
+				{
+					eprintln!("WARNING: Can't decode thumbnail! The ThumbnailOffset and ThumbnailLength tags are expected to contain exactly 1 INT32U value. However, they have {} and {} values.", offset.len(), length.len());
+				}
+
 				// Restore backup position
 				data_cursor.set_position(backup_position);
 			}
@@ -397,7 +463,12 @@ ImageFileDirectory
 
 		// Read in the link to the next IFD and check if its zero
 		let mut next_ifd_link_buffer = vec![0u8; 4];
-		data_cursor.read_exact(&mut next_ifd_link_buffer)?;
+		if data_cursor.read_exact(&mut next_ifd_link_buffer).is_err()
+		{
+			// Covers the case that this IFD is stored at the very end of the
+			// file and its a SubIFD that has no link at all
+			return Ok(None);
+		}
 
 		let link_is_zero = next_ifd_link_buffer.iter()
 			.zip(IFD_END_NO_LINK.iter())
@@ -500,6 +571,8 @@ ImageFileDirectory
 		// that results from these write operations in new vectors
 		#[allow(non_snake_case)]
 		let mut new_StripOffsets = Vec::new();
+		#[allow(non_snake_case)]
+		let mut new_ThumbnailOffset = Vec::new();
 		// let mut new_TODO ...
 
 		for tag in &all_relevant_tags
@@ -521,6 +594,13 @@ ImageFileDirectory
 							*current_offset += strip.len() as u32;
 						}
 					},
+					ExifTag::ThumbnailOffset(_, thumbnail_data) => {
+						new_ThumbnailOffset.extend(
+							to_u8_vec_macro!(u32, &current_offset.clone(), &data.get_endian())
+						);
+						encode_vec.extend(thumbnail_data);
+						*current_offset += thumbnail_data.len() as u32;
+					},
 					// TODO: What other tags to put in here?!
 					_ => ()
 				}
@@ -531,7 +611,8 @@ ImageFileDirectory
 		// Start by adding the number of entries
 		let count_entries = all_relevant_tags.iter().filter(
 			|tag| tag.is_writable() || 
-			if let TagType::IFD_OFFSET(_) = tag.get_tag_type() { true } else { false } 
+			if let TagType::IFD_OFFSET(_)  = tag.get_tag_type() { true } else { false } ||
+			if let TagType::DATA_OFFSET(_) = tag.get_tag_type() { true } else { false }
 		).count() as u16;
 
 		encode_vec.extend(to_u8_vec_macro!(u16, &count_entries, &data.get_endian()).iter());
@@ -568,6 +649,10 @@ ImageFileDirectory
 			{
 				&new_StripOffsets
 			}
+			else if let ExifTag::ThumbnailOffset(_, _) = tag
+			{
+				&new_ThumbnailOffset
+			}
 			else
 			{
 				&tag.value_as_u8_vec(&data.get_endian())
@@ -588,7 +673,7 @@ ImageFileDirectory
 				for _ in 0..(number_of_components - value.len() as u32)
 				{
 					string_padding.push(0x00);
-				}	
+				}
 			}
 
 			// Add offset or value /                                            4 bytes
