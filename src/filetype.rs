@@ -41,14 +41,14 @@ FileExtension
 			"tif"   => Ok(FileExtension::TIFF),
 			"tiff"  => Ok(FileExtension::TIFF),
 			"webp"  => Ok(FileExtension::WEBP),
-			_       => io_error!(Unsupported, "Unknown file type!")
+			_       => io_error!(Unsupported, format!("Unknown file type: {}", input))
 		}
 	}
 }
 
 
 
-pub(crate) fn
+pub fn
 get_file_type
 (
 	path: &Path

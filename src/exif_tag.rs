@@ -45,6 +45,9 @@ macro_rules! build_tag_enum {
 			StripOffsets(       Vec::<u32>, Vec::<Vec::<u8>>),
 			StripByteCounts(    Vec::<u32>, Vec::<Vec::<u8>>),
 
+			ThumbnailOffset(    Vec::<u32>, Vec::<u8>),
+			ThumbnailLength(    Vec::<u32>           ),
+
 			UnknownINT8U(       INT8U,          u16, ExifTagGroup),
 			UnknownSTRING(      STRING,         u16, ExifTagGroup),
 			UnknownINT16U(      INT16U,         u16, ExifTagGroup),
@@ -77,6 +80,9 @@ macro_rules! build_tag_enum {
 
 					ExifTag::StripOffsets(       _, _,       ) => 0x0111,
 					ExifTag::StripByteCounts(    _, _,       ) => 0x0117,
+
+					ExifTag::ThumbnailOffset(    _, _,       ) => 0x0201,
+					ExifTag::ThumbnailLength(    _,          ) => 0x0202,
 
 					ExifTag::UnknownINT8U(          _, tag, _) => tag,
 					ExifTag::UnknownSTRING(         _, tag, _) => tag,
@@ -121,6 +127,9 @@ macro_rules! build_tag_enum {
 
 					(0x0111, _) => Ok(ExifTag::StripOffsets(   Vec::new(), Vec::new())),
 					(0x0117, _) => Ok(ExifTag::StripByteCounts(Vec::new(), Vec::new())),
+
+					(0x0201, _) => Ok(ExifTag::ThumbnailOffset(Vec::new(), Vec::new())),
+					(0x0202, _) => Ok(ExifTag::ThumbnailLength(Vec::new(),           )),
 
 					_ => Err(String::from("Invalid hex value for EXIF tag - Use 'Unknown...' instead")),
 				}
@@ -168,6 +177,9 @@ macro_rules! build_tag_enum {
 
 					(0x0111, _) => Ok(ExifTag::StripOffsets(   Vec::new(), Vec::new())),
 					(0x0117, _) => Ok(ExifTag::StripByteCounts(Vec::new(), Vec::new())),
+
+					(0x0201, _) => Ok(ExifTag::ThumbnailOffset(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian), Vec::new())),
+					(0x0202, _) => Ok(ExifTag::ThumbnailLength(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian),           )),
 
 					_ => {
 						// In this case, the given hex_value represents a tag that is unknown
@@ -288,6 +300,9 @@ macro_rules! build_tag_enum {
 					ExifTag::StripOffsets(       _, _          ) => ExifTagGroup::GENERIC,
 					ExifTag::StripByteCounts(    _, _          ) => ExifTagGroup::GENERIC,
 
+					ExifTag::ThumbnailOffset(    _, _          ) => ExifTagGroup::GENERIC,
+					ExifTag::ThumbnailLength(    _,            ) => ExifTagGroup::GENERIC,
+
 					ExifTag::UnknownINT8U(          _, _, group) => group,
 					ExifTag::UnknownSTRING(         _, _, group) => group,
 					ExifTag::UnknownINT16U(         _, _, group) => group,
@@ -319,6 +334,9 @@ macro_rules! build_tag_enum {
 
 					ExifTag::StripOffsets(       _, _      ) => ExifTagFormat::INT32U,
 					ExifTag::StripByteCounts(    _, _      ) => ExifTagFormat::INT32U,
+
+					ExifTag::ThumbnailOffset(    _, _      ) => ExifTagFormat::INT32U,
+					ExifTag::ThumbnailLength(    _,        ) => ExifTagFormat::INT32U,
 
 					ExifTag::UnknownINT8U(          _, _, _) => ExifTagFormat::INT8U,
 					ExifTag::UnknownSTRING(         _, _, _) => ExifTagFormat::STRING,
@@ -369,6 +387,9 @@ macro_rules! build_tag_enum {
 
 					ExifTag::StripOffsets(       _, value      ) => value.len() as u32,
 					ExifTag::StripByteCounts(    _, value      ) => value.len() as u32,
+
+					ExifTag::ThumbnailOffset(    _, _          ) => 1,
+					ExifTag::ThumbnailLength(    _,            ) => 1,
 
 					ExifTag::UnknownINT8U(          value, _, _) => value.len() as u32,
 					ExifTag::UnknownSTRING(         value, _, _) => value.len() as u32 + 1,
@@ -423,6 +444,9 @@ macro_rules! build_tag_enum {
 
 					ExifTag::StripOffsets(          _,     _   ) => Vec::new(),
 					ExifTag::StripByteCounts( byte_counts, _   ) => byte_counts.to_u8_vec(endian),
+
+					ExifTag::ThumbnailOffset(       _,     _   ) => Vec::new(),
+					ExifTag::ThumbnailLength( length_data      ) => length_data.to_u8_vec(endian),
 
 					ExifTag::UnknownINT8U(          value, _, _) => value.to_u8_vec(endian),
 					ExifTag::UnknownSTRING(         value, _, _) => value.to_u8_vec(endian),
@@ -538,8 +562,8 @@ build_tag_enum![
 
 	// End of TIFF only tags (?)
 
-	(ThumbnailOffset,             0x0201, INT32U,        Some::<u32>(1),    true,      GENERIC),       // oh boy, this one seems complicated - the group depends on the file type???
-	(ThumbnailLength,             0x0202, INT32U,        Some::<u32>(1),    true,      GENERIC),       // same problems as 0x0201
+	// (ThumbnailOffset,             0x0201, INT32U,        Some::<u32>(1),    true,      GENERIC),
+	// (ThumbnailLength,             0x0202, INT32U,        Some::<u32>(1),    true,      GENERIC),
 
 	(YCbCrCoefficients,           0x0211, RATIONAL64U,   Some::<u32>(3),    true,      GENERIC),                
 	(YCbCrSubSampling,            0x0212, INT16U,        Some::<u32>(2),    true,      GENERIC),                
@@ -672,11 +696,14 @@ impl ExifTag
 	{
 		match self
 		{
-			ExifTag::ExifOffset(_)                    => TagType::IFD_OFFSET(ExifTagGroup::EXIF),
-			ExifTag::GPSInfo(_)                       => TagType::IFD_OFFSET(ExifTagGroup::GPS),
+			ExifTag::ExifOffset(_)                   => TagType::IFD_OFFSET(ExifTagGroup::EXIF),
+			ExifTag::GPSInfo(_)                      => TagType::IFD_OFFSET(ExifTagGroup::GPS),
 
-			ExifTag::StripOffsets(   offset_data, _)  => TagType::DATA_OFFSET(offset_data.clone()),
-			ExifTag::StripByteCounts(byte_counts, _)  => TagType::DATA_OFFSET(byte_counts.clone()),
+			ExifTag::StripOffsets(   offset_data, _) => TagType::DATA_OFFSET(offset_data.clone()),
+			ExifTag::StripByteCounts(byte_counts, _) => TagType::DATA_OFFSET(byte_counts.clone()),
+
+			ExifTag::ThumbnailOffset(offset_data, _) => TagType::DATA_OFFSET(offset_data.clone()),
+			ExifTag::ThumbnailLength(length_data   ) => TagType::DATA_OFFSET(length_data.clone()),
 
 			_ => TagType::VALUE
 		}
