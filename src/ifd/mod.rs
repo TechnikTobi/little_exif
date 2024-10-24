@@ -604,7 +604,8 @@ ImageFileDirectory
 		// Start by adding the number of entries
 		let count_entries = all_relevant_tags.iter().filter(
 			|tag| tag.is_writable() || 
-			if let TagType::IFD_OFFSET(_) = tag.get_tag_type() { true } else { false } 
+			if let TagType::IFD_OFFSET(_)  = tag.get_tag_type() { true } else { false } ||
+			if let TagType::DATA_OFFSET(_) = tag.get_tag_type() { true } else { false }
 		).count() as u16;
 
 		encode_vec.extend(to_u8_vec_macro!(u16, &count_entries, &data.get_endian()).iter());
