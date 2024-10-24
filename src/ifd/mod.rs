@@ -144,7 +144,8 @@ ImageFileDirectory
 		// other tags.
 		// For example, for decoding the StripOffsets we also need the 
 		// StripByteCounts to know how many bytes each strip has
-		let mut strip_tags: (Option<ExifTag>, Option<ExifTag>) = (None, None);
+		let mut strip_tags:     (Option<ExifTag>, Option<ExifTag>) = (None, None);
+		let mut thumbnail_info: (Option<ExifTag>, Option<ExifTag>) = (None, None);
 		// Others following here in the future...
 
 		////////////////////////////////////////////////////////////////////////
@@ -339,7 +340,13 @@ ImageFileDirectory
 					},
 					ExifTag::StripByteCounts(_, _) => {
 						strip_tags.1 = Some(tag)
-					}
+					},
+					ExifTag::ThumbnailOffset(_, _) => {
+						thumbnail_info.0 = Some(tag)
+					},
+					ExifTag::ThumbnailLength(_) => {
+						thumbnail_info.1 = Some(tag)
+					},
 					_ => ()
 				}
 
@@ -391,6 +398,41 @@ ImageFileDirectory
 
 				// Push StripOffset tag to tags vector
 				tags.push(ExifTag::StripOffsets(Vec::new(), strip_data));
+
+				// Restore backup position
+				data_cursor.set_position(backup_position);
+			}
+		}
+
+		if thumbnail_info.0.is_some() && thumbnail_info.1.is_some()
+		{
+			// 0 -> offset
+			// 1 -> length
+			if let
+				(
+					TagType::DATA_OFFSET(offset),
+					TagType::DATA_OFFSET(length)
+				)
+				=
+				(
+					thumbnail_info.0.unwrap().get_tag_type(),
+					thumbnail_info.1.unwrap().get_tag_type()
+				)
+			{
+				let backup_position = data_cursor.position();
+
+				if offset.len() == 1 && length.len() == 1
+				{
+					let mut thumbnail_data = vec![0u8; length[0] as usize];
+
+					// Gather the data at the offset
+					data_cursor.set_position(data_begin_position);
+					data_cursor.seek_relative(offset[0] as i64)?;
+					data_cursor.read_exact(&mut thumbnail_data)?;
+
+					// Push ThumbnailOffset tag to tags vector
+					tags.push(ExifTag::ThumbnailOffset(Vec::new(), thumbnail_data));
+				}
 
 				// Restore backup position
 				data_cursor.set_position(backup_position);
@@ -519,6 +561,7 @@ ImageFileDirectory
 		// that results from these write operations in new vectors
 		#[allow(non_snake_case)]
 		let mut new_StripOffsets = Vec::new();
+		let mut new_ThumbnailOffset = Vec::new();
 		// let mut new_TODO ...
 
 		for tag in &all_relevant_tags
@@ -539,6 +582,13 @@ ImageFileDirectory
 							encode_vec.extend(strip);
 							*current_offset += strip.len() as u32;
 						}
+					},
+					ExifTag::ThumbnailOffset(_, thumbnail_data) => {
+						new_ThumbnailOffset.extend(
+							to_u8_vec_macro!(u32, &current_offset.clone(), &data.get_endian())
+						);
+						encode_vec.extend(thumbnail_data);
+						*current_offset += thumbnail_data.len() as u32;
 					},
 					// TODO: What other tags to put in here?!
 					_ => ()
@@ -587,6 +637,10 @@ ImageFileDirectory
 			{
 				&new_StripOffsets
 			}
+			else if let ExifTag::ThumbnailOffset(_, _) = tag
+			{
+				&new_ThumbnailOffset
+			}
 			else
 			{
 				&tag.value_as_u8_vec(&data.get_endian())
@@ -607,7 +661,7 @@ ImageFileDirectory
 				for _ in 0..(number_of_components - value.len() as u32)
 				{
 					string_padding.push(0x00);
-				}	
+				}
 			}
 
 			// Add offset or value /                                            4 bytes
