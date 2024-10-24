@@ -258,7 +258,7 @@ ImageFileDirectory
 				);
 
 				// Check that this actually worked
-				if let Ok(subifd_result) = subifd_decode_result
+				if let Ok(_subifd_result) = subifd_decode_result
 				{
 					// Assert result, restore old cursor position & continue
 
@@ -399,6 +399,9 @@ ImageFileDirectory
 				// Push StripOffset tag to tags vector
 				tags.push(ExifTag::StripOffsets(Vec::new(), strip_data));
 
+				// Push StripByteCounts tag to tags vector
+				tags.push(ExifTag::StripByteCounts(byte_counts, Vec::new()));
+
 				// Restore backup position
 				data_cursor.set_position(backup_position);
 			}
@@ -432,6 +435,9 @@ ImageFileDirectory
 
 					// Push ThumbnailOffset tag to tags vector
 					tags.push(ExifTag::ThumbnailOffset(Vec::new(), thumbnail_data));
+
+					// Also push ThumbnailLength tag to tags vector
+					tags.push(ExifTag::ThumbnailLength(length));
 				}
 				else
 				{
@@ -565,6 +571,7 @@ ImageFileDirectory
 		// that results from these write operations in new vectors
 		#[allow(non_snake_case)]
 		let mut new_StripOffsets = Vec::new();
+		#[allow(non_snake_case)]
 		let mut new_ThumbnailOffset = Vec::new();
 		// let mut new_TODO ...
 
