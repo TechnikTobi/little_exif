@@ -521,6 +521,7 @@ build_tag_enum![
 
 	// Tag                        Tag ID  Format         Nr. Components     Writable   Group                             Required by        bilevel grayscale palette-color full-color
 	(InteroperabilityIndex,       0x0001, STRING,        Some::<u32>(4),    true,      INTEROP),
+	(InteroperabilityVersion,     0x0002, UNDEF,         None::<u32>,       true,      INTEROP),
 
 	(ImageWidth,                  0x0100, INT32U,        Some::<u32>(1),    true,      GENERIC),                        // Not EXIF but TIFF   x       x         x             x 
 	(ImageHeight,                 0x0101, INT32U,        Some::<u32>(1),    true,      GENERIC),                        // Not EXIF but TIFF   x       x         x             x 
@@ -698,6 +699,7 @@ impl ExifTag
 		{
 			ExifTag::ExifOffset(_)                   => TagType::IFD_OFFSET(ExifTagGroup::EXIF),
 			ExifTag::GPSInfo(_)                      => TagType::IFD_OFFSET(ExifTagGroup::GPS),
+			ExifTag::InteropOffset(_)                => TagType::IFD_OFFSET(ExifTagGroup::INTEROP),
 
 			ExifTag::StripOffsets(   offset_data, _) => TagType::DATA_OFFSET(offset_data.clone()),
 			ExifTag::StripByteCounts(byte_counts, _) => TagType::DATA_OFFSET(byte_counts.clone()),

@@ -50,9 +50,9 @@ ImageFileDirectory
 		match self.ifd_type
 		{
 			ExifTagGroup::GENERIC  => None,
-			ExifTagGroup::EXIF     => Some((ExifTagGroup::GENERIC, ExifTag::ExifOffset(Vec::new()))),
-			ExifTagGroup::GPS      => Some((ExifTagGroup::GENERIC, ExifTag::GPSInfo(   Vec::new()))),
-			ExifTagGroup::INTEROP  => panic!("INTEROP NOT YET SUPPORT - PLEASE CONTACT THE LITTLE_EXIF DEVELOPER!"),
+			ExifTagGroup::EXIF     => Some((ExifTagGroup::GENERIC, ExifTag::ExifOffset(   Vec::new()))),
+			ExifTagGroup::GPS      => Some((ExifTagGroup::GENERIC, ExifTag::GPSInfo(      Vec::new()))),
+			ExifTagGroup::INTEROP  => Some((ExifTagGroup::EXIF,    ExifTag::InteropOffset(Vec::new()))),
 		}
 	}
 
@@ -65,8 +65,9 @@ ImageFileDirectory
 	{
 		match tag
 		{
-			ExifTag::ExifOffset(_) => Some(ExifTagGroup::EXIF),
-			ExifTag::GPSInfo(_)    => Some(ExifTagGroup::GPS),
+			ExifTag::ExifOffset(_)    => Some(ExifTagGroup::EXIF),
+			ExifTag::GPSInfo(_)       => Some(ExifTagGroup::GPS),
+			ExifTag::InteropOffset(_) => Some(ExifTagGroup::INTEROP),
 			_ => None
 		}
 	}
