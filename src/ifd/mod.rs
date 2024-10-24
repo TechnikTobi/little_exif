@@ -336,16 +336,16 @@ ImageFileDirectory
 				match tag
 				{
 					ExifTag::StripOffsets(_, _) => {
-						strip_tags.0 = Some(tag)
+						strip_tags.0 = Some(tag);
 					},
 					ExifTag::StripByteCounts(_, _) => {
-						strip_tags.1 = Some(tag)
+						strip_tags.1 = Some(tag);
 					},
 					ExifTag::ThumbnailOffset(_, _) => {
-						thumbnail_info.0 = Some(tag)
+						thumbnail_info.0 = Some(tag);
 					},
 					ExifTag::ThumbnailLength(_) => {
-						thumbnail_info.1 = Some(tag)
+						thumbnail_info.1 = Some(tag);
 					},
 					_ => ()
 				}
@@ -432,6 +432,10 @@ ImageFileDirectory
 
 					// Push ThumbnailOffset tag to tags vector
 					tags.push(ExifTag::ThumbnailOffset(Vec::new(), thumbnail_data));
+				}
+				else
+				{
+					eprintln!("WARNING: Can't decode thumbnail! The ThumbnailOffset and ThumbnailLength tags are expected to contain exactly 1 INT32U value. However, they have {} and {} values.", offset.len(), length.len());
 				}
 
 				// Restore backup position
