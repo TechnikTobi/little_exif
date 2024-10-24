@@ -178,8 +178,8 @@ macro_rules! build_tag_enum {
 					(0x0111, _) => Ok(ExifTag::StripOffsets(   Vec::new(), Vec::new())),
 					(0x0117, _) => Ok(ExifTag::StripByteCounts(Vec::new(), Vec::new())),
 
-					(0x0201, _) => Ok(ExifTag::ThumbnailOffset(Vec::new(), Vec::new())),
-					(0x0202, _) => Ok(ExifTag::ThumbnailLength(Vec::new(),           )),
+					(0x0201, _) => Ok(ExifTag::ThumbnailOffset(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian), Vec::new())),
+					(0x0202, _) => Ok(ExifTag::ThumbnailLength(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian),           )),
 
 					_ => {
 						// In this case, the given hex_value represents a tag that is unknown
