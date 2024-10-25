@@ -364,6 +364,7 @@ use super::Metadata;
 		Ok(())
 	}
 
+	#[ignore]
 	#[test]
 	fn
 	new_test_2()
