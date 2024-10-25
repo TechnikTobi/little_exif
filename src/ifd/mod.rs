@@ -497,62 +497,6 @@ ImageFileDirectory
 	)
 	-> Result<(u64, Vec<u8>), std::io::Error>
 	{
-		// Get the offset information for this IFD's SubIFDs
-		let ifd_with_offset_info_only = ifds_with_offset_info_only
-			.iter()
-			.filter(|ifd| 
-				ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
-				ifd.get_ifd_type()       == self.get_ifd_type()
-			)
-			.next().unwrap();
-
-		// Check if this IFD links to a SubIFD. If so, encode that one first
-		for offset_tag in &ifd_with_offset_info_only.tags.clone()
-		{
-			if let Some(group) = Self::get_ifd_type_for_offset_tag(offset_tag)
-			{
-				// Find that IFD in the parent struct and encode that
-				if let Ok((_, subifd_offset)) = data.get_ifds()
-					.iter()
-					.filter(|ifd| 
-						ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
-						ifd.get_ifd_type()       == group
-					)
-					.next().unwrap().encode_ifd(
-						data, 
-						ifds_with_offset_info_only, 
-						encode_vec, 
-						current_offset
-					)
-				{
-					// Update the offset tag for later
-					ifds_with_offset_info_only
-						.iter_mut()
-						.filter(|ifd| 
-							ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
-							ifd.get_ifd_type()       == self.get_ifd_type()
-						)
-						.next().unwrap().tags
-						.iter_mut()
-						.filter(|tag| tag.as_u16() == offset_tag.as_u16())
-						.for_each(|tag| { *tag = ExifTag::from_u16_with_data(
-							tag.as_u16(), 
-							&tag.format(), 
-							&subifd_offset,
-							&data.get_endian(), 
-							&tag.get_group()
-						).unwrap()});
-				}
-				else
-				{
-					panic!("Could not find IFD in parent struct!");
-				}
-			}
-			else
-			{
-				panic!("Could not determine type of SubIFD!");
-			}
-		}
 
 		// Store all relevant tags (IFD tags + offset tags) in a temporary 
 		// location and sort them there
@@ -565,50 +509,7 @@ ImageFileDirectory
 			.next().unwrap().get_tags()
 			.iter()).cloned().collect::<Vec<ExifTag>>();
 
-		// SubIFDs are done; Now we need to handle data areas that are 
-		// described by data offset tags, such as StripOffsets
-		// As we can't modify the tags directly, store their relevant data
-		// that results from these write operations in new vectors
-		#[allow(non_snake_case)]
-		let mut new_StripOffsets = Vec::new();
-		#[allow(non_snake_case)]
-		let mut new_ThumbnailOffset = Vec::new();
-		// let mut new_TODO ...
-
-		for tag in &all_relevant_tags
-		{
-			if let TagType::DATA_OFFSET(_) = tag.get_tag_type()
-			{
-				match tag
-				{
-					ExifTag::StripOffsets(_, strip_data) => {
-						for strip in strip_data
-						{
-							// Store the current offset where the strip is
-							// pushed, push the strip and account for its length
-							// in the offset variable
-							new_StripOffsets.extend(
-								to_u8_vec_macro!(u32, &current_offset.clone(), &data.get_endian())
-							);
-							encode_vec.extend(strip);
-							*current_offset += strip.len() as u32;
-						}
-					},
-					ExifTag::ThumbnailOffset(_, thumbnail_data) => {
-						new_ThumbnailOffset.extend(
-							to_u8_vec_macro!(u32, &current_offset.clone(), &data.get_endian())
-						);
-						encode_vec.extend(thumbnail_data);
-						*current_offset += thumbnail_data.len() as u32;
-					},
-					// TODO: What other tags to put in here?!
-					_ => ()
-				}
-			}
-		}
-
-		// Now we can finally start by writing this IFD!
-		// Start by adding the number of entries
+		// Start writing this IFD by adding the number of entries
 		let count_entries = all_relevant_tags.iter().filter(
 			|tag| tag.is_writable() || 
 			if let TagType::IFD_OFFSET(_)  = tag.get_tag_type() { true } else { false } ||
@@ -629,7 +530,13 @@ ImageFileDirectory
 			+ IFD_ENTRY_LENGTH * count_entries as u32
 			+ IFD_END_NO_LINK.len()            as u32
 		;
-		let mut ifd_offset_area: Vec<u8> = Vec::new();
+		let mut ifd_offset_area: Vec<u8>;
+
+		// Ensure that offset data is aligned properly
+		let alignment_count = (4 - *current_offset % 4) % 4;
+		*current_offset += alignment_count;
+		ifd_offset_area = vec![0u8; alignment_count as usize];
+		
 
 		// Write directory entries to the vector
 		for tag in &all_relevant_tags
@@ -645,18 +552,79 @@ ImageFileDirectory
 
 			// Need to differentiate at this stage as we have to access e.g. the 
 			// StripOffsets that are stored in a local vec
-			let value = if let ExifTag::StripOffsets(_, _) = tag
+			let value = match tag.get_tag_type()
 			{
-				&new_StripOffsets
-			}
-			else if let ExifTag::ThumbnailOffset(_, _) = tag
-			{
-				&new_ThumbnailOffset
-			}
-			else
-			{
-				&tag.value_as_u8_vec(&data.get_endian())
+				TagType::VALUE => {
+					tag.value_as_u8_vec(&data.get_endian())
+				},
+
+				TagType::DATA_OFFSET(_) => {
+					match tag
+					{
+						ExifTag::StripOffsets(_, strip_data) => {
+							let mut value = Vec::new();
+							for strip in strip_data
+							{
+								// Store the current offset where the strip is
+								// pushed, push the strip and account for its length
+								// in the offset variable
+								value.extend(
+									to_u8_vec_macro!(u32, &current_offset.clone(), &data.get_endian())
+								);
+								ifd_offset_area.extend(strip);
+								*current_offset += strip.len() as u32;
+							}
+							value
+						},
+		
+						ExifTag::ThumbnailOffset(_, thumbnail_data) => {
+							let value = to_u8_vec_macro!(u32, &current_offset.clone(), &data.get_endian());
+							ifd_offset_area.extend(thumbnail_data);
+							*current_offset += thumbnail_data.len() as u32;
+							value
+						},
+
+						_ => tag.value_as_u8_vec(&data.get_endian()),
+					}
+				}
+
+				TagType::IFD_OFFSET(_) => {
+
+					if let Some(group) = Self::get_ifd_type_for_offset_tag(tag)
+					{
+						// Find that IFD in the parent struct and encode that
+						if let Ok((_, subifd_offset)) = data.get_ifds()
+							.iter()
+							.filter(|ifd| 
+								ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
+								ifd.get_ifd_type()       == group
+							)
+							.next().unwrap().encode_ifd(
+								data, 
+								ifds_with_offset_info_only, 
+								&mut ifd_offset_area, 
+								current_offset
+							)
+						{
+							subifd_offset
+						}
+						else
+						{
+							panic!("Could not find IFD in parent struct!");
+						}
+					}
+					else
+					{
+						panic!("Could not determine type of SubIFD!");
+					}
+				}
 			};
+
+			// Re-align 
+			let alignment_count = (4 - *current_offset % 4) % 4;
+			*current_offset += alignment_count;
+			ifd_offset_area.extend(vec![0u8; alignment_count as usize]);
+			
 			
 			// Add Tag & Data Format /                                          2 + 2 bytes
 			encode_vec.extend(to_u8_vec_macro!(u16, &tag.as_u16(),          &data.get_endian()).iter());
