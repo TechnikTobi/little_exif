@@ -566,10 +566,10 @@ build_tag_enum![
 	// (ThumbnailOffset,             0x0201, INT32U,        Some::<u32>(1),    true,      GENERIC),
 	// (ThumbnailLength,             0x0202, INT32U,        Some::<u32>(1),    true,      GENERIC),
 
-	(YCbCrCoefficients,           0x0211, RATIONAL64U,   Some::<u32>(3),    true,      GENERIC),                
-	(YCbCrSubSampling,            0x0212, INT16U,        Some::<u32>(2),    true,      GENERIC),                
-	(YCbCrPositioning,            0x0213, INT16U,        Some::<u32>(1),    true,      GENERIC),                
-	(ReferenceBlackWhite,         0x0214, RATIONAL64U,   Some::<u32>(6),    true,      GENERIC),                
+	(YCbCrCoefficients,           0x0211, RATIONAL64U,   Some::<u32>(3),    true,      GENERIC),
+	(YCbCrSubSampling,            0x0212, INT16U,        Some::<u32>(2),    true,      GENERIC),
+	(YCbCrPositioning,            0x0213, INT16U,        Some::<u32>(1),    true,      GENERIC),
+	(ReferenceBlackWhite,         0x0214, RATIONAL64U,   Some::<u32>(6),    true,      GENERIC),
 
 	(Copyright,                   0x8298, STRING,        None::<u32>,       true,      GENERIC),
 	(ExposureTime,                0x829a, RATIONAL64U,   Some::<u32>(1),    true,      EXIF),
@@ -579,7 +579,7 @@ build_tag_enum![
 
 	(ExposureProgram,             0x8822, INT16U,        Some::<u32>(1),    true,      EXIF),
 	(SpectralSensitivity,         0x8824, STRING,        None::<u32>,       true,      EXIF),
-	(GPSInfo,                     0x8825, INT32U,        Some::<u32>(1),    true,      GENERIC),       // -> GPS Tags: https://exiftool.org/TagNames/GPS.html
+	(GPSInfo,                     0x8825, INT32U,        Some::<u32>(1),    true,      GENERIC),                        // -> GPS Tags: https://exiftool.org/TagNames/GPS.html
 	(ISO,                         0x8827, INT16U,        None::<u32>,       true,      EXIF),
 	(OECF,                        0x8828, UNDEF,         None::<u32>,       false,     EXIF),
 	(SensitivityType,             0x8830, INT16U,        Some::<u32>(1),    true,      EXIF),
@@ -589,7 +589,7 @@ build_tag_enum![
 	(ISOSpeedLatitudeyyy,         0x8834, INT32U,        Some::<u32>(1),    true,      EXIF),
 	(ISOSpeedLatitudezzz,         0x8835, INT32U,        Some::<u32>(1),    true,      EXIF),
 
-	(ExifVersion,                 0x9000, UNDEF,         Some::<u32>(4),    true,      EXIF),    // 4 ASCII chars but without NULL Terminator
+	(ExifVersion,                 0x9000, UNDEF,         Some::<u32>(4),    true,      EXIF),                           // 4 ASCII chars but without NULL Terminator
 	(DateTimeOriginal,            0x9003, STRING,        Some::<u32>(20),   true,      EXIF),
 	(CreateDate,                  0x9004, STRING,        Some::<u32>(20),   true,      EXIF),
 	(OffsetTime,                  0x9010, STRING,        None::<u32>,       true,      EXIF),
@@ -606,14 +606,14 @@ build_tag_enum![
 	(MaxApertureValue,            0x9205, RATIONAL64U,   Some::<u32>(1),    true,      EXIF),
 	(SubjectDistance,             0x9206, RATIONAL64U,   Some::<u32>(1),    true,      EXIF),
 	(MeteringMode,                0x9207, INT16U,        Some::<u32>(1),    true,      EXIF),
-	(LightSource,                 0x9208, INT16U,        Some::<u32>(1),    true,      EXIF),    // -> EXIF LightSource Values: https://exiftool.org/TagNames/EXIF.html#LightSource
-	(Flash,                       0x9209, INT16U,        Some::<u32>(1),    true,      EXIF),    // -> EXIF Flash Values: https://exiftool.org/TagNames/EXIF.html#Flash
+	(LightSource,                 0x9208, INT16U,        Some::<u32>(1),    true,      EXIF),                           // -> EXIF LightSource Values: https://exiftool.org/TagNames/EXIF.html#LightSource
+	(Flash,                       0x9209, INT16U,        Some::<u32>(1),    true,      EXIF),                           // -> EXIF Flash Values: https://exiftool.org/TagNames/EXIF.html#Flash
 	(FocalLength,                 0x920a, RATIONAL64U,   Some::<u32>(1),    true,      EXIF),
 
 	(SubjectArea,                 0x9214, INT16U,        Some::<u32>(4),    true,      EXIF),
 
 	(MakerNote,                   0x927c, UNDEF,         None::<u32>,       true,      EXIF),
-	(UserComment,                 0x9286, UNDEF,         None::<u32>,       true,      EXIF),    // First 8 bytes describe the character code (e.g. "JIS" for Japanese characters)
+	(UserComment,                 0x9286, UNDEF,         None::<u32>,       true,      EXIF),                           // First 8 bytes describe the character code (e.g. "JIS" for Japanese characters)
 	(SubSecTime,                  0x9290, STRING,        None::<u32>,       true,      EXIF),
 	(SubSecTimeOriginal,          0x9291, STRING,        None::<u32>,       true,      EXIF),
 	(SubSecTimeDigitized,         0x9292, STRING,        None::<u32>,       true,      EXIF),
