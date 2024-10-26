@@ -282,7 +282,8 @@ Metadata
 		{
 			[0x49, 0x49] => { Endian::Little },
 			[0x4d, 0x4d] => { Endian::Big },
-			_            => { return io_error!(Other, "Illegal endian information!") } 
+			[0x68, 0x74] => { return io_error!(Other, "Expected endian information, but found something that suspectedly is XMP data") }
+			_            => { return io_error!(Other, format!("Illegal endian information: {:?}", endian_buffer)) } 
 		};
 
 		// Validate magic number
