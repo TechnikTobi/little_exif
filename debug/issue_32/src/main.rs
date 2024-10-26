@@ -47,7 +47,7 @@ fn main()
 	let file_extension = get_file_type(Path::new(&source_file_path))?;
 	let mut metadata = Metadata::new_from_vec(&file_content, file_extension)?;
 
-	metadata.set_tag(ExifTag::ImageDescription("test".to_string()));
+	metadata.set_tag(ExifTag::ImageDescription("Hello from little_exif (again)!".to_string()));
 	metadata.write_to_vec(&mut file_content, file_extension)?;
 
 	fs::write("./rsrc/copy.jpg", file_content)?;
