@@ -110,92 +110,71 @@ clear_segment
 	check_signature(&file_buffer)?;
 
 	// Setup of variables necessary for going through the file
-	let mut buffer_iterator = file_buffer.iter();                               // Iterator for processing the bytes of the file
-	let mut seek_counter = 0u64;                                                // A counter for keeping track of where in the file we currently are
 	let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
 	let mut previous_byte_was_marker_prefix = false;                            // A boolean for remembering if the previous byte was a marker prefix (0xFF)
+	let mut cursor = Cursor::new(file_buffer);
+
+	// Skip 0xFFD8 at the start
+	cursor.seek_relative(2)?;
 
 	loop
 	{
 		// Read next byte into buffer
-		if let Some(byte) = buffer_iterator.next() 
-		{
-			byte_buffer[0] = byte.clone();
-		}
+		cursor.read_exact(&mut byte_buffer)?;
 
 		if previous_byte_was_marker_prefix
 		{
+			// Check if this is the end of the file. In that case, the length
+			// data can't be read and we need to return prematurely. 
+			if byte_buffer[0] == 0xd9                                           // EOI marker
+			{
+				// No more data to read in
+				return Ok(());
+			}
+
+			// Read in the length of the segment
+			// (which follows immediately after the marker)
+			let mut length_buffer = [0u8; 2];
+			cursor.read_exact(&mut length_buffer)?;
+
+			// Decode the length to determine how much more data there is
+			let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
+			let remaining_length = (length - 2) as usize;
+
 			if byte_buffer[0] == segment_marker                                 // Given marker, e.g. for APP1
 			{
-
-				// Read in the length of the segment
-				// (which follows immediately after the marker)
-				let mut length_buffer = [0u8; 2];
-
-				if let (Some(&byte1), Some(&byte2)) = (buffer_iterator.next(), buffer_iterator.next()) 
-				{
-					length_buffer = [byte1, byte2];
-				}
-
-				// Decode the length to determine how much more data there is
-				let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
-				let remaining_length = length - 2;
+				// Backup current position, account for the 4 bytes already read
+				let backup_position = cursor.position() - 4;
 
 				// Skip the segment
-				if remaining_length > 0 
-				{
-					if buffer_iterator.nth((remaining_length - 1) as usize).is_none()
-					{
-						panic!("Could not skip to end of APP1 segment!");
-					}
-				} 
-				else
-				{
-					unreachable!("If rem_len is <= 0 then it's not a valid\
-					JPEG - it must have at least a single SOS after APP1")
-				}
+				cursor.seek_relative(remaining_length as i64)?;
 
-				// ...copy data from there onwards into a buffer...
-				let mut file_buffer_clone = file_buffer.clone();
-				let (_, buffer) = file_buffer_clone.split_at_mut(
-						(seek_counter     as usize)                             // Skip what has already been sought
-					+ (remaining_length as usize)                               // Skip current segment
-					+ 2                                                         // Skip Marker Prefix and APP1 marker
-					+ 2                                                         // Skip the two length bytes
-				);
-				let buffer: Vec<u8> = buffer.to_vec();
+				// Copy data from there onwards into a buffer
+				let mut temp_buffer = Vec::new();
+				cursor.read_to_end(&mut temp_buffer)?;
 
-				// This essentially shifts the right-most bytes n bytes to the left
-				// This seeks inside the file_buffer to the position 
-				// (seek_counter as usize), i.e. all bytes that have 
-				// previously been read. 
-				// Then a chunk of the length of the buffer vector is
-				// selected and replaced with the buffer contents, shifting
-				// the contents to the left
-				file_buffer
-					[(seek_counter as usize)..]
-					[..buffer.len()]
-					.copy_from_slice(&buffer);
+				// Overwrite segment
+				cursor.set_position(backup_position);
+				cursor.write_all(&temp_buffer)?;
 
 				// Cut off right-most bytes that are now duplicates due 
 				// to the previous shift-to-left operation
-				let cutoff_index = (seek_counter as usize) + buffer.len();
-				file_buffer.truncate(cutoff_index);
+				let cutoff_index = backup_position as usize + temp_buffer.len();
+				cursor.get_mut().truncate(cutoff_index);
 
-				// Reassign iterator to the new file buffer and seek to the
-				// current position
-				buffer_iterator = file_buffer.iter();
-				buffer_iterator.nth(seek_counter as usize);
-
-				// Account for the fact that we stepped back the prefix
-				// marker and the marker itself (note the increment at the
-				// end of the iteration, which is why we remove two as one
-				// gets added back again there)
-				seek_counter -= 2;
+				// Seek to start of next segment
+				cursor.set_position(backup_position);
 			}
-			else if byte_buffer[0] == 0xd9                                      // EOI marker
+			else if byte_buffer[0] == 0xda
 			{
-				break;
+				// See `generic_read_metadata`
+				cursor.seek_relative(remaining_length as i64)?;
+				skip_ecs(&mut cursor)?;
+			}
+			else
+			{
+				// Skip this segment
+				cursor.seek_relative(remaining_length as i64)?;
 			}
 
 			previous_byte_was_marker_prefix = false;
@@ -204,12 +183,7 @@ clear_segment
 		{
 			previous_byte_was_marker_prefix = byte_buffer[0] == JPG_MARKER_PREFIX;
 		}
-
-		seek_counter += 1;
-
 	}
-
-	return Ok(());
 }
 
 pub(crate) fn
