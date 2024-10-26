@@ -59,6 +59,21 @@ Metadata
 		).next()
 	}
 
+	/// Gets the maximum generic ifd number that any of the struct's IFDs has
+	pub fn
+	get_max_generic_ifd_number
+	(
+		&self
+	)
+	-> u32
+	{
+		self.image_file_directories.iter()
+			.filter(|ifd| ifd.get_ifd_type() == ExifTagGroup::GENERIC)
+			.max_by(|ifd1, ifd2| ifd1.get_generic_ifd_nr().cmp(&ifd2.get_generic_ifd_nr()))
+			.unwrap()
+			.get_generic_ifd_nr()
+	}
+
 	/// Gets an image file directory that is of a specific group an is
 	/// associated with a certain generic IFD number as a mutable reference. 
 	/// If the desired IFD does not exist yet it gets created.
