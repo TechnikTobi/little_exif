@@ -119,7 +119,6 @@ Metadata
 	-> Result<Vec<u8>, std::io::Error>
 	{
 		// Prepare offset information
-		let mut generic_ifd_count = 0;
 		let mut ifds_with_offset_info_only: Vec<ImageFileDirectory> = Vec::new();
 
 		for ifd in self.image_file_directories.iter() // .rev()
@@ -135,8 +134,6 @@ Metadata
 
 		for ifd in self.image_file_directories.iter()
 		{
-			generic_ifd_count = std::cmp::max(ifd.get_generic_ifd_nr(), generic_ifd_count);
-
 			if let Some((parent_ifd_group, offset_tag)) = ifd.get_offset_tag_for_parent_ifd()
 			{
 				// Check if the parent IFD is already in the vector
@@ -170,11 +167,7 @@ Metadata
 		// Now traverse the IFDs, starting with the SubIFDs associated with 
 		// IFD0, then IFD0 itself. Next, SubIFDs for IFD1, IFD1 itself, and
 		// so on up to IFD-n.
-		let generic_ifd_count = self.image_file_directories.iter()
-			.filter(|ifd| ifd.get_ifd_type() == ExifTagGroup::GENERIC)
-			.max_by(|ifd1, ifd2| ifd1.get_generic_ifd_nr().cmp(&ifd2.get_generic_ifd_nr()))
-			.unwrap()
-			.get_generic_ifd_nr();
+		let generic_ifd_count = self.get_max_generic_ifd_number();
 		
 		let mut index_of_previous_ifds_link_section: Option<u64> = Some(4);
 
@@ -189,6 +182,8 @@ Metadata
 			).collect::<Vec<&ImageFileDirectory>>();
 
 			assert!(filter_result.len() <= 1);
+
+			if filter_result.len() == 0 { continue; }
 
 			if let Ok((next_link_section, link_vec)) = filter_result.last().unwrap().encode_ifd(
 				&self, 
