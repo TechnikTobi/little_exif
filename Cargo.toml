@@ -5,10 +5,8 @@ version = "0.6.0-beta.4"
 edition = "2021"
 
 description = """
-Basic reading and writing of EXIF (related) metadata for PNG, JP(E)G, JXL and 
-WebP image files (other file types - e.g. TIFF or HEIC - are planned), with the 
-advantage of being solely written in Rust & not relying on any 3rd party 
-non-rust library.
+Basic reading and writing of EXIF metadata for PNG, JP(E)G, JXL and WebP images
+(other file types - e.g. TIFF or HEIC - are planned) written in pure Rust.
 """
 
 authors = ["Tobias Prisching"]
