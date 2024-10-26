@@ -29,7 +29,7 @@ fn main()
 	// Modify it
 	let mut data = Metadata::new_from_path(orig_path).unwrap();
 	data.set_tag(
-		ExifTag::ImageDescription("Hallo Welt!".to_string())
+		ExifTag::ImageDescription("Hello from little_exif!".to_string())
 	);
 
 	data.write_to_file(&jpg_path);
