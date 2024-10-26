@@ -310,6 +310,37 @@ ImageFileDirectory
 
 					tag = tag.set_value_to_int16u_vec(int16u_data).unwrap();
 				}
+				else if
+					tag.format()    == ExifTagFormat::INT8U  &&
+					format          == ExifTagFormat::STRING &&
+					tag.as_u16()    == 0x0005                && // GPSAltitudeRef
+					tag.get_group() == ExifTagGroup::GPS
+				{
+					// The GPSAltitudeRef tag is a strange case. It is the only
+					// GPS -Ref tag that is a INT8U, all others are STRINGs
+					// with a length of two. 
+					// Some images store this as a string nevertheless. 
+					// So, we try to convert the string by taking its first
+					// character. If it is 0x00 or 0x30 ("0") we set it to 0,
+					// if it is 0x01 or 0x31 ("1") we set it to 1, and
+					// otherwise we panic and tell the user to open a ticket.
+
+					let first_char = raw_data[0];
+					let int8u_data = match first_char
+					{
+						0x00 | 0x30 => vec![0u8],
+						0x01 | 0x31 => vec![1u8],
+						_ => panic!("Problem while decoding GPSAltitudeRef. Please open a new issue for little_exif!")
+					};
+
+					tag = ExifTag::from_u16_with_data(
+						0x0005, 
+						&ExifTagFormat::INT8U, 
+						&int8u_data, 
+						&endian, 
+						group
+					).unwrap();
+				}
 				// Other special cases
 				else
 				{

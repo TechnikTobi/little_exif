@@ -487,7 +487,7 @@ build_tag_enum![
 	(GPSLongitudeRef,             0x0003, STRING,        Some::<u32>(2),    true,      GPS),
 	(GPSLongitude,                0x0004, RATIONAL64U,   Some::<u32>(3),    true,      GPS),
 
-	(GPSAltitudeRef,              0x0005, STRING,        Some::<u32>(1),    true,      GPS),
+	(GPSAltitudeRef,              0x0005, INT8U,         Some::<u32>(1),    true,      GPS),
 	(GPSAltitude,                 0x0006, RATIONAL64U,   Some::<u32>(1),    true,      GPS),
 	(GPSTimeStamp,                0x0007, RATIONAL64U,   Some::<u32>(3),    true,      GPS),
 	(GPSSatellites,               0x0008, STRING,        None::<u32>,       true,      GPS),
