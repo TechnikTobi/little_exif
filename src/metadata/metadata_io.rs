@@ -139,6 +139,120 @@ Metadata
 		}
 	}
 
+	/// Clears the APP12 segment in a JPEG file that contains data resulting
+	/// from exporting the file via Photoshop. This may be required in order
+	/// for other software to see e.g. the ImageDescription written in the
+	/// APP1 exif segment by little_exif
+	#[allow(unreachable_patterns)]
+	pub fn
+	clear_app12_segment
+	(
+		file_buffer: &mut Vec<u8>,
+		file_type:   FileExtension
+	)
+	-> Result<(), std::io::Error>
+	{
+		match file_type
+		{
+			FileExtension::JPEG 
+				=>  jpg::clear_segment(file_buffer, 0xec),
+			_
+				=> return io_error!(
+					Other, 
+					format!(
+						"Function 'clear_app12_segment' not available for {:?} (only relevant for JPEG)", 
+						file_type
+					)
+				),
+		}
+	}
+
+	/// Clears the APP13 segment in a JPEG file that contains data resulting
+	/// from exporting the file via Photoshop. This may be required in order
+	/// for other software to see e.g. the ImageDescription written in the
+	/// APP1 exif segment by little_exif
+	#[allow(unreachable_patterns)]
+	pub fn
+	clear_app13_segment
+	(
+		file_buffer: &mut Vec<u8>,
+		file_type:   FileExtension
+	)
+	-> Result<(), std::io::Error>
+	{
+		match file_type
+		{
+			FileExtension::JPEG 
+				=>  jpg::clear_segment(file_buffer, 0xed),
+			_
+				=> return io_error!(
+					Other, 
+					format!(
+						"Function 'clear_app13_segment' not available for {:?} (only relevant for JPEG)", 
+						file_type
+					)
+				),
+		}
+	}
+
+	/// Clears the APP12 segment in a JPEG file that contains data resulting
+	/// from exporting the file via Photoshop. This may be required in order
+	/// for other software to see e.g. the ImageDescription written in the
+	/// APP1 exif segment by little_exif
+	#[allow(unreachable_patterns)]
+	pub fn
+	file_clear_app12_segment
+	(
+		path: &Path
+	)
+	-> Result<(), std::io::Error>
+	{
+		let file_type = get_file_type(path)?;
+
+		match file_type
+		{
+			FileExtension::JPEG 
+				=>  jpg::file_clear_segment(path, 0xec),
+			_
+				=> return io_error!(
+					Other, 
+					format!(
+						"Function 'file_clear_app12_segment' not available for {:?} (only relevant for JPEG)", 
+						file_type
+					)
+				),
+		}
+	}
+
+	/// Clears the APP13 segment in a JPEG file that contains data resulting
+	/// from exporting the file via Photoshop. This may be required in order
+	/// for other software to see e.g. the ImageDescription written in the
+	/// APP1 exif segment by little_exif
+	#[allow(unreachable_patterns)]
+	pub fn
+	file_clear_app13_segment
+	(
+		path: &Path
+	)
+	-> Result<(), std::io::Error>
+	{
+		let file_type = get_file_type(path)?;
+
+		match file_type
+		{
+			FileExtension::JPEG 
+				=>  jpg::file_clear_segment(path, 0xed),
+			_
+				=> return io_error!(
+					Other, 
+					format!(
+						"Function 'file_clear_app13_segment' not available for {:?} (only relevant for JPEG)", 
+						file_type
+					)
+				),
+		}
+	}
+
 	#[allow(unreachable_patterns)]
 	pub fn
 	file_clear_metadata
