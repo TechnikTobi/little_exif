@@ -295,6 +295,8 @@ read_metadata
 	check_signature(file_buffer)?;
 
 	let mut cursor = Cursor::new(file_buffer);
+
+	// Skip signature
 	cursor.set_position(2);
 
 	return generic_read_metadata(&mut cursor);
