@@ -175,8 +175,8 @@ macro_rules! build_tag_enum {
 						)),
 					)*
 
-					(0x0111, _) => Ok(ExifTag::StripOffsets(   Vec::new(), Vec::new())),
-					(0x0117, _) => Ok(ExifTag::StripByteCounts(Vec::new(), Vec::new())),
+					(0x0111, _) => Ok(ExifTag::StripOffsets(   <INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian), Vec::new())),
+					(0x0117, _) => Ok(ExifTag::StripByteCounts(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian), Vec::new())),
 
 					(0x0201, _) => Ok(ExifTag::ThumbnailOffset(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian), Vec::new())),
 					(0x0202, _) => Ok(ExifTag::ThumbnailLength(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian),           )),
@@ -373,15 +373,27 @@ macro_rules! build_tag_enum {
 					$(
 						ExifTag::$tag(value) => {
 
+							// First, handle strings as special cases
+							if self.is_string()
+							{
+								return value.len() as u32 + 1;
+							}
+
+							// Next, prefer the length of the value vector in
+							// case there already is data stored in the tag
+							if value.len() > 0
+							{
+								return value.len() as u32;
+							}
+
 							// Check if the value has a predefined number of components
 							if $component_number.is_some()
 							{
 								return $component_number.unwrap() as u32;
 							}
 
-							// In case we have a string, return its length +1 for 0x00 at the end
-							// Otherwise just the length of the container
-							return value.len() as u32 + self.is_string() as u32;
+							// Otherwise, return 0
+							return 0;
 						},
 					)*
 
