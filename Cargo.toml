@@ -1,12 +1,12 @@
 [package]
 name = "little_exif"
 
-version = "0.6.0-beta.5"
+version = "0.6.0-beta.6"
 edition = "2021"
 
 description = """
 Basic reading and writing of EXIF metadata for PNG, JP(E)G, JXL and WebP images
-(other file types - e.g. TIFF or HEIC - are planned) written in pure Rust.
+(other file types like e.g. HEIC are in development) written in pure Rust.
 """
 
 authors = ["Tobias Prisching"]
