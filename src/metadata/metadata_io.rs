@@ -47,6 +47,8 @@ Metadata
 				=>  jxl::read_metadata(file_buffer),
 			FileExtension::PNG { as_zTXt_chunk: _ }
 				=>  png::vec::read_metadata(file_buffer),
+			FileExtension::TIFF
+				=> tiff::vec::read_metadata(file_buffer),
 			FileExtension::WEBP
 				=> webp::vec::read_metadata(file_buffer),
 			_
@@ -126,6 +128,8 @@ Metadata
 				=>  jxl::clear_metadata(file_buffer),
 			FileExtension::PNG { as_zTXt_chunk: _ }
 				=>  png::vec::clear_metadata(file_buffer),
+			FileExtension::TIFF
+				=> tiff::vec::clear_metadata(file_buffer),
 			FileExtension::WEBP
 				=> webp::vec::clear_metadata(file_buffer),
 			_
@@ -271,6 +275,8 @@ Metadata
 				=>  jxl::file_clear_metadata(&path),
 			FileExtension::PNG { as_zTXt_chunk: _ }
 				=>  png::file::clear_metadata(&path),
+			FileExtension::TIFF
+				=> tiff::file::clear_metadata(&path),
 			FileExtension::WEBP 
 				=> webp::file::clear_metadata(&path),
 			_
@@ -378,7 +384,7 @@ Metadata
 				=> return io_error!(
 					Other, 
 					format!(
-						"Function 'file_clear_metadata' not yet implemented for {:?}", 
+						"Function 'write_to_file' not yet implemented for {:?}", 
 						file_type
 					)
 				),

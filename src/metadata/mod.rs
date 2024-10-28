@@ -3,8 +3,10 @@
 
 pub mod metadata_io;
 pub mod iterator;
+pub mod edit;
 pub mod get;
 pub mod set;
+pub mod soft_merge;
 
 use core::panic;
 use std::io::Cursor;
@@ -78,7 +80,7 @@ Metadata
 	}
 
 
-	fn
+	pub(crate) fn
 	general_decoding_wrapper
 	(
 		raw_pre_decode_general: Result<Vec<u8>, std::io::Error>
@@ -121,7 +123,7 @@ Metadata
 		// Prepare offset information
 		let mut ifds_with_offset_info_only: Vec<ImageFileDirectory> = Vec::new();
 
-		for ifd in self.image_file_directories.iter() // .rev()
+		for ifd in self.image_file_directories.iter()
 		{
 			ifds_with_offset_info_only.push(
 				ImageFileDirectory::new_with_tags(
