@@ -39,7 +39,17 @@ clear_metadata
 
 	// Write the reduced data back to the backup cursor
 	cursor.set_position(cursor_start_pos);
-	generic_write_metadata(&mut cursor, &data)?;
+	return generic_write_metadata(&mut cursor, &data);
+}
 
-	return Ok(());
+pub(crate) fn
+write_metadata
+(
+	file_buffer: &mut Vec<u8>,
+	metadata:    &Metadata
+)
+-> Result<(), std::io::Error>
+{
+	let mut cursor = Cursor::new(file_buffer);
+	return generic_write_metadata(&mut cursor, metadata);
 }

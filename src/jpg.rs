@@ -11,6 +11,7 @@ use std::io::Write;
 use std::path::Path;
 
 use crate::endian::Endian;
+use crate::metadata::Metadata;
 use crate::u8conversion::*;
 use crate::general_file_io::*;
 
@@ -239,7 +240,7 @@ pub(crate) fn
 write_metadata
 (
 	file_buffer: &mut Vec<u8>,
-	general_encoded_metadata: &Vec<u8>
+	metadata:    &Metadata
 )
 -> Result<(), std::io::Error>
 {
@@ -247,7 +248,7 @@ write_metadata
 	clear_metadata(file_buffer)?;
 
 	// Encode the data specifically for JPG
-	let mut encoded_metadata = encode_metadata_jpg(general_encoded_metadata);
+	let mut encoded_metadata = encode_metadata_jpg(&metadata.encode()?);
 
 	// Insert the metadata right after the signature
 	crate::util::insert_multiple_at(file_buffer, 2, &mut encoded_metadata);
@@ -262,8 +263,8 @@ write_metadata
 pub(crate) fn
 file_write_metadata
 (
-	path: &Path,
-	general_encoded_metadata: &Vec<u8>
+	path:     &Path,
+	metadata: &Metadata
 )
 -> Result<(), std::io::Error>
 {
@@ -276,7 +277,7 @@ file_write_metadata
 	// Writes the metadata to the file_buffer vec
 	// The called function handles the removal of old metadata and the JPG
 	// specific encoding, so we pass only the generally encoded metadata here
-	write_metadata(&mut file_buffer, general_encoded_metadata)?;
+	write_metadata(&mut file_buffer, metadata)?;
 
 	// Seek back to start & write the file
 	perform_file_action!(file.seek(SeekFrom::Start(0)));

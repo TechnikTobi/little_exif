@@ -336,13 +336,15 @@ Metadata
 		match file_type
 		{
 			FileExtension::JPEG 
-				=>  jpg::write_metadata(file_buffer, &self.encode()?),
+				=>  jpg::write_metadata(file_buffer, &self),
 			FileExtension::JXL 
-				=>  jxl::write_metadata(file_buffer, &self.encode()?),
+				=>  jxl::write_metadata(file_buffer, &self),
 			FileExtension::PNG { as_zTXt_chunk: _ }
-				=>  png::vec::write_metadata(file_buffer, &self.encode()?),
+				=>  png::vec::write_metadata(file_buffer, &self),
+			FileExtension::TIFF
+				=> tiff::vec::write_metadata(file_buffer, &self),
 			FileExtension::WEBP
-				=> webp::vec::write_metadata(file_buffer, &self.encode()?),
+				=> webp::vec::write_metadata(file_buffer, &self),
 			_
 				=> return io_error!(
 					Other, 
@@ -373,13 +375,15 @@ Metadata
 		match file_type
 		{
 			FileExtension::JPEG 
-				=>  jpg::file_write_metadata(&path, &self.encode()?),
+				=>  jpg::file_write_metadata(&path, &self),
 			FileExtension::JXL 
-				=>  jxl::file_write_metadata(&path, &self.encode()?),
+				=>  jxl::file_write_metadata(&path, &self),
 			FileExtension::PNG { as_zTXt_chunk: _ }
-				=>  png::file::write_metadata(&path, &self.encode()?),
+				=>  png::file::write_metadata(&path, &self),
+			FileExtension::TIFF
+				=> tiff::file::write_metadata(&path, &self),
 			FileExtension::WEBP 
-				=> webp::file::write_metadata(&path, &self.encode()?),
+				=> webp::file::write_metadata(&path, &self),
 			_
 				=> return io_error!(
 					Other, 
