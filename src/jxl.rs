@@ -191,7 +191,7 @@ file_clear_metadata
 			.eq(&EXIF.len())
 		{
 			// Seek past the EXIF box ...
-			perform_file_action!(file.seek_relative((length-8) as i64));
+			file.seek(SeekFrom::Current((length-8) as i64))?;
 
 
 			// ... copy everything from here onwards into a buffer ...
@@ -213,7 +213,7 @@ file_clear_metadata
 		{
 			// Not an EXIF box so skip it
 			assert_eq!(position+8, file.stream_position()?);
-			perform_file_action!(file.seek_relative((length-8) as i64));
+			file.seek(SeekFrom::Current((length-8) as i64))?;
 		}
 	}
 }
@@ -257,7 +257,7 @@ read_metadata
 			},
 			_ => {
 				// Not an EXIF box so skip it
-				cursor.seek_relative(length as i64)?;
+				cursor.seek(SeekFrom::Current(length as i64))?;
 			}
 		}
 	}
@@ -295,7 +295,7 @@ file_read_metadata
 			EXIF => {
 
 				// Skip the next 4 bytes (which contain the minor version???)
-				file.seek_relative(4)?;
+				file.seek(SeekFrom::Current(4))?;
 
 				// `length-4` because of the previous relative seek operation
 				let mut exif_buffer = vec![0u8; (length-4) as usize];
@@ -303,9 +303,10 @@ file_read_metadata
 
 				return Ok(exif_buffer);
 			},
+
 			_ => {
 				// Not an EXIF box so skip it
-				file.seek_relative(length as i64)?;
+				file.seek(SeekFrom::Current(length as i64))?;
 			}
 		}
 	}
@@ -363,7 +364,7 @@ find_insert_position
 			IsoBmffBoxType::JXL |
 			IsoBmffBoxType::FTYP => {
 				// Place exif box after these boxes
-				cursor.seek_relative(length as i64)?;
+				cursor.seek(SeekFrom::Current(length as i64))?;
 			}
 			_ => {
 				return Ok(cursor.position() as usize - 8);

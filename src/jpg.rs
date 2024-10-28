@@ -116,7 +116,7 @@ clear_segment
 	let mut cursor = Cursor::new(file_buffer);
 
 	// Skip 0xFFD8 at the start
-	cursor.seek_relative(2)?;
+	cursor.seek(SeekFrom::Current(2))?;
 
 	loop
 	{
@@ -148,7 +148,7 @@ clear_segment
 				let backup_position = cursor.position() - 4;
 
 				// Skip the segment
-				cursor.seek_relative(remaining_length as i64)?;
+				cursor.seek(SeekFrom::Current(remaining_length as i64))?;
 
 				// Copy data from there onwards into a buffer
 				let mut temp_buffer = Vec::new();
@@ -169,13 +169,13 @@ clear_segment
 			else if byte_buffer[0] == 0xda
 			{
 				// See `generic_read_metadata`
-				cursor.seek_relative(remaining_length as i64)?;
+				cursor.seek(SeekFrom::Current(remaining_length as i64))?;
 				skip_ecs(&mut cursor)?;
 			}
 			else
 			{
 				// Skip this segment
-				cursor.seek_relative(remaining_length as i64)?;
+				cursor.seek(SeekFrom::Current(remaining_length as i64))?;
 			}
 
 			previous_byte_was_marker_prefix = false;
@@ -354,7 +354,7 @@ skip_ecs
 
 				_ => {
 					// Position back to where the 0xFF byte is located
-					cursor.seek_relative(-2)?;
+					cursor.seek(SeekFrom::Current(-2))?;
 					return Ok(()); 
 				},
 			}
@@ -428,7 +428,7 @@ generic_read_metadata
 					// - a data FF (followed by 00)
 
 					// So, start by skipping the SOS segment
-					cursor.seek_relative(remaining_length as i64)?;
+					cursor.seek(SeekFrom::Current(remaining_length as i64))?;
 
 					// And skip the ECS
 					skip_ecs(cursor)?;
@@ -436,7 +436,7 @@ generic_read_metadata
 
 				_ => {                                                          // Every other marker
 					// Skip this segment
-					cursor.seek_relative(remaining_length as i64)?;
+					cursor.seek(SeekFrom::Current(remaining_length as i64))?;
 				},
 			}
 

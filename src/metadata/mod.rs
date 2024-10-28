@@ -261,7 +261,7 @@ Metadata
 		// Otherwise the cursor should now be advanced to this area
 		if !starts_with_exif_signature
 		{
-			data_cursor.seek_relative(-(EXIF_HEADER.len() as i64))?;
+			data_cursor.seek(std::io::SeekFrom::Current(-(EXIF_HEADER.len() as i64)))?;
 		}
 		else
 		{
@@ -306,7 +306,7 @@ Metadata
 			if let Some(ifd_offset) = ifd_offset_option
 			{
 				data_cursor.set_position(data_start_position);
-				data_cursor.seek_relative(ifd_offset as i64)?;
+				data_cursor.seek(std::io::SeekFrom::Current(ifd_offset as i64))?;
 
 				let decode_result = ImageFileDirectory::decode_ifd(
 					data_cursor,

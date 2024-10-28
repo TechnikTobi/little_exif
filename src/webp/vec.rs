@@ -285,7 +285,7 @@ read_metadata
 		// Get the size of this chunk from the previous parsing process and skip
 		// the 4 bytes regarding the size
 		let chunk_size = parse_webp_result.iter().nth(chunk_index).unwrap().len();
-		cursor.seek_relative(4)?;
+		cursor.seek(std::io::SeekFrom::Current(4))?;
 
 		if chunk_type.to_lowercase() == EXIF_CHUNK_HEADER.to_lowercase()
 		{
@@ -306,11 +306,11 @@ read_metadata
 		else
 		{
 			// Skip the entire chunk
-			cursor.seek_relative(chunk_size as i64)?;
+			cursor.seek(std::io::SeekFrom::Current(chunk_size as i64))?;
 
 			// Note that we have to seek another byte in case the chunk is of 
 			// uneven size to account for the padding byte that must be included
-			cursor.seek_relative(chunk_size as i64 % 2)?;
+			cursor.seek(std::io::SeekFrom::Current(chunk_size as i64 % 2))?;
 		}
 
 		// Update for next loop iteration
@@ -540,7 +540,7 @@ clear_metadata
 		// Not an EXIF chunk, seek to next one and continue
 		if parsed_chunk.header().to_lowercase() != EXIF_CHUNK_HEADER.to_lowercase()
 		{
-			cursor.seek_relative(parsed_chunk_byte_count as i64)?;
+			cursor.seek(std::io::SeekFrom::Current(parsed_chunk_byte_count as i64))?;
 			continue;
 		}
 
