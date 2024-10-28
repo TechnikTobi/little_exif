@@ -99,8 +99,6 @@ Metadata
 			ifd.get_ifd_type()       == group
 		).next().unwrap();
 	}
-
-
 }
 
 
