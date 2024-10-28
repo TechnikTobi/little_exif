@@ -369,7 +369,7 @@ ImageFileDirectory
 					ExifTag::StripOffsets(_, _) => {
 						strip_tags.0 = Some(tag);
 					},
-					ExifTag::StripByteCounts(_, _) => {
+					ExifTag::StripByteCounts(_) => {
 						strip_tags.1 = Some(tag);
 					},
 					ExifTag::ThumbnailOffset(_, _) => {
@@ -431,7 +431,7 @@ ImageFileDirectory
 				tags.push(ExifTag::StripOffsets(Vec::new(), strip_data));
 
 				// Push StripByteCounts tag to tags vector
-				tags.push(ExifTag::StripByteCounts(byte_counts, Vec::new()));
+				tags.push(ExifTag::StripByteCounts(byte_counts));
 
 				// Restore backup position
 				data_cursor.set_position(backup_position);
