@@ -28,4 +28,18 @@ ImageFileDirectory
 		self.tags.push(input_tag);
 		self.sort_tags();
 	}
+
+	/// Removes a tag with a given hex value from the image file directory.
+	/// If the tag is removed successfully, nothing happens.
+	/// If no such tag exists, nothing happens.
+	pub fn
+	remove_tag
+	(
+		&mut self,
+		input_tag: ExifTag
+	)
+	{
+		self.tags.retain(|tag| tag.as_u16() != input_tag.as_u16());
+		self.sort_tags();
+	}
 }
