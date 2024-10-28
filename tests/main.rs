@@ -521,6 +521,27 @@ write_to_file_webp_extended()
 	Ok(())
 }
 
+#[test]
+fn 
+write_to_file_tiff_basic() 
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/read_sample_copy.tif")
+	{
+		println!("{}", error);
+	}
+	copy("tests/read_sample.tif", "tests/read_sample_copy.tif")?;
+
+	// Read original file
+	let metadata = Metadata::new_from_path(Path::new("tests/read_sample.tif"))?;
+
+	// Write metadata to file
+	metadata.write_to_file(Path::new("tests/read_sample_copy.tif"))?;
+
+	Ok(())
+}
+
 fn 
 compare_write_to_generic
 (
