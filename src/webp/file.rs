@@ -9,6 +9,7 @@ use std::io::SeekFrom;
 use std::path::Path;
 
 use crate::endian::*;
+use crate::metadata::Metadata;
 use crate::u8conversion::*;
 use crate::general_file_io::*;
 use super::riff_chunk::RiffChunk;
@@ -630,8 +631,8 @@ clear_metadata
 pub(crate) fn
 write_metadata
 (
-	path:                     &Path,
-	general_encoded_metadata: &Vec<u8>
+	path:     &Path,
+	metadata: &Metadata
 )
 -> Result<(), std::io::Error>
 {
@@ -639,7 +640,7 @@ write_metadata
 	clear_metadata(path)?;
 
 	// Encode the general metadata format to WebP specifications
-	let encoded_metadata = encode_metadata_webp(general_encoded_metadata);
+	let encoded_metadata = encode_metadata_webp(&metadata.encode()?);
 
 	// Open the file...
 	let mut file = check_signature(path)?;

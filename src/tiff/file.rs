@@ -46,8 +46,11 @@ clear_metadata
 pub(crate) fn 
 write_metadata
 (
-	
-) 
+	path:     &Path,
+	metadata: &Metadata
+)
+-> Result<(), std::io::Error>
 {
-	
+	let mut buffered_file = BufWriter::new(open_write_file(path)?);
+	return generic_write_metadata(&mut buffered_file, metadata);
 }

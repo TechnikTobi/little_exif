@@ -7,6 +7,7 @@ use std::io::Seek;
 use std::io::Write;
 
 use crate::general_file_io::EXIF_HEADER;
+use crate::metadata::Metadata;
 use crate::util::insert_multiple_at;
 use crate::util::range_remove;
 
@@ -571,8 +572,8 @@ clear_metadata
 pub(crate) fn
 write_metadata
 (
-	file_buffer:              &mut Vec<u8>,
-	general_encoded_metadata: &Vec<u8>
+	file_buffer: &mut Vec<u8>,
+	metadata:    &Metadata
 )
 -> Result<(), std::io::Error>
 {
@@ -580,7 +581,7 @@ write_metadata
 	clear_metadata(file_buffer)?;
 
 	// Encode the general metadata format to WebP specifications
-	let mut encoded_metadata = encode_metadata_webp(general_encoded_metadata);
+	let mut encoded_metadata = encode_metadata_webp(&metadata.encode()?);
 	let encoded_metadata_len = encoded_metadata.len() as i32;
 
 	// Find a location where to put the EXIF chunk
