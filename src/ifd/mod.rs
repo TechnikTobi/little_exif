@@ -198,7 +198,7 @@ ImageFileDirectory
 				// Backup current position & go to offset position
 				let backup_position = data_cursor.position();
 				data_cursor.set_position(data_begin_position);
-				data_cursor.seek_relative(hex_offset as i64)?;
+				data_cursor.seek(std::io::SeekFrom::Current(hex_offset as i64))?;
 
 				// Read the raw data
 				let mut raw_data_buffer = vec![0u8; byte_count as usize];
@@ -246,7 +246,7 @@ ImageFileDirectory
 
 				// Go to the SubIFD offset and decode that
 				data_cursor.set_position(data_begin_position);
-				data_cursor.seek_relative(offset as i64)?;
+				data_cursor.seek(std::io::SeekFrom::Current(offset as i64))?;
 
 				let subifd_decode_result = Self::decode_ifd(
 					data_cursor,
@@ -420,7 +420,7 @@ ImageFileDirectory
 				for (offset, byte_count) in offsets.iter().zip(byte_counts.iter())
 				{
 					data_cursor.set_position(data_begin_position);
-					data_cursor.seek_relative(*offset as i64)?;
+					data_cursor.seek(std::io::SeekFrom::Current(*offset as i64))?;
 
 					let mut data_buffer = vec![0u8; *byte_count as usize];
 					data_cursor.read_exact(&mut data_buffer)?;
@@ -461,7 +461,7 @@ ImageFileDirectory
 
 					// Gather the data at the offset
 					data_cursor.set_position(data_begin_position);
-					data_cursor.seek_relative(offset[0] as i64)?;
+					data_cursor.seek(std::io::SeekFrom::Current(offset[0] as i64))?;
 					data_cursor.read_exact(&mut thumbnail_data)?;
 
 					// Push ThumbnailOffset tag to tags vector

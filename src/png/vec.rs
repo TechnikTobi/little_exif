@@ -172,12 +172,12 @@ clear_metadata
 		if chunk.as_string() != String::from("zTXt")
 		{
 			seek_counter += chunk.length() as u64 + 12;
-			cursor.seek_relative(chunk.length() as i64 + 12)?;
+			cursor.seek(std::io::SeekFrom::Current(chunk.length() as i64 + 12))?;
 			continue;
 		}
 
 		// Skip chunk length and type (4+4 Bytes)
-		cursor.seek_relative(4+4)?;
+		cursor.seek(std::io::SeekFrom::Current(4+4))?;
 
 		// Read chunk data into buffer for checking that this is the 
 		// correct chunk to delete
@@ -200,7 +200,7 @@ clear_metadata
 		}
 
 		// Skip the CRC as it is not important at this point
-		cursor.seek_relative(4)?;
+		cursor.seek(std::io::SeekFrom::Current(4))?;
 
 		// If this is not the correct zTXt chunk, ignore current
 		// (wrong) zTXt chunk and continue with next chunk
@@ -236,13 +236,13 @@ read_metadata
 		// Wrong chunk? Seek to the next one
 		if chunk.as_string() != String::from("zTXt")
 		{
-			cursor.seek_relative(chunk.length() as i64 + 12)?;
+			cursor.seek(std::io::SeekFrom::Current(chunk.length() as i64 + 12))?;
 			continue;
 		}
 
 		// We now have a zTXt chunk:
 		// Skip chunk length and type (4+4 Bytes)
-		cursor.seek_relative(4+4)?;
+		cursor.seek(std::io::SeekFrom::Current(4+4))?;
 
 		// Read chunk data into buffer
 		// No need to verify this using CRC as already done by parse_png(path)
@@ -266,7 +266,7 @@ read_metadata
 		if !correct_zTXt_chunk
 		{
 			// Skip CRC from current (wrong) zTXt chunk and continue
-			cursor.seek_relative(4)?;
+			cursor.seek(std::io::SeekFrom::Current(4))?;
 			continue;
 		}
 
