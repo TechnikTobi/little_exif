@@ -43,7 +43,7 @@ macro_rules! build_tag_enum {
 			)*
 			
 			StripOffsets(       Vec::<u32>, Vec::<Vec::<u8>>),
-			StripByteCounts(    Vec::<u32>, Vec::<Vec::<u8>>),
+			StripByteCounts(    Vec::<u32>,                 ),
 
 			ThumbnailOffset(    Vec::<u32>, Vec::<u8>),
 			ThumbnailLength(    Vec::<u32>           ),
@@ -79,7 +79,7 @@ macro_rules! build_tag_enum {
 					)*
 
 					ExifTag::StripOffsets(       _, _,       ) => 0x0111,
-					ExifTag::StripByteCounts(    _, _,       ) => 0x0117,
+					ExifTag::StripByteCounts(    _,          ) => 0x0117,
 
 					ExifTag::ThumbnailOffset(    _, _,       ) => 0x0201,
 					ExifTag::ThumbnailLength(    _,          ) => 0x0202,
@@ -126,7 +126,7 @@ macro_rules! build_tag_enum {
 					)*
 
 					(0x0111, _) => Ok(ExifTag::StripOffsets(   Vec::new(), Vec::new())),
-					(0x0117, _) => Ok(ExifTag::StripByteCounts(Vec::new(), Vec::new())),
+					(0x0117, _) => Ok(ExifTag::StripByteCounts(Vec::new(),           )),
 
 					(0x0201, _) => Ok(ExifTag::ThumbnailOffset(Vec::new(), Vec::new())),
 					(0x0202, _) => Ok(ExifTag::ThumbnailLength(Vec::new(),           )),
@@ -176,7 +176,7 @@ macro_rules! build_tag_enum {
 					)*
 
 					(0x0111, _) => Ok(ExifTag::StripOffsets(   <INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian), Vec::new())),
-					(0x0117, _) => Ok(ExifTag::StripByteCounts(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian), Vec::new())),
+					(0x0117, _) => Ok(ExifTag::StripByteCounts(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian),           )),
 
 					(0x0201, _) => Ok(ExifTag::ThumbnailOffset(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian), Vec::new())),
 					(0x0202, _) => Ok(ExifTag::ThumbnailLength(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian),           )),
@@ -298,7 +298,7 @@ macro_rules! build_tag_enum {
 					)*
 
 					ExifTag::StripOffsets(       _, _          ) => ExifTagGroup::GENERIC,
-					ExifTag::StripByteCounts(    _, _          ) => ExifTagGroup::GENERIC,
+					ExifTag::StripByteCounts(    _,            ) => ExifTagGroup::GENERIC,
 
 					ExifTag::ThumbnailOffset(    _, _          ) => ExifTagGroup::GENERIC,
 					ExifTag::ThumbnailLength(    _,            ) => ExifTagGroup::GENERIC,
@@ -333,7 +333,7 @@ macro_rules! build_tag_enum {
 					)*
 
 					ExifTag::StripOffsets(       _, _      ) => ExifTagFormat::INT32U,
-					ExifTag::StripByteCounts(    _, _      ) => ExifTagFormat::INT32U,
+					ExifTag::StripByteCounts(    _,        ) => ExifTagFormat::INT32U,
 
 					ExifTag::ThumbnailOffset(    _, _      ) => ExifTagFormat::INT32U,
 					ExifTag::ThumbnailLength(    _,        ) => ExifTagFormat::INT32U,
@@ -398,7 +398,7 @@ macro_rules! build_tag_enum {
 					)*
 
 					ExifTag::StripOffsets(       _, value      ) => value.len() as u32,
-					ExifTag::StripByteCounts(    _, value      ) => value.len() as u32,
+					ExifTag::StripByteCounts(value,            ) => value.len() as u32,
 
 					ExifTag::ThumbnailOffset(    _, _          ) => 1,
 					ExifTag::ThumbnailLength(    _,            ) => 1,
@@ -455,7 +455,7 @@ macro_rules! build_tag_enum {
 					)*
 
 					ExifTag::StripOffsets(          _,     _   ) => Vec::new(),
-					ExifTag::StripByteCounts( byte_counts, _   ) => byte_counts.to_u8_vec(endian),
+					ExifTag::StripByteCounts( byte_counts,     ) => byte_counts.to_u8_vec(endian),
 
 					ExifTag::ThumbnailOffset(       _,     _   ) => Vec::new(),
 					ExifTag::ThumbnailLength( length_data      ) => length_data.to_u8_vec(endian),
@@ -714,7 +714,7 @@ impl ExifTag
 			ExifTag::InteropOffset(_)                => TagType::IFD_OFFSET(ExifTagGroup::INTEROP),
 
 			ExifTag::StripOffsets(   offset_data, _) => TagType::DATA_OFFSET(offset_data.clone()),
-			ExifTag::StripByteCounts(byte_counts, _) => TagType::DATA_OFFSET(byte_counts.clone()),
+			ExifTag::StripByteCounts(byte_counts,  ) => TagType::DATA_OFFSET(byte_counts.clone()),
 
 			ExifTag::ThumbnailOffset(offset_data, _) => TagType::DATA_OFFSET(offset_data.clone()),
 			ExifTag::ThumbnailLength(length_data   ) => TagType::DATA_OFFSET(length_data.clone()),
@@ -741,7 +741,7 @@ impl ExifTag
 			ExifTag::ImageHeight(_)        => Ok(ExifTag::ImageHeight(    data)),
 			ExifTag::StripOffsets(_, _)    => Ok(ExifTag::StripOffsets(   data, Vec::new())),
 			ExifTag::RowsPerStrip(_)       => Ok(ExifTag::RowsPerStrip(   data)),
-			ExifTag::StripByteCounts(_, _) => Ok(ExifTag::StripByteCounts(data, Vec::new())),
+			ExifTag::StripByteCounts(_)    => Ok(ExifTag::StripByteCounts(data)),
 			ExifTag::ExifImageWidth(_)     => Ok(ExifTag::ExifImageWidth( data)),
 			ExifTag::ExifImageHeight(_)    => Ok(ExifTag::ExifImageHeight(data)),
 			_ => Err(String::from("Not a INT32U compatible tag!"))

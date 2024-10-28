@@ -32,7 +32,7 @@ Metadata
 				match tag
 				{
 					ExifTag::StripOffsets(_, _)
-					| ExifTag::StripByteCounts(_, _)
+					| ExifTag::StripByteCounts(_)
 					| ExifTag::ThumbnailOffset(_, _)
 					| ExifTag::ThumbnailLength(_)
 					| ExifTag::ImageWidth(_)
