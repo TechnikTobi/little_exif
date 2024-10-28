@@ -686,6 +686,11 @@ ImageFileDirectory
 				ifd_offset_area.extend(string_padding.iter());
 
 				*current_offset += byte_count;
+
+				// Re-align 
+				let alignment_count = (4 - *current_offset % 4) % 4;
+				*current_offset += alignment_count;
+				ifd_offset_area.extend(vec![0u8; alignment_count as usize]);
 			}
 			else
 			{
