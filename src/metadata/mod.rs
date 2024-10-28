@@ -6,7 +6,6 @@ pub mod iterator;
 pub mod edit;
 pub mod get;
 pub mod set;
-pub mod soft_merge;
 
 use core::panic;
 use std::io::Cursor;
