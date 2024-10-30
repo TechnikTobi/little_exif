@@ -11,6 +11,7 @@ use std::io::Write;
 use std::path::Path;
 
 use crate::endian::Endian;
+use crate::metadata::Metadata;
 use crate::u8conversion::*;
 use crate::general_file_io::*;
 
@@ -88,104 +89,93 @@ file_check_signature
 }
 
 
-
 pub(crate) fn
 clear_metadata
 (
-	file_buffer: &mut Vec<u8>
+	file_buffer: &mut Vec<u8>,
+)
+-> Result<(), std::io::Error>
+{
+	return clear_segment(file_buffer, 0xe1);
+}
+
+
+pub(crate) fn
+clear_segment
+(
+	file_buffer:    &mut Vec<u8>,
+	segment_marker: u8,
 )
 -> Result<(), std::io::Error>
 {
 	check_signature(&file_buffer)?;
 
 	// Setup of variables necessary for going through the file
-	let mut buffer_iterator = file_buffer.iter();                               // Iterator for processing the bytes of the file
-	let mut seek_counter = 0u64;                                                // A counter for keeping track of where in the file we currently are
 	let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
 	let mut previous_byte_was_marker_prefix = false;                            // A boolean for remembering if the previous byte was a marker prefix (0xFF)
+	let mut cursor = Cursor::new(file_buffer);
+
+	// Skip 0xFFD8 at the start
+	cursor.seek(SeekFrom::Current(2))?;
 
 	loop
 	{
 		// Read next byte into buffer
-		if let Some(byte) = buffer_iterator.next() 
-		{
-			byte_buffer[0] = byte.clone();
-		}
+		cursor.read_exact(&mut byte_buffer)?;
 
 		if previous_byte_was_marker_prefix
 		{
-			match byte_buffer[0]
+			// Check if this is the end of the file. In that case, the length
+			// data can't be read and we need to return prematurely. 
+			if byte_buffer[0] == 0xd9                                           // EOI marker
 			{
-				0xe1	=> {
-					// APP1 marker
+				// No more data to read in
+				return Ok(());
+			}
 
-					// Read in the length of the segment
-					// (which follows immediately after the marker)
-					let mut length_buffer = [0u8; 2];
+			// Read in the length of the segment
+			// (which follows immediately after the marker)
+			let mut length_buffer = [0u8; 2];
+			cursor.read_exact(&mut length_buffer)?;
 
-					if let (Some(&byte1), Some(&byte2)) = (buffer_iterator.next(), buffer_iterator.next()) 
-					{
-						length_buffer = [byte1, byte2];
-					}
+			// Decode the length to determine how much more data there is
+			let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
+			let remaining_length = (length - 2) as usize;
 
-					// Decode the length to determine how much more data there is
-					let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
-					let remaining_length = length - 2;
+			if byte_buffer[0] == segment_marker                                 // Given marker, e.g. for APP1
+			{
+				// Backup current position, account for the 4 bytes already read
+				let backup_position = cursor.position() - 4;
 
-					// Skip the segment
-					if remaining_length > 0 
-					{
-						if buffer_iterator.nth((remaining_length - 1) as usize).is_none()
-						{
-							panic!("Could not skip to end of APP1 segment!");
-						}
-					} 
-					else 
-					{
-						unreachable!("If rem_len is <= 0 then it's not a valid\
-						JPEG - it must have at least a single SOS after APP1")
-					}
+				// Skip the segment
+				cursor.seek(SeekFrom::Current(remaining_length as i64))?;
 
-					// ...copy data from there onwards into a buffer...
-					let mut file_buffer_clone = file_buffer.clone();
-					let (_, buffer) = file_buffer_clone.split_at_mut(
-						  (seek_counter     as usize)                           // Skip what has already been sought
-						+ (remaining_length as usize)                           // Skip current segment
-						+ 2                                                     // Skip Marker Prefix and APP1 marker
-						+ 2                                                     // Skip the two length bytes
-					);
-					let buffer: Vec<u8> = buffer.to_vec();
+				// Copy data from there onwards into a buffer
+				let mut temp_buffer = Vec::new();
+				cursor.read_to_end(&mut temp_buffer)?;
 
-					// This essentially shifts the right-most bytes n bytes to the left
-					// This seeks inside the file_buffer to the position 
-					// (seek_counter as usize), i.e. all bytes that have 
-					// previously been read. 
-					// Then a chunk of the length of the buffer vector is
-					// selected and replaced with the buffer contents, shifting
-					// the contents to the left
-					file_buffer
-						[(seek_counter as usize)..]
-						[..buffer.len()]
-						.copy_from_slice(&buffer);
+				// Overwrite segment
+				cursor.set_position(backup_position);
+				cursor.write_all(&temp_buffer)?;
 
-					// Cut off right-most bytes that are now duplicates due 
-					// to the previous shift-to-left operation
-					let cutoff_index = (seek_counter as usize) + buffer.len();
-					file_buffer.truncate(cutoff_index);
+				// Cut off right-most bytes that are now duplicates due 
+				// to the previous shift-to-left operation
+				let cutoff_index = backup_position as usize + temp_buffer.len();
+				cursor.get_mut().truncate(cutoff_index);
 
-					// Reassign iterator to the new file buffer and seek to the
-					// current position
-					buffer_iterator = file_buffer.iter();
-					buffer_iterator.nth(seek_counter as usize);
-
-					// Account for the fact that we stepped back the prefix
-					// marker and the marker itself (note the increment at the
-					// end of the iteration, which is why we remove two as one
-					// gets added back again there)
-					seek_counter -= 2;
-				},
-				0xd9	=> break,                                               // EOI marker
-				_		=> (),                                                  // Every other marker
+				// Seek to start of next segment
+				cursor.set_position(backup_position);
+			}
+			else if byte_buffer[0] == 0xda
+			{
+				// See `generic_read_metadata`
+				cursor.seek(SeekFrom::Current(remaining_length as i64))?;
+				skip_ecs(&mut cursor)?;
+			}
+			else
+			{
+				// Skip this segment
+				cursor.seek(SeekFrom::Current(remaining_length as i64))?;
 			}
 
 			previous_byte_was_marker_prefix = false;
@@ -194,10 +184,29 @@ clear_metadata
 		{
 			previous_byte_was_marker_prefix = byte_buffer[0] == JPG_MARKER_PREFIX;
 		}
-
-		seek_counter += 1;
-
 	}
+}
+
+pub(crate) fn
+file_clear_segment
+(
+	path:           &Path,
+	segment_marker: u8,
+)
+-> Result<(), std::io::Error>
+{
+	// Load the entire file into memory instead of reading one byte at a time
+	// to improve the overall speed
+	// Thanks to Xuf3r for this improvement!
+	let mut file_buffer: Vec<u8> = std::fs::read(path)?;
+
+	// Clear the metadata in the APP1 segment from the file buffer
+	clear_segment(&mut file_buffer, segment_marker)?;
+	
+	// Write the file
+	// Possible to optimize further by returning the purged bytestream itself?
+	let mut file = std::fs::OpenOptions::new().write(true).truncate(true).open(path)?;
+	perform_file_action!(file.write_all(&file_buffer));
 
 	return Ok(());
 }
@@ -209,21 +218,9 @@ file_clear_metadata
 )
 -> Result<(), std::io::Error>
 {
-	// Load the entire file into memory instead of reading one byte at a time
-	// to improve the overall speed
-	// Thanks to Xuf3r for this improvement!
-	let mut file_buffer: Vec<u8> = std::fs::read(path)?;
-
-	// Clear the metadata from the file buffer
-	clear_metadata(&mut file_buffer)?;
-	
-	// Write the file
-	// Possible to optimize further by returning the purged bytestream itself?
-	let mut file = std::fs::OpenOptions::new().write(true).truncate(true).open(path)?;
-	perform_file_action!(file.write_all(&file_buffer));
-
-	return Ok(());
+	return file_clear_segment(path, 0xe1);
 }
+
 
 /// Provides the JPEG specific encoding result as vector of bytes to be used
 /// by the user (e.g. in combination with another library)
@@ -243,7 +240,7 @@ pub(crate) fn
 write_metadata
 (
 	file_buffer: &mut Vec<u8>,
-	general_encoded_metadata: &Vec<u8>
+	metadata:    &Metadata
 )
 -> Result<(), std::io::Error>
 {
@@ -251,7 +248,7 @@ write_metadata
 	clear_metadata(file_buffer)?;
 
 	// Encode the data specifically for JPG
-	let mut encoded_metadata = encode_metadata_jpg(general_encoded_metadata);
+	let mut encoded_metadata = encode_metadata_jpg(&metadata.encode()?);
 
 	// Insert the metadata right after the signature
 	crate::util::insert_multiple_at(file_buffer, 2, &mut encoded_metadata);
@@ -266,8 +263,8 @@ write_metadata
 pub(crate) fn
 file_write_metadata
 (
-	path: &Path,
-	general_encoded_metadata: &Vec<u8>
+	path:     &Path,
+	metadata: &Metadata
 )
 -> Result<(), std::io::Error>
 {
@@ -280,7 +277,7 @@ file_write_metadata
 	// Writes the metadata to the file_buffer vec
 	// The called function handles the removal of old metadata and the JPG
 	// specific encoding, so we pass only the generally encoded metadata here
-	write_metadata(&mut file_buffer, general_encoded_metadata)?;
+	write_metadata(&mut file_buffer, metadata)?;
 
 	// Seek back to start & write the file
 	perform_file_action!(file.seek(SeekFrom::Start(0)));
@@ -299,6 +296,8 @@ read_metadata
 	check_signature(file_buffer)?;
 
 	let mut cursor = Cursor::new(file_buffer);
+
+	// Skip signature
 	cursor.set_position(2);
 
 	return generic_read_metadata(&mut cursor);
@@ -328,7 +327,7 @@ skip_ecs
 )
 -> Result<(), std::io::Error>
 {
-	
+
 	let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
 	let mut previous_byte_was_marker_prefix = false;                            // A boolean for remembering if the previous byte was a marker prefix (0xFF)
 
@@ -341,14 +340,21 @@ skip_ecs
 		{
 			match byte_buffer[0]
 			{
-				0xd0 | 0xd1 | 0xd2 | 0xd3 | 0xd4 | 0xd5 | 0x6 | 0xd7 |
+				0xd0 |
+				0xd1 |
+				0xd2 |
+				0xd3 |
+				0xd4 |
+				0xd5 |
+				0xd6 |
+				0xd7 |
 				0x00 => {
-					// Continue
+					// Do nothing
 				},
 
 				_ => {
 					// Position back to where the 0xFF byte is located
-					cursor.seek_relative(-2)?;
+					cursor.seek(SeekFrom::Current(-2))?;
 					return Ok(()); 
 				},
 			}
@@ -422,7 +428,7 @@ generic_read_metadata
 					// - a data FF (followed by 00)
 
 					// So, start by skipping the SOS segment
-					cursor.seek_relative(remaining_length as i64)?;
+					cursor.seek(SeekFrom::Current(remaining_length as i64))?;
 
 					// And skip the ECS
 					skip_ecs(cursor)?;
@@ -430,7 +436,7 @@ generic_read_metadata
 
 				_ => {                                                          // Every other marker
 					// Skip this segment
-					cursor.seek_relative(remaining_length as i64)?;
+					cursor.seek(SeekFrom::Current(remaining_length as i64))?;
 				},
 			}
 

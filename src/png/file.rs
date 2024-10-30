@@ -14,6 +14,7 @@ use miniz_oxide::deflate::compress_to_vec_zlib;
 use miniz_oxide::inflate::decompress_to_vec_zlib;
 
 use crate::general_file_io::*;
+use crate::metadata::Metadata;
 
 use super::PNG_SIGNATURE;
 use super::RAW_PROFILE_TYPE_EXIF;
@@ -306,8 +307,8 @@ read_metadata
 pub(crate) fn
 write_metadata
 (
-	path: &Path,
-	general_encoded_metadata: &Vec<u8>
+	path:     &Path,
+	metadata: &Metadata
 )
 -> Result<(), std::io::Error>
 {
@@ -324,7 +325,7 @@ write_metadata
 	}
 
 	// Encode the data specifically for PNG and open the image file
-	let encoded_metadata = encode_metadata_png(general_encoded_metadata);
+	let encoded_metadata = encode_metadata_png(&metadata.encode()?);
 	let seek_start = 0u64         // Skip ...
 	+ PNG_SIGNATURE.len() as u64  // PNG Signature
 	+ IHDR_length         as u64  // IHDR data section

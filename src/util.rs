@@ -1,3 +1,6 @@
+// Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// See https://github.com/TechnikTobi/little_exif#license for licensing details
+
 /// Inserts a slice into a vector at a given offset, shifting elements 
 /// starting at the offset towards the end.
 /// Returns 0 (zero) if the operation was successful, non-zero if the offset 

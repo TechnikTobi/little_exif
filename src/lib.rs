@@ -29,9 +29,12 @@
 #![crate_name = "little_exif"]
 
 mod general_file_io;
+pub mod ifd;
+
 mod png;
 mod jpg;
 mod jxl;
+mod tiff;
 mod webp;
 mod util;
 
