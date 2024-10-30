@@ -3,6 +3,7 @@ name = "little_exif"
 
 version = "0.6.0"
 edition = "2021"
+rust-version = "1.65"
 
 description = """
 Basic reading and writing of EXIF metadata for PNG, JP(E)G, JXL, TIFF and WebP 
@@ -27,8 +28,8 @@ exclude = [
 ]
 
 [dependencies]
-crc = "3.0.0"
-paste = "1.0.9"
+crc = "3.2.1"
+paste = "1.0.15"
 miniz_oxide = "0.8.0"
 
 [[test]]
