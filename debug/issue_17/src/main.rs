@@ -3,20 +3,30 @@ use std::fs::remove_file;
 use std::path::Path;
 
 extern crate little_exif;
-use little_exif::metadata::Metadata;
 use little_exif::exif_tag::ExifTag;
+use little_exif::metadata::Metadata;
 
 fn main() 
+-> Result<(), std::io::Error>
 {
-	let jpg_path = Path::new("./rsrc/image1.tif");
+	// let path_string = "./rsrc/A0040275_5.tif";
+	let path_string = "./rsrc/image1.tif";
+
+	let path = Path::new(path_string);
+
+	copy(path_string, "./rsrc/copy.tif")?;
 
 	// Read metadata from file
-	for tag in &Metadata::new_from_path(jpg_path).unwrap()
-	{
-		println!("{:?}", tag);
-		if tag.is_unknown()
-		{
-			println!("The previous unknown tag 0x{:x} has a u8 vec with {} elements\n", tag.as_u16(), tag.value_as_u8_vec(&little_exif::endian::Endian::Little).len());
-		}
+	let mut data = Metadata::new_from_path(path).unwrap();
+
+	// Read tags
+	for tag in data.into_iter() {
+		println!("{:x}", tag.as_u16());
 	}
+
+	// Set ImageDescription
+	// data.set_tag(ExifTag::ImageDescription("Hello World!".to_string()));
+
+	// Write back to copy
+	return data.write_to_file(Path::new("./rsrc/copy.tif"));
 }
