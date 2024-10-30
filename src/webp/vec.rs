@@ -7,6 +7,7 @@ use std::io::Seek;
 use std::io::Write;
 
 use crate::general_file_io::EXIF_HEADER;
+use crate::metadata::Metadata;
 use crate::util::insert_multiple_at;
 use crate::util::range_remove;
 
@@ -284,7 +285,7 @@ read_metadata
 		// Get the size of this chunk from the previous parsing process and skip
 		// the 4 bytes regarding the size
 		let chunk_size = parse_webp_result.iter().nth(chunk_index).unwrap().len();
-		cursor.seek_relative(4)?;
+		cursor.seek(std::io::SeekFrom::Current(4))?;
 
 		if chunk_type.to_lowercase() == EXIF_CHUNK_HEADER.to_lowercase()
 		{
@@ -305,11 +306,11 @@ read_metadata
 		else
 		{
 			// Skip the entire chunk
-			cursor.seek_relative(chunk_size as i64)?;
+			cursor.seek(std::io::SeekFrom::Current(chunk_size as i64))?;
 
 			// Note that we have to seek another byte in case the chunk is of 
 			// uneven size to account for the padding byte that must be included
-			cursor.seek_relative(chunk_size as i64 % 2)?;
+			cursor.seek(std::io::SeekFrom::Current(chunk_size as i64 % 2))?;
 		}
 
 		// Update for next loop iteration
@@ -539,7 +540,7 @@ clear_metadata
 		// Not an EXIF chunk, seek to next one and continue
 		if parsed_chunk.header().to_lowercase() != EXIF_CHUNK_HEADER.to_lowercase()
 		{
-			cursor.seek_relative(parsed_chunk_byte_count as i64)?;
+			cursor.seek(std::io::SeekFrom::Current(parsed_chunk_byte_count as i64))?;
 			continue;
 		}
 
@@ -571,8 +572,8 @@ clear_metadata
 pub(crate) fn
 write_metadata
 (
-	file_buffer:              &mut Vec<u8>,
-	general_encoded_metadata: &Vec<u8>
+	file_buffer: &mut Vec<u8>,
+	metadata:    &Metadata
 )
 -> Result<(), std::io::Error>
 {
@@ -580,7 +581,7 @@ write_metadata
 	clear_metadata(file_buffer)?;
 
 	// Encode the general metadata format to WebP specifications
-	let mut encoded_metadata = encode_metadata_webp(general_encoded_metadata);
+	let mut encoded_metadata = encode_metadata_webp(&metadata.encode()?);
 	let encoded_metadata_len = encoded_metadata.len() as i32;
 
 	// Find a location where to put the EXIF chunk

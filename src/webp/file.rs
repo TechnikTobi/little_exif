@@ -9,6 +9,7 @@ use std::io::SeekFrom;
 use std::path::Path;
 
 use crate::endian::*;
+use crate::metadata::Metadata;
 use crate::u8conversion::*;
 use crate::general_file_io::*;
 use super::riff_chunk::RiffChunk;
@@ -297,7 +298,7 @@ read_metadata
 		// Get the size of this chunk from the previous parsing process and skip
 		// the 4 bytes regarding the size
 		let chunk_size = parse_webp_result.iter().nth(chunk_index).unwrap().len();
-		perform_file_action!(file.seek_relative(4));
+		file.seek(std::io::SeekFrom::Current(4))?;
 
 		if chunk_type.to_lowercase() == EXIF_CHUNK_HEADER.to_lowercase()
 		{
@@ -318,11 +319,11 @@ read_metadata
 		else
 		{
 			// Skip the entire chunk
-			perform_file_action!(file.seek_relative(chunk_size as i64));
+			file.seek(std::io::SeekFrom::Current(chunk_size as i64))?;
 
 			// Note that we have to seek another byte in case the chunk is of 
 			// uneven size to account for the padding byte that must be included
-			perform_file_action!(file.seek_relative(chunk_size as i64 % 2));
+			file.seek(std::io::SeekFrom::Current(chunk_size as i64 % 2))?;
 		}
 
 		// Update for next loop iteration
@@ -563,7 +564,7 @@ clear_metadata
 	let mut delta = 0i32;
 
 	// Skip the WEBP signature
-	perform_file_action!(file.seek_relative(4i64));
+	file.seek(std::io::SeekFrom::Current(4i64))?;
 
 	for parsed_chunk in parse_webp_result
 	{
@@ -581,7 +582,7 @@ clear_metadata
 		// Not an EXIF chunk, seek to next one and continue
 		if parsed_chunk.header().to_lowercase() != EXIF_CHUNK_HEADER.to_lowercase()
 		{
-			perform_file_action!(file.seek_relative(parsed_chunk_byte_count as i64));
+			file.seek(std::io::SeekFrom::Current(parsed_chunk_byte_count as i64))?;
 			continue;
 		}
 
@@ -592,7 +593,7 @@ clear_metadata
 		let exif_chunk_start_cursor_position = SeekFrom::Start(file.seek(SeekFrom::Current(0)).unwrap());
 
 		// Skip the EXIF chunk ...
-		perform_file_action!(file.seek_relative(parsed_chunk_byte_count as i64));
+		file.seek(std::io::SeekFrom::Current(parsed_chunk_byte_count as i64))?;
 
 		// ...and copy everything afterwards into a buffer...
 		let mut buffer = Vec::new();
@@ -630,8 +631,8 @@ clear_metadata
 pub(crate) fn
 write_metadata
 (
-	path:                     &Path,
-	general_encoded_metadata: &Vec<u8>
+	path:     &Path,
+	metadata: &Metadata
 )
 -> Result<(), std::io::Error>
 {
@@ -639,7 +640,7 @@ write_metadata
 	clear_metadata(path)?;
 
 	// Encode the general metadata format to WebP specifications
-	let encoded_metadata = encode_metadata_webp(general_encoded_metadata);
+	let encoded_metadata = encode_metadata_webp(&metadata.encode()?);
 
 	// Open the file...
 	let mut file = check_signature(path)?;

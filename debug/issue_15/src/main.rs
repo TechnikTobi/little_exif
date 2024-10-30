@@ -15,7 +15,7 @@ fn main()
     let jpg_path = Path::new("./rsrc/copy.jpg");
 
     let read_metadata_1 = Metadata::new_from_path(&jpg_path).unwrap();
-    for tag in read_metadata_1.data()
+    for tag in &read_metadata_1
     {
         println!("{:?}", tag);
     }
@@ -28,7 +28,7 @@ fn main()
     println!("\nres: {:?}\n", res);
 
     let read_metadata_2 = Metadata::new_from_path(&jpg_path).unwrap();
-    for tag in read_metadata_2.data()
+    for tag in &read_metadata_2
     {
         let a_clone = tag.clone();
         println!("{:?}", a_clone);
