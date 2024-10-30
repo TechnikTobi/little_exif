@@ -37,7 +37,7 @@ metadata.set_tag(
 metadata.write_to_file(&image_path)?;
 ```
 
-Alternatively, if the image is stored in a Vec<u8> variable:
+Alternatively, if the image is stored in a ```Vec<u8>``` variable:
 
 ```rust
 use little_exif::metadata::Metadata;
@@ -58,7 +58,7 @@ metadata.write_to_vec(&mut image_vector, file_type)?;
 
 ### I tried writing the ImageDescription tag on a JPEG file, but it does not show up. Why?
 
-This could be due to the such called APP12 or APP13 segment stored in the JPEG, likely caused by editing the file using e.g. Photoshop. These segments may store data that image viewers also interpret as an ImageDescription, overriding the EXIF tag. Right now, ```little_exif``` can't edit these segments. As a workaround, the functions ```clear_app12_segment``` and ```clear_app13_segment``` can remove these areas from the JPEG:
+This could be due to the such called APP12 or APP13 segment stored in the JPEG, likely caused by editing the file using e.g. Photoshop. These segments may store data that image viewers also interpret as an ImageDescription, overriding the EXIF tag. Right now, little_exif can't edit these segments. As a workaround, the functions ```clear_app12_segment``` and ```clear_app13_segment``` can remove these areas from the JPEG:
 
 ```rust
 // File in a Vec<u8>
