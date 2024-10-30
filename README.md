@@ -25,19 +25,27 @@ Your required format is not listed here or you've run into a problem with a file
 use little_exif::metadata::Metadata;
 use little_exif::exif_tag::ExifTag;
 
+// Image stored as a file
 let image_path = std::path::Path::new("image.png");
 let mut metadata = Metadata::new_from_path(&image_path);
+
+// Alternatively, the image is stored in a Vec<u8> variable
+// let file_type = FileExtension::JPEG;
+// let mut metadata = Metadata::new_from_vec(&image_vector, file_type);
 
 metadata.set_tag(
     ExifTag::ImageDescription("Hello World!".to_string())
 );
 
-metadata.write_to_file(&image_path);
+metadata.write_to_file(&image_path)?;
+
+// Or, in case of a Vec<u8>:
+// metadata.write_to_vec(&mut image_vector, file_type)?;
 ```
 
 ## FAQ
 
-### I tried writing the ImageDescription tag on a JPEG file, but it does not how up. Why?
+### I tried writing the ImageDescription tag on a JPEG file, but it does not show up. Why?
 
 This could be due to the such called APP12 or APP13 segment stored in the JPEG, likely caused by editing the file using e.g. Photoshop. These segments may store data that image viewers also interpret as an ImageDescription, overriding the EXIF tag. Right now, ```little_exif``` can't edit these segments. As a workaround, the functions ```clear_app12_segment``` and ```clear_app13_segment``` can remove these areas from the JPEG:
 
