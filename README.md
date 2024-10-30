@@ -21,26 +21,37 @@ Your required format is not listed here or you've run into a problem with a file
 
 ## Example
 
+If the image is stored in a file, located at some given path:
+
 ```rust
 use little_exif::metadata::Metadata;
 use little_exif::exif_tag::ExifTag;
 
-// Image stored as a file
 let image_path = std::path::Path::new("image.png");
 let mut metadata = Metadata::new_from_path(&image_path);
-
-// Alternatively, the image is stored in a Vec<u8> variable
-// let file_type = FileExtension::JPEG;
-// let mut metadata = Metadata::new_from_vec(&image_vector, file_type);
 
 metadata.set_tag(
     ExifTag::ImageDescription("Hello World!".to_string())
 );
 
 metadata.write_to_file(&image_path)?;
+```
 
-// Or, in case of a Vec<u8>:
-// metadata.write_to_vec(&mut image_vector, file_type)?;
+Alternatively, if the image is stored in a Vec<u8> variable:
+
+```rust
+use little_exif::metadata::Metadata;
+use little_exif::exif_tag::ExifTag;
+use little_exif::filetype::FileExtension;
+
+let file_type = FileExtension::JPEG;
+let mut metadata = Metadata::new_from_vec(&image_vector, file_type);
+
+metadata.set_tag(
+    ExifTag::ImageDescription("Hello World!".to_string())
+);
+
+metadata.write_to_vec(&mut image_vector, file_type)?;
 ```
 
 ## FAQ
