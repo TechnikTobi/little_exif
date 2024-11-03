@@ -51,7 +51,7 @@ main()
 	// Explicitly read in the ImageDescription by tag or hex
 	let metadata = Metadata::new_from_path(jpg_path).unwrap();
 	let image_description_by_tag = metadata.get_tag(&ExifTag::ImageDescription(String::new())).next().unwrap();
-	let image_description_by_hex = metadata.get_tag_by_hex(0x010e).next().unwrap();
+	let image_description_by_hex = metadata.get_tag_by_hex(0x010e, None).next().unwrap();
 
 	// Print it as String
 	let endian = metadata.get_endian();
