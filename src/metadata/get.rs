@@ -19,7 +19,7 @@ Metadata
 	/// use little_exif::metadata::Metadata;
 	/// 
 	/// let metadata = Metadata::new_from_path(std::path::Path::new("image.png")).unwrap();
-	/// let tag_data = metadata.get_tag_by_hex(0x010e).next().unwrap().value_as_u8_vec(&metadata.get_endian());
+	/// let tag_data = metadata.get_tag_by_hex(0x010e, None).next().unwrap().value_as_u8_vec(&metadata.get_endian());
 	/// ```
 	pub fn
 	get_endian
@@ -124,14 +124,19 @@ impl Metadata
 	)
 	-> GetTagIterator
 	{
-		return self.get_tag_by_hex(tag.as_u16());
+		return self.get_tag_by_hex(tag.as_u16(), Some(tag.get_group()));
 	}
 
+	/// Gets a tag from the metadata struct via the hex number and the group
+	/// Note: While it is not necessary to provide the group, it may be needed
+	/// in some cases as there are tags that have the same tag number, e.g. 
+	/// the `InteroperabilityVersion` and the `GPSLatitude` tags.
 	pub fn
 	get_tag_by_hex
 	(
 		&self,
-		hex:   u16
+		hex:   u16,
+		group: Option<ExifTagGroup>,
 	)
 	-> GetTagIterator
 	{
@@ -140,7 +145,8 @@ impl Metadata
 			metadata:          &self,
 			current_ifd_index: 0,
 			current_tag_index: 0,
-			tag_hex_value:     hex
+			tag_hex_value:     hex,
+			group:             group,
 		}
 	}
 }
@@ -151,7 +157,8 @@ GetTagIterator<'a>
 	metadata:          &'a Metadata,
 	current_ifd_index: usize,
 	current_tag_index: usize,
-	tag_hex_value:     u16
+	tag_hex_value:     u16,
+	group:             Option<ExifTagGroup>,
 }
 
 impl<'a> Iterator
@@ -168,6 +175,19 @@ for GetTagIterator<'a>
 	{
 		while self.current_ifd_index < self.metadata.image_file_directories.len()
 		{
+			// First: Check the group, assuming it is provided
+			if let Some(given_group) = self.group
+			{
+				if given_group != self.metadata.image_file_directories[self.current_ifd_index].get_ifd_type()
+				{
+					self.current_ifd_index += 1;
+					continue;
+				}
+			}
+
+			// Check the current tag
+			// - If it is wrong, increment the tag index
+			// - If we can't access that tag, increment IFD index and reset tag index
 			if self.current_tag_index < self.metadata.image_file_directories[self.current_ifd_index].get_tags().len()
 			{
 				self.current_tag_index += 1;
