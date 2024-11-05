@@ -438,6 +438,20 @@ macro_rules! build_tag_enum {
 				}
 			}
 
+			// /// Tries to unpack the tag's value as a RATIONAL64U vector.
+			// /// If this does not work (because it is e.g. a string tag) the 
+			// /// function returns `None`.
+			// pub fn
+			// value_as_r64u_vec
+			// (
+			// 	&self,
+			// 	endian: &Endian
+			// )
+			// -> Option<Vec<RATIONAL64U>>
+			// {
+
+			// }
+
 			/// Gets the value stored in the tag as an u8 vector, using the 
 			/// given endianness for conversion.
 			pub fn
@@ -474,6 +488,7 @@ macro_rules! build_tag_enum {
 					ExifTag::UnknownDOUBLE(         value, _, _) => value.to_u8_vec(endian),
 				}
 			}
+
 		}
 	};
 }
@@ -750,7 +765,7 @@ impl ExifTag
 
 	/// For handling special case tags that need to be able to accept
 	/// both INT16U and INT32U, but the other way around
-	pub fn
+	pub(crate) fn
 	set_value_to_int16u_vec
 	(
 		&self,
@@ -758,9 +773,19 @@ impl ExifTag
 	)
 	-> Result<ExifTag, String>
 	{
-		match self
+		match self.format()
 		{
-			ExifTag::FocalLengthIn35mmFormat(_) => Ok(ExifTag::FocalLengthIn35mmFormat(data)),
+			ExifTagFormat::INT16U => {
+				let endian   = Endian::Little;
+				let raw_data = data.to_u8_vec(&endian);
+				return Self::from_u16_with_data(
+					self.as_u16(),
+					&ExifTagFormat::INT16U,
+					&raw_data,
+					&endian,
+					&self.get_group(),
+				);
+			}
 			_ => Err(String::from("Not a INT16U compatible tag!"))
 		}
 	}
