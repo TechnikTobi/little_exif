@@ -1,6 +1,9 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+pub(crate) mod decode;
+pub(super) mod set_value_to;
+
 use paste::paste;
 
 use crate::endian::Endian;
@@ -721,58 +724,6 @@ impl ExifTag
 			ExifTag::ThumbnailLength(length_data   ) => TagType::DATA_OFFSET(length_data.clone()),
 
 			_ => TagType::VALUE
-		}
-	}
-
-	/// For handling special case tags that need to be able to accept
-	/// both INT16U and INT32U
-	/// See subsections 4.6.5 and 4.6.6 of CIPA DC-008-2023, which is
-	/// the EXIF specification in Version 3.0
-	pub fn
-	set_value_to_int32u_vec
-	(
-		&self,
-		data: Vec<u32>
-	)
-	-> Result<ExifTag, String>
-	{
-		match self
-		{
-			ExifTag::ImageWidth(_)         => Ok(ExifTag::ImageWidth(     data)),
-			ExifTag::ImageHeight(_)        => Ok(ExifTag::ImageHeight(    data)),
-			ExifTag::StripOffsets(_, _)    => Ok(ExifTag::StripOffsets(   data, Vec::new())),
-			ExifTag::RowsPerStrip(_)       => Ok(ExifTag::RowsPerStrip(   data)),
-			ExifTag::StripByteCounts(_)    => Ok(ExifTag::StripByteCounts(data)),
-			ExifTag::ExifImageWidth(_)     => Ok(ExifTag::ExifImageWidth( data)),
-			ExifTag::ExifImageHeight(_)    => Ok(ExifTag::ExifImageHeight(data)),
-			_ => Err(String::from("Not a INT32U compatible tag!"))
-		}
-	}
-
-	/// For handling special case tags that need to be able to accept
-	/// both INT16U and INT32U, but the other way around
-	pub(crate) fn
-	set_value_to_int16u_vec
-	(
-		&self,
-		data: Vec<u16>
-	)
-	-> Result<ExifTag, String>
-	{
-		match self.format()
-		{
-			ExifTagFormat::INT16U => {
-				let endian   = Endian::Little;
-				let raw_data = data.to_u8_vec(&endian);
-				return Self::from_u16_with_data(
-					self.as_u16(),
-					&ExifTagFormat::INT16U,
-					&raw_data,
-					&endian,
-					&self.get_group(),
-				);
-			}
-			_ => Err(String::from("Not a INT16U compatible tag!"))
 		}
 	}
 }
