@@ -438,20 +438,6 @@ macro_rules! build_tag_enum {
 				}
 			}
 
-			// /// Tries to unpack the tag's value as a RATIONAL64U vector.
-			// /// If this does not work (because it is e.g. a string tag) the 
-			// /// function returns `None`.
-			// pub fn
-			// value_as_r64u_vec
-			// (
-			// 	&self,
-			// 	endian: &Endian
-			// )
-			// -> Option<Vec<RATIONAL64U>>
-			// {
-
-			// }
-
 			/// Gets the value stored in the tag as an u8 vector, using the 
 			/// given endianness for conversion.
 			pub fn
