@@ -250,6 +250,22 @@ read_metadata
 	let mut file = check_signature(path).unwrap();
 	for chunk in &parse_png_result
 	{
+		if chunk.as_string() == String::from("eXIf")
+		{
+			// Skip chunk length and type (4+4 Bytes)
+			perform_file_action!(file.seek(SeekFrom::Current(8)));
+
+			// Read chunk data into buffer
+			// No need to verify this using CRC as already done by parse_png(path)
+			let mut eXIf_chunk_data = vec![0u8; chunk.length() as usize];
+			if file.read(&mut eXIf_chunk_data).unwrap() != chunk.length() as usize
+			{
+				return io_error!(Other, "Could not read chunk data");
+			}
+			
+			return Ok(eXIf_chunk_data);
+		}
+
 		// Wrong chunk? Seek to the next one
 		if chunk.as_string() != String::from("zTXt")
 		{
