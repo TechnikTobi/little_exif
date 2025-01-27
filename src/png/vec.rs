@@ -107,16 +107,18 @@ get_next_chunk_descriptor
 
 	// If validating the chunk using the CRC was successful, return its descriptor
 	// Note: chunk_length does NOT include the +4 for the CRC area!
-	if let Ok(png_chunk) = PngChunk::from_string(
-		&chunk_name.unwrap(),
+	let png_chunk_result = PngChunk::from_string(
+		&chunk_name.clone().unwrap(),
 		chunk_length
-	)
+	);
+	if let Ok(png_chunk) = png_chunk_result
 	{
 		return Ok(png_chunk);
 	}
 	else
 	{
-		return io_error!(Other, "Invalid PNG chunk name");
+		eprintln!("Warning: Unknown PNG chunk name: {}", chunk_name.unwrap());
+		return Ok(png_chunk_result.err().unwrap());
 	}
 }
 
