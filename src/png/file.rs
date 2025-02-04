@@ -172,64 +172,75 @@ clear_metadata
 
 	for chunk in &parse_png_result
 	{
-		// If this is not a zTXt chunk, jump to the next chunk
-		if chunk.as_string() != String::from("zTXt")
+		match chunk.as_string().as_str()
 		{
-			seek_counter += chunk.length() as u64 + 12;
-			perform_file_action!(file.seek(SeekFrom::Current(chunk.length() as i64 + 12)));
-			continue;
-		}
+			"eXIf" => {
+				todo!();
+			},
+			
+			"zTXt" => {
+				// Skip chunk length and type (4+4 Bytes)
+				perform_file_action!(file.seek(SeekFrom::Current(8)));
 
-		// Skip chunk length and type (4+4 Bytes)
-		perform_file_action!(file.seek(SeekFrom::Current(8)));
+				// Read chunk data into buffer for checking that this is the 
+				// correct chunk to delete
+				let mut zTXt_chunk_data = vec![0u8; chunk.length() as usize];
+				if file.read(&mut zTXt_chunk_data).unwrap() != chunk.length() as usize
+				{
+					return io_error!(Other, "Could not read chunk data");
+				}
 
-		// Read chunk data into buffer for checking that this is the 
-		// correct chunk to delete
-		let mut zTXt_chunk_data = vec![0u8; chunk.length() as usize];
-		if file.read(&mut zTXt_chunk_data).unwrap() != chunk.length() as usize
-		{
-			return io_error!(Other, "Could not read chunk data");
-		}
+				// Compare to the "Raw profile type exif" string constant
+				let mut correct_zTXt_chunk = true;
+				for i in 0..RAW_PROFILE_TYPE_EXIF.len()
+				{
+					if zTXt_chunk_data[i] != RAW_PROFILE_TYPE_EXIF[i]
+					{
+						correct_zTXt_chunk = false;
+						break;
+					}
+				}
 
-		// Compare to the "Raw profile type exif" string constant
-		let mut correct_zTXt_chunk = true;
-		for i in 0..RAW_PROFILE_TYPE_EXIF.len()
-		{
-			if zTXt_chunk_data[i] != RAW_PROFILE_TYPE_EXIF[i]
-			{
-				correct_zTXt_chunk = false;
-				break;
+				// Skip the CRC as it is not important at this point
+				perform_file_action!(file.seek(SeekFrom::Current(4)));
+
+				// If this is not the correct zTXt chunk, ignore current
+				// (wrong) zTXt chunk and continue with next chunk
+				if !correct_zTXt_chunk
+				{	
+					continue;
+				}
+				
+				// We have now established that this is the correct chunk to 
+				// delete. Therefore: Copy data from here (after CRC) onwards 
+				// into a buffer...
+				let mut buffer = Vec::new();
+				perform_file_action!(file.read_to_end(&mut buffer));
+
+				// ...compute the new file length while we are at it...
+				let new_file_length = seek_counter + buffer.len() as u64;
+
+				// ...go back to the chunk to be removed...
+				perform_file_action!(file.seek(SeekFrom::Start(seek_counter)));
+
+				// ...and overwrite it using the data from the buffer
+				perform_file_action!(file.write_all(&buffer));
+				perform_file_action!(file.seek(SeekFrom::Start(seek_counter)));		
+
+				// Update the size of the file - otherwise there will be
+				// duplicate bytes at the end!
+				perform_file_action!(file.set_len(new_file_length));
+
 			}
-		}
 
-		// Skip the CRC as it is not important at this point
-		perform_file_action!(file.seek(SeekFrom::Current(4)));
+			_ => {
+				// Jump to the next chunk
+				seek_counter += chunk.length() as u64 + 12;
+				perform_file_action!(file.seek(SeekFrom::Current(chunk.length() as i64 + 12)));
+				continue;
+			}
+		};
 
-		// If this is not the correct zTXt chunk, ignore current
-		// (wrong) zTXt chunk and continue with next chunk
-		if !correct_zTXt_chunk
-		{	
-			continue;
-		}
-		
-		// We have now established that this is the correct chunk to delete
-		// Therefore: Copy data from here (after CRC) onwards into a buffer...
-		let mut buffer = Vec::new();
-		perform_file_action!(file.read_to_end(&mut buffer));
-
-		// ...compute the new file length while we are at it...
-		let new_file_length = seek_counter + buffer.len() as u64;
-
-		// ...go back to the chunk to be removed...
-		perform_file_action!(file.seek(SeekFrom::Start(seek_counter)));
-
-		// ...and overwrite it using the data from the buffer
-		perform_file_action!(file.write_all(&buffer));
-		perform_file_action!(file.seek(SeekFrom::Start(seek_counter)));		
-
-		// Update the size of the file - otherwise there will be
-		// duplicate bytes at the end!
-		perform_file_action!(file.set_len(new_file_length));
 	}
 
 	return Ok(());
@@ -250,69 +261,78 @@ read_metadata
 	let mut file = check_signature(path).unwrap();
 	for chunk in &parse_png_result
 	{
-		if chunk.as_string() == String::from("eXIf")
-		{
-			// Skip chunk length and type (4+4 Bytes)
-			perform_file_action!(file.seek(SeekFrom::Current(8)));
 
-			// Read chunk data into buffer
-			// No need to verify this using CRC as already done by parse_png(path)
-			let mut eXIf_chunk_data = vec![0u8; chunk.length() as usize];
-			if file.read(&mut eXIf_chunk_data).unwrap() != chunk.length() as usize
-			{
-				return io_error!(Other, "Could not read chunk data");
-			}
+		match chunk.as_string().as_str()
+		{
+			"eXIf" => {
+				// Can be directly decoded
+
+				// Skip chunk length and type (4+4 Bytes)
+				perform_file_action!(file.seek(SeekFrom::Current(8)));
+
+				// Read chunk data into buffer
+				// No need to verify this using CRC as already done by parse_png(path)
+				let mut eXIf_chunk_data = vec![0u8; chunk.length() as usize];
+				if file.read(&mut eXIf_chunk_data).unwrap() != chunk.length() as usize
+				{
+					return io_error!(Other, "Could not read chunk data");
+				}
+				
+				return Ok(eXIf_chunk_data);
+			},
 			
-			return Ok(eXIf_chunk_data);
-		}
+			"zTXt" => {
+				// More common & expected case
 
-		// Wrong chunk? Seek to the next one
-		if chunk.as_string() != String::from("zTXt")
-		{
-			perform_file_action!(file.seek(SeekFrom::Current(chunk.length() as i64 + 12)));
-			continue;
-		}
+				// Skip chunk length and type (4+4 Bytes)
+				perform_file_action!(file.seek(SeekFrom::Current(8)));
 
-		// We now have a zTXt chunk:
-		// Skip chunk length and type (4+4 Bytes)
-		perform_file_action!(file.seek(SeekFrom::Current(8)));
+				// Read chunk data into buffer
+				// No need to verify this using CRC as already done by 
+				// previously calling parse_png(path)
+				let mut zTXt_chunk_data = vec![0u8; chunk.length() as usize];
+				if file.read(&mut zTXt_chunk_data).unwrap() != chunk.length() as usize
+				{
+					return io_error!(Other, "Could not read chunk data");
+				}
 
-		// Read chunk data into buffer
-		// No need to verify this using CRC as already done by parse_png(path)
-		let mut zTXt_chunk_data = vec![0u8; chunk.length() as usize];
-		if file.read(&mut zTXt_chunk_data).unwrap() != chunk.length() as usize
-		{
-			return io_error!(Other, "Could not read chunk data");
-		}
+				// Check that this is the correct zTXt chunk...
+				let mut correct_zTXt_chunk = true;
+				for i in 0..RAW_PROFILE_TYPE_EXIF.len()
+				{
+					if zTXt_chunk_data[i] != RAW_PROFILE_TYPE_EXIF[i]
+					{
+						correct_zTXt_chunk = false;
+						break;
+					}
+				}
 
-		// Check that this is the correct zTXt chunk...
-		let mut correct_zTXt_chunk = true;
-		for i in 0..RAW_PROFILE_TYPE_EXIF.len()
-		{
-			if zTXt_chunk_data[i] != RAW_PROFILE_TYPE_EXIF[i]
-			{
-				correct_zTXt_chunk = false;
-				break;
+				if !correct_zTXt_chunk
+				{
+					// Skip CRC from current (wrong) zTXt chunk and continue
+					perform_file_action!(file.seek(SeekFrom::Current(4)));
+					continue;
+				}
+
+				// Decode zlib data...
+				if let Ok(decompressed_data) = decompress_to_vec_zlib(
+					&zTXt_chunk_data[RAW_PROFILE_TYPE_EXIF.len()..]
+				)
+				{
+					// ...and perform PNG-specific decoding & return the result
+					return Ok(decode_metadata_png(&decompressed_data).unwrap());
+				}
+				else
+				{
+					return io_error!(Other, "Could not inflate compressed chunk data!");
+				}
 			}
-		}
 
-		if !correct_zTXt_chunk
-		{
-			// Skip CRC from current (wrong) zTXt chunk and continue
-			perform_file_action!(file.seek(SeekFrom::Current(4)));
-			continue;
-		}
-
-		// Decode zlib data...
-		if let Ok(decompressed_data) = decompress_to_vec_zlib(&zTXt_chunk_data[RAW_PROFILE_TYPE_EXIF.len()..])
-		{
-			// ...and perform PNG-specific decoding & return the result
-			return Ok(decode_metadata_png(&decompressed_data).unwrap());
-		}
-		else
-		{
-			return io_error!(Other, "Could not inflate compressed chunk data!");
-		}
+			_ => {
+				perform_file_action!(file.seek(SeekFrom::Current(chunk.length() as i64 + 12)));
+				continue;
+			}
+		};
 	}
 
 	return io_error!(Other, "No metadata found!");
