@@ -15,6 +15,7 @@
 		"GPSH",
 		"HDLC",
 		"ICCP",
+		"IDAT",
 		"IEND",
 		"ifds",
 		"IHDR",
@@ -25,8 +26,11 @@
 		"nonoverlapping",
 		"OECF",
 		"Opto",
+		"Photoshop",
+		"PLTE",
 		"Prisching",
 		"rsrc",
+		"semiconvergent",
 		"subifd",
 		"Testcam"
 	]

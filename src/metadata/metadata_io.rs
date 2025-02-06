@@ -46,7 +46,7 @@ Metadata
 			FileExtension::JXL
 				=>  jxl::read_metadata(file_buffer),
 			FileExtension::PNG { as_zTXt_chunk: _ }
-				=>  png::vec::read_metadata(file_buffer),
+				=>  png::read_metadata(file_buffer),
 			FileExtension::TIFF
 				=> tiff::vec::read_metadata(file_buffer),
 			FileExtension::WEBP
@@ -93,7 +93,7 @@ Metadata
 			FileExtension::JXL
 				=>  jxl::file_read_metadata(&path),
 			FileExtension::PNG { as_zTXt_chunk: _ } 
-				=>  png::file::read_metadata(&path),
+				=>  png::file_read_metadata(&path),
 			FileExtension::TIFF
 				=> tiff::file::read_metadata(&path),
 			FileExtension::WEBP 
@@ -127,7 +127,7 @@ Metadata
 			FileExtension::JXL
 				=>  jxl::clear_metadata(file_buffer),
 			FileExtension::PNG { as_zTXt_chunk: _ }
-				=>  png::vec::clear_metadata(file_buffer),
+				=>  png::clear_metadata(file_buffer),
 			FileExtension::TIFF
 				=> tiff::vec::clear_metadata(file_buffer),
 			FileExtension::WEBP
@@ -274,7 +274,7 @@ Metadata
 			FileExtension::JXL
 				=>  jxl::file_clear_metadata(&path),
 			FileExtension::PNG { as_zTXt_chunk: _ }
-				=>  png::file::clear_metadata(&path),
+				=>  png::file_clear_metadata(&path),
 			FileExtension::TIFF
 				=> tiff::file::clear_metadata(&path),
 			FileExtension::WEBP 
@@ -340,7 +340,7 @@ Metadata
 			FileExtension::JXL 
 				=>  jxl::write_metadata(file_buffer, &self),
 			FileExtension::PNG { as_zTXt_chunk: _ }
-				=>  png::vec::write_metadata(file_buffer, &self),
+				=>  png::write_metadata(file_buffer, &self),
 			FileExtension::TIFF
 				=> tiff::vec::write_metadata(file_buffer, &self),
 			FileExtension::WEBP
@@ -379,7 +379,7 @@ Metadata
 			FileExtension::JXL 
 				=>  jxl::file_write_metadata(&path, &self),
 			FileExtension::PNG { as_zTXt_chunk: _ }
-				=>  png::file::write_metadata(&path, &self),
+				=>  png::file_write_metadata(&path, &self),
 			FileExtension::TIFF
 				=> tiff::file::write_metadata(&path, &self),
 			FileExtension::WEBP 
