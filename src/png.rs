@@ -134,19 +134,24 @@ generic_parse_png
 )
 -> Result<Vec<PngChunk>, std::io::Error>
 {
+	println!("Entering generic_parse_png");
 	let mut chunks = Vec::new();
 
 	loop
 	{
+		println!("Trying to get chunk descriptor...");
 		let chunk_descriptor = get_next_chunk_descriptor(cursor)?;
+		println!("Got chunk descriptor!");
 		chunks.push(chunk_descriptor);
 
 		if chunks.last().unwrap().as_string() == "IEND".to_string()
 		{
+			println!("BREAK1!");
 			break;
 		}
 	}
 
+	println!("BREAK2!");
 	return Ok(chunks);
 }
 
@@ -170,6 +175,7 @@ get_next_chunk_descriptor
 	// Check that indeed 8 bytes were read
 	if bytes_read != 8
 	{
+		println!("1here");
 		return io_error!(Other, "Could not read start of chunk");
 	}
 
@@ -181,11 +187,14 @@ get_next_chunk_descriptor
 		chunk_length = chunk_length * 256 + *byte as u32;
 	}
 
+	println!("chunk name: {}", chunk_name.clone().unwrap());
+
 	// Read chunk data ...
 	let mut chunk_data_buffer = vec![0u8; chunk_length as usize];
 	bytes_read = cursor.read(&mut chunk_data_buffer).unwrap();
 	if bytes_read != chunk_length as usize
 	{
+		println!("2here: {} {}", bytes_read, chunk_length);
 		return io_error!(Other, "Could not read chunk data");
 	}
 
@@ -194,6 +203,7 @@ get_next_chunk_descriptor
 	bytes_read = cursor.read(&mut chunk_crc_buffer).unwrap();
 	if bytes_read != 4
 	{
+		println!("3here");
 		return io_error!(Other, "Could not read chunk CRC");
 	}
 
@@ -209,6 +219,7 @@ get_next_chunk_descriptor
 	{
 		if ((checksum >> (8 * (3-i))) as u8) != chunk_crc_buffer[i]
 		{
+			println!("4here");
 			return io_error!(InvalidData, "Checksum check failed while reading PNG!");
 		}
 	}
@@ -475,6 +486,8 @@ write_metadata
 )
 -> Result<(), std::io::Error>
 {
+	println!("Entering write_metadata");
+
 	// First clear the existing metadata
 	// This also parses the PNG and checks its validity, so it is safe to
 	// assume that is, in fact, a usable PNG file
@@ -495,6 +508,8 @@ file_write_metadata
 )
 -> Result<(), std::io::Error>
 {
+	println!("Entering file_write_metadata");
+
 	// First clear the existing metadata
 	// This also parses the PNG and checks its validity, so it is safe to
 	// assume that is, in fact, a usable PNG file
@@ -502,8 +517,10 @@ file_write_metadata
 
 	// Parsed PNG is Ok to use - Open the file and go through the chunks
 	let mut file = open_write_file(path)?;
+	file.seek(SeekFrom::Start(0))?;
 
 	// Call the generic write function
+	println!("Calling generic_write_metadata");
 	return generic_write_metadata(&mut file, metadata);
 }
 
@@ -517,10 +534,24 @@ generic_write_metadata
 )
 -> Result<(), std::io::Error>
 {
+	println!("Entering generic_write_metadata");
+
 	let mut IHDR_length = 0u32;
-	if let Ok(chunks) = generic_parse_png(cursor)
+
+	let parse_result = generic_parse_png(cursor);
+
+	if parse_result.is_err()
+	{
+		println!("BUT WHY?")
+	}
+
+	if let Ok(chunks) = parse_result // generic_parse_png(cursor)
 	{
 		IHDR_length = chunks[0].length();
+	}
+	else
+	{
+		panic!("AHHHHHH");
 	}
 
 	// Encode the data specifically for PNG and open the image file
@@ -556,7 +587,6 @@ generic_write_metadata
 	let chunk_data_len = zTXt_chunk_data.len() as u32 - 8;
 	for i in 0..4
 	{
-		// chunk_data_len_buffer[i] = (chunk_data_len >> (8 * (3-i))) as u8;
 		cursor.write(&[(chunk_data_len >> (8 * (3-i))) as u8])?;
 	}
 
