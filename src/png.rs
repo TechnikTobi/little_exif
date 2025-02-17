@@ -10,8 +10,6 @@ use std::io::Read;
 use std::io::Write;
 use std::path::Path;
 
-use std::sync::atomic::{fence, Ordering};
-
 use crc::Crc;
 use crc::CRC_32_ISO_HDLC;
 use miniz_oxide::deflate::compress_to_vec_zlib;
@@ -20,7 +18,6 @@ use miniz_oxide::inflate::decompress_to_vec_zlib;
 use crate::general_file_io::io_error;
 use crate::general_file_io::open_read_file;
 use crate::general_file_io::open_write_file;
-use crate::general_file_io::perform_file_action;
 use crate::general_file_io::EXIF_HEADER;
 use crate::general_file_io::NEWLINE;
 use crate::general_file_io::SPACE;
@@ -383,13 +380,7 @@ file_clear_metadata
 		.write(true)
 		.truncate(true)
 		.open(path)?;
-
 	file.write_all(&file_buffer)?;
-
-	file.flush()?;
-	file.sync_all()?;
-
-	fence(Ordering::SeqCst);
 
 	return Ok(());
 }
@@ -486,7 +477,7 @@ write_metadata
 	// First clear the existing metadata
 	// This also parses the PNG and checks its validity, so it is safe to
 	// assume that is, in fact, a usable PNG file
-	let _ = clear_metadata(file_buffer)?;
+	clear_metadata(file_buffer)?;
 
 	// Parsed PNG is Ok to use - Create a cursor for writing
 	let mut cursor = Cursor::new(file_buffer);
@@ -506,13 +497,21 @@ file_write_metadata
 	// First clear the existing metadata
 	// This also parses the PNG and checks its validity, so it is safe to
 	// assume that is, in fact, a usable PNG file
-	let _ = file_clear_metadata(path)?;
+	// For that, load the entire file into memory
+	let mut file_buffer: Vec<u8> = std::fs::read(path)?;
 
-	// Parsed PNG is Ok to use - Open the file and go through the chunks
-	let mut file = open_write_file(path)?;
+	// Clear old metadata and write new to buffer
+	write_metadata(&mut file_buffer, metadata)?;
 
-	// Call the generic write function
-	return generic_write_metadata(&mut file, metadata);
+	// Write the file
+	// Possible to optimize further by returning the purged bytestream itself?
+	let mut file = std::fs::OpenOptions::new()
+		.write(true)
+		.truncate(true)
+		.open(path)?;
+	file.write_all(&file_buffer)?;
+
+	return Ok(());
 }
 
 #[allow(non_snake_case)]
