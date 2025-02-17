@@ -25,3 +25,6 @@ debug/*/target/*
 debug/*.lock
 tests/*copy*
 debug/*/rsrc/copy.jpg
+debug/issue_52/rsrc/test1.png
+debug/issue_52/rsrc/test2.png
+debug/issue_52/rsrc/test3.png
