@@ -346,7 +346,7 @@ file_clear_metadata_jxl()
 
 #[test]
 fn
-file_clear_metadata_jpg()
+file_write_and_clear_metadata_jpg()
 -> Result<(), std::io::Error>
 {
 	// Remove file from previous run and replace it with fresh copy
@@ -364,6 +364,24 @@ file_clear_metadata_jpg()
 
 	// Clear metadata
 	Metadata::file_clear_metadata(Path::new("tests/sample2_copy_no_metadata.jpg"))?;
+
+	Ok(())
+}
+
+#[test]
+fn
+file_clear_metadata_png()
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/sample2_copy_no_metadata.png")
+	{
+		println!("{}", error);
+	}
+	copy("tests/sample2.png", "tests/sample2_copy_no_metadata.png")?;
+
+	// Clear metadata
+	Metadata::file_clear_metadata(Path::new("tests/sample2_copy_no_metadata.png"))?;
 
 	Ok(())
 }
