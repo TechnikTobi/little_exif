@@ -115,5 +115,6 @@ build_png_chunk_type_enum![
     (tIME,  false,      false,      NONE),
     (iTXt,  false,      true,       NONE),
     (tEXt,  false,      true,       NONE),
+    (vpAg,  false,      false,      NONE),
     (zTXt,  false,      true,       NONE)
 ];

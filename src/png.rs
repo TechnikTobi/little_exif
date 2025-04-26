@@ -19,6 +19,8 @@ use crate::general_file_io::io_error;
 use crate::general_file_io::open_read_file;
 use crate::general_file_io::open_write_file;
 use crate::general_file_io::EXIF_HEADER;
+use crate::general_file_io::LITTLE_ENDIAN_INFO;
+use crate::general_file_io::BIG_ENDIAN_INFO;
 use crate::general_file_io::NEWLINE;
 use crate::general_file_io::SPACE;
 
@@ -668,12 +670,14 @@ decode_metadata_png
 		other_byte = None;
 	}
 
-	// Now remove the first element until the exif header is found
+	// Now remove the first element until the exif header or endian information 
+	// is found.
 	// Store the popped elements to get the size information
 	let mut exif_header_found = false;
+	let mut endian_info_found = false;
 	let mut pop_storage: Vec<u8> = Vec::new();
 
-	while !exif_header_found
+	while !exif_header_found && !endian_info_found
 	{
 		let mut counter = 0;
 		for header_value in &EXIF_HEADER
@@ -691,6 +695,44 @@ decode_metadata_png
 		{
 			break;
 		}
+
+		counter = 0;
+
+		// But what if the EXIF_HEADER is missing and we are directly starting
+		// with the endian information? See issue #54
+		for endian_info in &LITTLE_ENDIAN_INFO
+		{
+			if *endian_info != exif_all[counter]
+			{
+				break;
+			}
+			counter += 1;
+		}
+
+		endian_info_found = counter == LITTLE_ENDIAN_INFO.len();
+
+		if endian_info_found
+		{
+			break;
+		}
+
+		// And the same check for big endian
+		for endian_info in &BIG_ENDIAN_INFO
+		{
+			if *endian_info != exif_all[counter]
+			{
+				break;
+			}
+			counter += 1;
+		}
+
+		endian_info_found = counter == BIG_ENDIAN_INFO.len();
+
+		if endian_info_found
+		{
+			break;
+		}
+
 		pop_storage.push(exif_all.pop_front().unwrap());
 	}
 
