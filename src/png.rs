@@ -36,12 +36,14 @@ pub(crate) const RAW_PROFILE_TYPE_EXIF: [u8; 23] = [
 	0x74, 0x79, 0x70, 0x65, 0x20,                       // type
 	0x65, 0x78, 0x69, 0x66, 0x00, 0x00                  // exif NUL NUL
 ];
+
 pub(crate) const XML_COM_ADOBE_XMP: [u8; 18] = [
 	0x58, 0x4d, 0x4c, 0x3a,                 // XML:
 	0x63, 0x6f, 0x6d, 0x2e,                 // com.
 	0x61, 0x64, 0x6f, 0x62, 0x65, 0x2e,     // adobe.
 	0x78, 0x6d, 0x70, 0x00,                 // xmp NUL
 ];
+
 
 // The bytes during encoding need to be encoded themselves:
 // A given byte (e.g. 0x30 for the char '0') has two values in the string of its hex representation ('3' and '0')
@@ -407,8 +409,9 @@ clear_metadata
 
 	// Parsed PNG is Ok to use - Open the file and go through the chunks
 	let mut cursor = Cursor::new(file_buffer);
-	// Skip the file header
-	let mut seek_counter = 8u64;
+
+	// Skip the PNG file header (8 bytes)
+	let mut seek_counter = 8usize;
 	cursor.seek(std::io::SeekFrom::Current(8))?;
 
 	for chunk in &parse_png_result
@@ -416,10 +419,11 @@ clear_metadata
 		match chunk.as_string().as_str()
 		{
 			"eXIf" => {
-				// Remove the entire chunk
-				let remove_start = seek_counter as usize;
-				let remove_end   = seek_counter as usize + (chunk.length() as i64 + 12) as usize;
-				range_remove(cursor.get_mut(), remove_start, remove_end);
+				// Remove the entire chunk (done after the match)
+				// Position cursor accordingly.
+				// Skip the length field, chunk length, CRC and chunk data 
+				// Bytes:   4           , 4           , 4       chunk.length()
+				cursor.seek(std::io::SeekFrom::Current(12 + chunk.length() as i64))?;
 			},
 
 			"iTXt" => {
@@ -456,34 +460,39 @@ clear_metadata
 					seek_counter = cursor.position();
 					continue;
 				}
-				
-				// We have now established that this is the correct chunk
-				let remove_start = seek_counter as usize;
-				let remove_end   = cursor.position() as usize;
-				range_remove(cursor.get_mut(), remove_start, remove_end);
-				cursor.set_position(seek_counter);
 			},
 
-			"zTXt" => {
+			"iTXt" | "zTXt" => {
 				// Skip chunk length and type (4+4 Bytes)
 				cursor.seek(std::io::SeekFrom::Current(4+4))?;
 
 				// Read chunk data into buffer for checking that this is the
 				// correct chunk to delete
-				let mut zTXt_chunk_data = vec![0u8; chunk.length() as usize];
+				let mut chunk_data = vec![0u8; chunk.length() as usize];
 
-				if cursor.read(&mut zTXt_chunk_data).unwrap() != chunk.length() as usize
+				if cursor.read(&mut chunk_data).unwrap() != chunk.length() as usize
 				{
 					return io_error!(Other, "Could not read chunk data");
 				}
 
 				// Compare to the "Raw profile type exif" string constant
-				let mut correct_zTXt_chunk = true;
+				let mut has_raw_profile_type_exif = true;
 				for i in 0..RAW_PROFILE_TYPE_EXIF.len()
 				{
-					if zTXt_chunk_data[i] != RAW_PROFILE_TYPE_EXIF[i]
+					if chunk_data[i] != RAW_PROFILE_TYPE_EXIF[i]
 					{
-						correct_zTXt_chunk = false;
+						has_raw_profile_type_exif = false;
+						break;
+					}
+				}
+
+				// Compare to the "XML:com.adobe.xmp" string constant
+				let mut has_xml_com_adobe_xmp = true;
+				for i in 0..XML_COM_ADOBE_XMP.len()
+				{
+					if chunk_data[i] != XML_COM_ADOBE_XMP[i]
+					{
+						has_xml_com_adobe_xmp = false;
 						break;
 					}
 				}
@@ -491,27 +500,32 @@ clear_metadata
 				// Skip the CRC as it is not important at this point
 				cursor.seek(std::io::SeekFrom::Current(4))?;
 
-				// If this is not the correct zTXt chunk, ignore current
-				// (wrong) zTXt chunk and continue with next chunk
-				if !correct_zTXt_chunk
+				// If this is not the correct zTXt/iTXt chunk, 
+				// ignore it and continue with next chunk
+				if 
+					!has_raw_profile_type_exif &&
+					!has_xml_com_adobe_xmp
 				{
 					seek_counter = cursor.position();
 					continue;
 				}
-				
-				// We have now established that this is the correct chunk
-				let remove_start = seek_counter as usize;
-				let remove_end   = cursor.position() as usize;
-				range_remove(cursor.get_mut(), remove_start, remove_end);
-				cursor.set_position(seek_counter);
 			},
 
 			_ => {
-				seek_counter += chunk.length() as u64 + 12;
+				// In any other case, 
+				seek_counter += chunk.length() as usize + 12;
 				cursor.seek(std::io::SeekFrom::Current(chunk.length() as i64 + 12))?;
 				continue;
 			}
 		}
+
+		// As we haven't continued to the next chunk in a previous match arm, 
+		// we have now established that we want to remove this chunk.
+		// The cursor has previously been positioned at the end of this chunk.
+		let remove_start = seek_counter;
+		let remove_end   = cursor.position() as usize;
+		range_remove(cursor.get_mut(), remove_start, remove_end);
+		cursor.set_position(seek_counter);
 
 	}
 
