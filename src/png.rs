@@ -476,9 +476,10 @@ clear_metadata
 			},
 
 			_ => {
-				// In any other case, 
-				seek_counter += chunk.length() as usize + 12;
-				cursor.seek(std::io::SeekFrom::Current(chunk.length() as i64 + 12))?;
+				// In any other case, skip this chunk and continue with the 
+				// next one after adjusting the cursor and the seek counter
+				cursor.seek(std::io::SeekFrom::Current(12 + chunk.length() as i64))?;
+				seek_counter = cursor.position();
 				continue;
 			}
 		}
