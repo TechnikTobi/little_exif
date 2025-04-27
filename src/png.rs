@@ -426,42 +426,6 @@ clear_metadata
 				cursor.seek(std::io::SeekFrom::Current(12 + chunk.length() as i64))?;
 			},
 
-			"iTXt" => {
-				// Skip chunk length and type (4+4 Bytes)
-				cursor.seek(std::io::SeekFrom::Current(4+4))?;
-
-				// Read chunk data into buffer for checking that this is the
-				// correct chunk to delete
-				let mut iTXt_chunk_data = vec![0u8; chunk.length() as usize];
-
-				if cursor.read(&mut iTXt_chunk_data).unwrap() != chunk.length() as usize
-				{
-					return io_error!(Other, "Could not read chunk data");
-				}
-
-				// Compare to the "XML:com.adobe.xmp" string constant
-				let mut correct_iTXt_chunk = true;
-				for i in 0..XML_COM_ADOBE_XMP.len()
-				{
-					if iTXt_chunk_data[i] != XML_COM_ADOBE_XMP[i]
-					{
-						correct_iTXt_chunk = false;
-						break;
-					}
-				}
-
-				// Skip the CRC as it is not important at this point
-				cursor.seek(std::io::SeekFrom::Current(4))?;
-
-				// If this is not the correct iTXt chunk, ignore current
-				// (wrong) iTXt chunk and continue with next chunk
-				if !correct_iTXt_chunk
-				{
-					seek_counter = cursor.position();
-					continue;
-				}
-			},
-
 			"iTXt" | "zTXt" => {
 				// Skip chunk length and type (4+4 Bytes)
 				cursor.seek(std::io::SeekFrom::Current(4+4))?;
