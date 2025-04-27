@@ -12,6 +12,7 @@ use std::path::Path;
 
 use crc::Crc;
 use crc::CRC_32_ISO_HDLC;
+use log::warn;
 use miniz_oxide::deflate::compress_to_vec_zlib;
 use miniz_oxide::inflate::decompress_to_vec_zlib;
 
@@ -226,7 +227,7 @@ get_next_chunk_descriptor
 	}
 	else
 	{
-		eprintln!("Warning: Unknown PNG chunk name: {}", chunk_name.unwrap());
+		warn!("Unknown PNG chunk name: {}", chunk_name.unwrap());
 		return Ok(png_chunk_result.err().unwrap());
 	}
 }
