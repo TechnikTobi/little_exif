@@ -8,6 +8,8 @@ use std::io::Seek;
 use std::io::SeekFrom;
 use std::path::Path;
 
+use log::debug;
+
 use crate::endian::*;
 use crate::metadata::Metadata;
 use crate::u8conversion::*;
@@ -394,7 +396,7 @@ convert_to_extended_format
 	let (width, height) = match first_chunk.descriptor().header().as_str()
 	{
 		"VP8" 
-			=> {println!("VP8 !"); todo!()},
+			=> {debug!("VP8 !"); todo!()},
 		"VP8L"
 			=> get_dimension_info_from_vp8l_chunk(first_chunk.payload()),
 		_ 

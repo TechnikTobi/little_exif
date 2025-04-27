@@ -10,6 +10,8 @@ use std::io::Read;
 use std::io::Seek;
 use std::vec;
 
+use log::warn;
+
 use crate::endian::*;
 use crate::exif_tag::decode::decode_tag_with_format_exceptions;
 use crate::exif_tag::ExifTag;
@@ -408,7 +410,7 @@ ImageFileDirectory
 				}
 				else
 				{
-					eprintln!("WARNING: Can't decode thumbnail! The ThumbnailOffset and ThumbnailLength tags are expected to contain exactly 1 INT32U value. However, they have {} and {} values.", offset.len(), length.len());
+					warn!("Can't decode thumbnail! The ThumbnailOffset and ThumbnailLength tags are expected to contain exactly 1 INT32U value. However, they have {} and {} values.", offset.len(), length.len());
 				}
 
 				// Restore backup position
