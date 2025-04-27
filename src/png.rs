@@ -17,7 +17,6 @@ use miniz_oxide::inflate::decompress_to_vec_zlib;
 
 use crate::general_file_io::io_error;
 use crate::general_file_io::open_read_file;
-use crate::general_file_io::open_write_file;
 use crate::general_file_io::EXIF_HEADER;
 use crate::general_file_io::LITTLE_ENDIAN_INFO;
 use crate::general_file_io::BIG_ENDIAN_INFO;
@@ -36,6 +35,12 @@ pub(crate) const RAW_PROFILE_TYPE_EXIF: [u8; 23] = [
 	0x70, 0x72, 0x6F, 0x66, 0x69, 0x6C, 0x65, 0x20,     // profile
 	0x74, 0x79, 0x70, 0x65, 0x20,                       // type
 	0x65, 0x78, 0x69, 0x66, 0x00, 0x00                  // exif NUL NUL
+];
+pub(crate) const XML_COM_ADOBE_XMP: [u8; 18] = [
+	0x58, 0x4d, 0x4c, 0x3a,                 // XML:
+	0x63, 0x6f, 0x6d, 0x2e,                 // com.
+	0x61, 0x64, 0x6f, 0x62, 0x65, 0x2e,     // adobe.
+	0x78, 0x6d, 0x70, 0x00,                 // xmp NUL
 ];
 
 // The bytes during encoding need to be encoded themselves:
@@ -402,22 +407,68 @@ clear_metadata
 
 	// Parsed PNG is Ok to use - Open the file and go through the chunks
 	let mut cursor = Cursor::new(file_buffer);
+	// Skip the file header
 	let mut seek_counter = 8u64;
+	cursor.seek(std::io::SeekFrom::Current(8))?;
 
 	for chunk in &parse_png_result
 	{
-
 		match chunk.as_string().as_str()
 		{
 			"eXIf" => {
-				todo!();
+				// Remove the entire chunk
+				let remove_start = seek_counter as usize;
+				let remove_end   = seek_counter as usize + (chunk.length() as i64 + 12) as usize;
+				range_remove(cursor.get_mut(), remove_start, remove_end);
+			},
+
+			"iTXt" => {
+				// Skip chunk length and type (4+4 Bytes)
+				cursor.seek(std::io::SeekFrom::Current(4+4))?;
+
+				// Read chunk data into buffer for checking that this is the
+				// correct chunk to delete
+				let mut iTXt_chunk_data = vec![0u8; chunk.length() as usize];
+
+				if cursor.read(&mut iTXt_chunk_data).unwrap() != chunk.length() as usize
+				{
+					return io_error!(Other, "Could not read chunk data");
+				}
+
+				// Compare to the "XML:com.adobe.xmp" string constant
+				let mut correct_iTXt_chunk = true;
+				for i in 0..XML_COM_ADOBE_XMP.len()
+				{
+					if iTXt_chunk_data[i] != XML_COM_ADOBE_XMP[i]
+					{
+						correct_iTXt_chunk = false;
+						break;
+					}
+				}
+
+				// Skip the CRC as it is not important at this point
+				cursor.seek(std::io::SeekFrom::Current(4))?;
+
+				// If this is not the correct iTXt chunk, ignore current
+				// (wrong) iTXt chunk and continue with next chunk
+				if !correct_iTXt_chunk
+				{
+					seek_counter = cursor.position();
+					continue;
+				}
+				
+				// We have now established that this is the correct chunk
+				let remove_start = seek_counter as usize;
+				let remove_end   = cursor.position() as usize;
+				range_remove(cursor.get_mut(), remove_start, remove_end);
+				cursor.set_position(seek_counter);
 			},
 
 			"zTXt" => {
 				// Skip chunk length and type (4+4 Bytes)
 				cursor.seek(std::io::SeekFrom::Current(4+4))?;
 
-				// Read chunk data into buffer for checking that this is the 
+				// Read chunk data into buffer for checking that this is the
 				// correct chunk to delete
 				let mut zTXt_chunk_data = vec![0u8; chunk.length() as usize];
 
@@ -443,7 +494,8 @@ clear_metadata
 				// If this is not the correct zTXt chunk, ignore current
 				// (wrong) zTXt chunk and continue with next chunk
 				if !correct_zTXt_chunk
-				{	
+				{
+					seek_counter = cursor.position();
 					continue;
 				}
 				
@@ -451,6 +503,7 @@ clear_metadata
 				let remove_start = seek_counter as usize;
 				let remove_end   = cursor.position() as usize;
 				range_remove(cursor.get_mut(), remove_start, remove_end);
+				cursor.set_position(seek_counter);
 			},
 
 			_ => {
