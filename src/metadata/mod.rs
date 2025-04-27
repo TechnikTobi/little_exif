@@ -13,6 +13,9 @@ use std::io::Read;
 use std::io::Seek;
 use std::io::Write;
 
+use log::error;
+use log::warn;
+
 use crate::endian::*;
 use crate::general_file_io::io_error;
 use crate::general_file_io::EXIF_HEADER;
@@ -98,15 +101,15 @@ Metadata
 			}
 			else
 			{
-				eprintln!("{}", decoding_result.err().unwrap());
+				error!("{}", decoding_result.err().unwrap());
 			}
 		}
 		else
 		{
-			eprintln!("Error during decoding: {:?}", raw_pre_decode_general.err().unwrap());
+			error!("Error during decoding: {:?}", raw_pre_decode_general.err().unwrap());
 		}
 
-		eprintln!("WARNING: Can't read metadata - Create new & empty struct");
+		warn!("Can't read metadata - Create new & empty struct");
 		return Ok(Metadata::new());
 	}
 
