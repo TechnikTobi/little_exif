@@ -100,8 +100,8 @@ build_png_chunk_type_enum![
 
     (cHRM,  false,      false,      BEFORE_PLTE_AND_IDAT),
     (gAMA,  false,      false,      BEFORE_PLTE_AND_IDAT),
-    (iCCP,  false,      false,      BEFORE_PLTE_AND_IDAT),
     (cICP,  false,      false,      BEFORE_PLTE_AND_IDAT),
+    (iCCP,  false,      false,      BEFORE_PLTE_AND_IDAT),
     (sBIT,  false,      false,      BEFORE_PLTE_AND_IDAT),
     (sRGB,  false,      false,      BEFORE_PLTE_AND_IDAT),
 
