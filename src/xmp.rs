@@ -23,8 +23,13 @@ remove_exif_from_xmp
     let mut reader = Reader::from_reader(data);
     let mut writer = Writer::new(Cursor::new(Vec::new()));
 
-    // Not really needed, but maybe useful in the future
+    // Needed by the reader
     let mut read_buffer = Vec::new();
+
+    // Needed for skipping stuff like 
+    // <exif:Description>Hi</exif:Description>\n
+    let mut skip_depth   = 0u32;
+    let mut skip_next_nl = false;
 
     loop 
     {
@@ -34,19 +39,67 @@ remove_exif_from_xmp
         match read_event
         {
             Ok(Event::Start(ref event)) => {
-                writer.write_event(Event::Start(get_exif_filtered_event(event)?))?;
+                let event_name = String::from_utf8(event.name().0.to_vec())?;
+
+                if event_name.starts_with("exif:")
+                {
+                    skip_depth += 1;
+                }
+                else if skip_depth == 0
+                {
+                    writer.write_event(Event::Start(get_exif_filtered_event(event)?))?;
+                }
             }
 
             Ok(Event::Empty(ref event)) => {
-                writer.write_event(Event::Empty(get_exif_filtered_event(event)?))?;
+                let event_name = String::from_utf8(event.name().0.to_vec())?;
+
+                if event_name.starts_with("exif:")
+                {
+                    // do nothing
+                }
+                else if skip_depth == 0
+                {
+                    writer.write_event(Event::Empty(get_exif_filtered_event(event)?))?;
+                }
+            }
+
+            Ok(Event::End(ref event)) => {
+                if skip_depth > 0 
+                {
+                    skip_depth  -= 1;
+                    skip_next_nl = true;
+                } 
+                else 
+                {
+                    writer.write_event(Event::End(event.clone()))?;
+                }
             }
 
             Ok(Event::Eof) => {
+                assert_eq!(skip_depth, 0);
                 break;
             }
 
+            Ok(Event::Text(ref event)) => {
+                let event_string = String::from_utf8(event.to_vec())?;
+
+                let characters = event_string.chars()
+                    .filter(|c| *c == '\n' || !c.is_whitespace())
+                    .collect::<Vec<char>>();
+
+                if characters == vec!['\n'] && skip_next_nl
+                {
+                    skip_next_nl = false;
+                }
+                else if skip_depth == 0 
+                {
+                    writer.write_event(Event::Text(event.clone()))?; 
+                }
+            }
+
             Ok(other_event) => {
-                writer.write_event(other_event)?;
+                if skip_depth == 0 { writer.write_event(other_event)?; }
             }
 
             Err(error_message) => {

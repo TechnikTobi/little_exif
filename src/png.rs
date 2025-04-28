@@ -28,6 +28,7 @@ use crate::metadata::Metadata;
 
 use crate::png_chunk::PngChunk;
 
+use crate::xmp::remove_exif_from_xmp;
 use crate::util::range_remove;
 
 pub(crate) const PNG_SIGNATURE: [u8; 8] = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
@@ -460,6 +461,21 @@ clear_metadata
 						has_xml_com_adobe_xmp = false;
 						break;
 					}
+				}
+
+				if has_xml_com_adobe_xmp
+				{
+					println!("\nBEFORE: {}", String::from_utf8(
+						chunk_data[XML_COM_ADOBE_XMP.len()..].to_vec()
+					).unwrap());
+
+					println!("\nAFTER: {}", String::from_utf8(remove_exif_from_xmp(
+						&chunk_data[XML_COM_ADOBE_XMP.len()..]
+					).unwrap()).unwrap());
+				}
+				else
+				{
+					println!("NO XMP!");
 				}
 
 				// Skip the CRC as it is not important at this point
