@@ -471,7 +471,7 @@ clear_metadata
 					!has_raw_profile_type_exif &&
 					!has_xml_com_adobe_xmp
 				{
-					seek_counter = cursor.position();
+					seek_counter = cursor.position() as usize;
 					continue;
 				}
 			},
@@ -480,7 +480,7 @@ clear_metadata
 				// In any other case, skip this chunk and continue with the 
 				// next one after adjusting the cursor and the seek counter
 				cursor.seek(std::io::SeekFrom::Current(12 + chunk.length() as i64))?;
-				seek_counter = cursor.position();
+				seek_counter = cursor.position() as usize;
 				continue;
 			}
 		}
@@ -491,7 +491,7 @@ clear_metadata
 		let remove_start = seek_counter;
 		let remove_end   = cursor.position() as usize;
 		range_remove(cursor.get_mut(), remove_start, remove_end);
-		cursor.set_position(seek_counter);
+		cursor.set_position(seek_counter as u64);
 
 	}
 
