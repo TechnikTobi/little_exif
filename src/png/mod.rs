@@ -404,7 +404,7 @@ clear_metadata
 				// Remove the entire chunk (done after the match)
 			},
 
-			"iTXt" | "zTXt" => {
+			"iTXt" | "zTXt" | "tEXt" => {
 
 				// Skip chunk length and type (4+4 Bytes)
 				cursor.seek(std::io::SeekFrom::Current(4+4))?;
