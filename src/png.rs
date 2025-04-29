@@ -465,17 +465,6 @@ clear_metadata
 
 				if has_xml_com_adobe_xmp
 				{
-					println!("\nBEFORE: {}", String::from_utf8(
-						chunk_data[XML_COM_ADOBE_XMP.len()..].to_vec()
-					).unwrap());
-
-					println!("\nAFTER: {}", String::from_utf8(remove_exif_from_xmp(
-						&chunk_data[XML_COM_ADOBE_XMP.len()..]
-					).unwrap()).unwrap());
-				}
-				else
-				{
-					println!("NO XMP!");
 				}
 
 				// Skip the CRC as it is not important at this point
@@ -513,6 +502,173 @@ clear_metadata
 
 	return Ok(());
 }
+
+
+/// The iTXt chunk is in its structure more complex than e.g. tEXt. The data
+/// section consists of (from the specifications, see paragraph 11.3.3.4 of
+/// https://www.w3.org/TR/png ):
+/// - Keyword              1-79 bytes (character string)
+/// - Null separator       1 byte (null character)
+/// - Compression flag     1 byte
+/// - Compression method   1 byte
+/// - Language tag         0 or more bytes (character string)
+/// - Null separator       1 byte (null character)
+/// - Translated keyword   0 or more bytes
+/// - Null separator       1 byte (null character)
+/// - Text                 0 or more bytes
+fn
+get_info_about_iTXt_chunk
+(
+	chunk_data:   &[u8]
+)
+-> (
+	u8,     // compression flag
+	u8,     // compression method
+	String, // keyword
+	String, // language tag
+	String, // translated keyword
+)
+{
+	// Tells us where we currently are in the chunk data
+	let mut chunk_counter = 0;
+
+	// Buffers for the different attributes
+	let mut keyword_buffer = Vec::new();
+
+	loop
+	{
+		if chunk_data[chunk_counter] != 0x00
+		{
+			keyword_buffer.push(chunk_data[chunk_counter]);
+			chunk_counter += 1;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	let _null_separator_1  = chunk_data[chunk_counter + 0];
+	let compression_flag   = chunk_data[chunk_counter + 1];
+	let compression_method = chunk_data[chunk_counter + 2];
+
+	chunk_counter += 3;
+	let mut language_tag_buffer = Vec::new();
+
+	loop 
+	{
+		if chunk_data[chunk_counter] != 0x00
+		{
+			language_tag_buffer.push(chunk_data[chunk_counter]);
+			chunk_counter += 1;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	chunk_counter += 1;
+	let mut translated_keyword_buffer = Vec::new();
+
+	loop 
+	{
+		if chunk_data[chunk_counter] != 0x00
+		{
+			translated_keyword_buffer.push(chunk_data[chunk_counter]);
+			chunk_counter += 1;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return (
+		compression_flag,
+		compression_method,
+		String::from_utf8(keyword_buffer           ).unwrap_or_default(),
+		String::from_utf8(language_tag_buffer      ).unwrap_or_default(),
+		String::from_utf8(translated_keyword_buffer).unwrap_or_default()
+	);
+}
+
+fn
+clear_exif_from_xmp_metadata
+<T: Seek + Read + Write>
+(
+	cursor:       &mut T,
+	chunk_data:   &[u8],
+	seek_counter: usize,
+)
+-> Result<(), std::io::Error>
+{
+	// The cursor, at this point, is positioned right at the start of the CRC
+	// field of the chunk containing the XMP metadata
+	// So, we use this opportunity and before we do *anything* else, we skip 
+	// the CRC and read in all of the subsequent chunks into a buffer
+	cursor.seek_relative(4)?;
+	let mut buffer = Vec::new();
+	cursor.read_to_end(&mut buffer)?;
+	
+	// We take the chunk_data already read and clean that up. 
+	let clean_chunk_data = remove_exif_from_xmp(
+		&chunk_data[XML_COM_ADOBE_XMP.len()..]
+	).unwrap();
+
+	// Compute change in length of this data
+	let len_delta = (chunk_data.len() as i64) - (clean_chunk_data.len() as i64);
+
+	// Now we use this delta to update the chunk length field
+	{
+		cursor.seek(SeekFrom::Start(seek_counter as u64))?;
+
+		// Read in old value
+		let mut length_field = [0u8; 4];
+		let bytes_read = cursor.read(&mut length_field).unwrap();
+
+		// Check that indeed 4 bytes were read
+		if bytes_read != 4
+		{
+			return io_error!(Other, "Could not read start of chunk");
+		}
+
+		let mut chunk_length = 0u32;
+		for byte in &length_field
+		{
+			chunk_length = chunk_length * 256 + *byte as u32;
+		}
+
+		chunk_length = (chunk_length as i64 - len_delta) as u32;
+
+		// Write the new length value
+		cursor.seek_relative(-4)?;
+		for i in 0..4
+		{
+			cursor.write(&[(chunk_length >> (8 * (3-i))) as u8])?;
+		}
+	}
+
+	// TODO: What if this is a zTXt chunk? The XML_COM_ADOBE_XMP doesn't need
+	// to be compressed - so can we simply replace the stuff 
+
+	// Now, compute the CRC
+	{
+		// Read in the data that remains the same
+		let mut crc_buffer = vec![0u8; 4 + XML_COM_ADOBE_XMP.len()];
+		cursor.read(&mut crc_buffer)?;
+
+		// Extend with the new, cleaned up XMP data
+
+
+	}
+
+
+
+
+	todo!()
+}
+
 
 
 
@@ -571,7 +727,7 @@ generic_write_metadata
 <T: Seek + Read + Write>
 (
 	cursor:     &mut T,
-	metadata:    &Metadata
+	metadata:   &Metadata
 )
 -> Result<(), std::io::Error>
 {
@@ -814,7 +970,7 @@ decode_metadata_png
 	return Ok(Vec::from(exif_all));
 }
 
-/// Provides the WebP specific encoding result as vector of bytes to be used
+/// Provides the PNG specific encoding result as vector of bytes to be used
 /// by the user (e.g. in combination with another library)
 #[allow(non_snake_case)]
 pub(crate) fn
