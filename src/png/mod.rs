@@ -12,13 +12,14 @@ use std::io::Seek;
 use std::io::SeekFrom;
 use std::io::Read;
 use std::io::Write;
+use std::ops::Neg;
 use std::path::Path;
 
 use crc::Crc;
 use crc::CRC_32_ISO_HDLC;
 use log::warn;
 use miniz_oxide::deflate::compress_to_vec_zlib;
-use miniz_oxide::inflate::decompress_to_vec_zlib;
+use text::get_data_from_text_chunk;
 
 use crate::general_file_io::io_error;
 use crate::general_file_io::open_read_file;
@@ -35,7 +36,7 @@ use crate::png::read::read_chunk_length;
 use crate::png::read::read_chunk_name;
 use crate::png::read::read_chunk_data;
 use crate::png::read::read_chunk_crc;
-use crate::png::text::extract_keyword_from_text_chunk_data;
+use crate::png::text::get_keyword_from_text_chunk;
 
 use crate::xmp::remove_exif_from_xmp;
 use crate::util::range_remove;
@@ -287,50 +288,46 @@ generic_read_metadata
 				return Ok(eXIf_chunk_data);
 			},
 			
-			"zTXt" => {
+			"tEXt" | "zTXt" | "iTXt" => {
 				// More common & expected case
 
 				// Skip chunk length and type (4+4 Bytes)
-				cursor.seek(std::io::SeekFrom::Current(4+4))?;
+				cursor.seek(std::io::SeekFrom::Current(4))?;
+
+				let chunk_name = read_chunk_name(cursor)?;
 
 				// Read chunk data into buffer
 				// No need to verify this using CRC as already done by 
 				// previously calling parse_png(path)
-				let zTXt_chunk_data = read_chunk_data(
+				let chunk_data = read_chunk_data(
 					cursor, 
 					chunk.length() as usize
 				)?;
 
-				// Check that this is the correct zTXt chunk...
-				let mut correct_zTXt_chunk = true;
-				for i in 0..RAW_PROFILE_TYPE_EXIF.len()
+				// Check that this chunk contains raw profile EXIF data
+				let keyword = get_keyword_from_text_chunk(&chunk_data);
+				let mut has_raw_profile_type_exif = false;
+				if keyword.len() == RAW_PROFILE_TYPE_EXIF.len()
 				{
-					if zTXt_chunk_data[i] != RAW_PROFILE_TYPE_EXIF[i]
-					{
-						correct_zTXt_chunk = false;
-						break;
-					}
+					has_raw_profile_type_exif = keyword
+						.bytes()
+						.zip(RAW_PROFILE_TYPE_EXIF.iter())
+						.all(|(a,b)| a == *b);
 				}
 
-				if !correct_zTXt_chunk
+				if !has_raw_profile_type_exif
 				{
-					// Skip CRC from current (wrong) zTXt chunk and continue
+					// Skip CRC from current (wrong) chunk and continue
 					cursor.seek(std::io::SeekFrom::Current(4))?;
 					continue;
 				}
 
-				// Decode zlib data...
-				if let Ok(decompressed_data) = decompress_to_vec_zlib(
-					&zTXt_chunk_data[RAW_PROFILE_TYPE_EXIF.len()..]
-				)
-				{
-					// ...and perform PNG-specific decoding & return the result
-					return Ok(decode_metadata_png(&decompressed_data).unwrap());
-				}
-				else
-				{
-					return io_error!(Other, "Could not inflate compressed chunk data!");
-				}
+				let decompressed_data = get_data_from_text_chunk(
+					chunk_name.as_str(), 
+					&chunk_data
+				)?;
+				
+				return Ok(decode_metadata_png(&decompressed_data).unwrap());
 			}
 
 			_ => {
@@ -418,7 +415,7 @@ clear_metadata
 					chunk.length() as usize
 				)?;
 
-				let keyword = extract_keyword_from_text_chunk_data(&chunk_data);
+				let keyword = get_keyword_from_text_chunk(&chunk_data);
 
 				// Compare to the "Raw profile type exif" string constant
 				let mut has_raw_profile_type_exif = false;
@@ -440,11 +437,19 @@ clear_metadata
 						.all(|(a,b)| a == *b);
 				}
 
+				if has_xml_com_adobe_xmp
+				{
+					// Don't fully remove the chunk, only remove EXIF from XMP
+					// To do that, reposition the cursor to the start of the 
+					// chunk
+					cursor.seek_relative((chunk.length() as i64).neg())?;
+					clear_exif_from_xmp_metadata(&mut cursor, &chunk_data)?;
+					continue;
+				}
+
 				// If this is not the correct zTXt/iTXt chunk, 
 				// ignore it and continue with next chunk
-				if 
-					!has_raw_profile_type_exif &&
-					!has_xml_com_adobe_xmp
+				if !has_raw_profile_type_exif
 				{
 					continue;
 				}
@@ -505,94 +510,6 @@ remove_chunk_at
 }
 
 
-/// The iTXt chunk is in its structure more complex than e.g. tEXt. The data
-/// section consists of (from the specifications, see paragraph 11.3.3.4 of
-/// https://www.w3.org/TR/png ):
-/// - Keyword              1-79 bytes (character string)
-/// - Null separator       1 byte (null character)
-/// - Compression flag     1 byte
-/// - Compression method   1 byte
-/// - Language tag         0 or more bytes (character string)
-/// - Null separator       1 byte (null character)
-/// - Translated keyword   0 or more bytes
-/// - Null separator       1 byte (null character)
-/// - Text                 0 or more bytes
-fn
-get_info_about_iTXt_chunk
-(
-	chunk_data:   &[u8]
-)
--> (
-	u8,     // compression flag
-	u8,     // compression method
-	String, // keyword
-	String, // language tag
-	String, // translated keyword
-)
-{
-	// Tells us where we currently are in the chunk data
-	let mut chunk_counter = 0;
-
-	// Buffers for the different attributes
-	let mut keyword_buffer = Vec::new();
-
-	loop
-	{
-		if chunk_data[chunk_counter] != 0x00
-		{
-			keyword_buffer.push(chunk_data[chunk_counter]);
-			chunk_counter += 1;
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	let _null_separator_1  = chunk_data[chunk_counter + 0];
-	let compression_flag   = chunk_data[chunk_counter + 1];
-	let compression_method = chunk_data[chunk_counter + 2];
-
-	chunk_counter += 3;
-	let mut language_tag_buffer = Vec::new();
-
-	loop 
-	{
-		if chunk_data[chunk_counter] != 0x00
-		{
-			language_tag_buffer.push(chunk_data[chunk_counter]);
-			chunk_counter += 1;
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	chunk_counter += 1;
-	let mut translated_keyword_buffer = Vec::new();
-
-	loop 
-	{
-		if chunk_data[chunk_counter] != 0x00
-		{
-			translated_keyword_buffer.push(chunk_data[chunk_counter]);
-			chunk_counter += 1;
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	return (
-		compression_flag,
-		compression_method,
-		String::from_utf8(keyword_buffer           ).unwrap_or_default(),
-		String::from_utf8(language_tag_buffer      ).unwrap_or_default(),
-		String::from_utf8(translated_keyword_buffer).unwrap_or_default()
-	);
-}
 
 fn
 clear_exif_from_xmp_metadata
@@ -600,10 +517,27 @@ clear_exif_from_xmp_metadata
 (
 	cursor:       &mut T,
 	chunk_data:   &[u8],
-	seek_counter: usize,
 )
 -> Result<(), std::io::Error>
 {
+	// Get information about the chunk
+
+
+	// Cursor positioned at the start of the chunk
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	// The cursor, at this point, is positioned right at the start of the CRC
 	// field of the chunk containing the XMP metadata
 	// So, we use this opportunity and before we do *anything* else, we skip 
