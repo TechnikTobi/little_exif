@@ -19,6 +19,7 @@ use crc::Crc;
 use crc::CRC_32_ISO_HDLC;
 use log::warn;
 use miniz_oxide::deflate::compress_to_vec_zlib;
+use text::construct_similar_with_new_data;
 use text::get_data_from_text_chunk;
 
 use crate::general_file_io::io_error;
@@ -441,8 +442,9 @@ clear_metadata
 				{
 					// Don't fully remove the chunk, only remove EXIF from XMP
 					// To do that, reposition the cursor to the start of the 
-					// chunk
+					// entire
 					cursor.seek_relative((chunk.length() as i64).neg())?;
+					cursor.seek_relative(-8)?;
 					clear_exif_from_xmp_metadata(&mut cursor, &chunk_data)?;
 					continue;
 				}
@@ -465,11 +467,8 @@ clear_metadata
 
 		// As we haven't continued to the next chunk in a previous match arm, 
 		// we have now established that we want to remove this chunk.
-		let new_cursor_position = remove_chunk_at(
-			cursor.get_mut(), 
-			remove_start
-		)?.position();
-		cursor.set_position(new_cursor_position as u64);
+		cursor.set_position(remove_start as u64);
+		remove_chunk_at(&mut cursor)?;
 
 	}
 
@@ -478,26 +477,23 @@ clear_metadata
 
 
 
-/// Removes the chunk that starts at the given position
-/// Returns a cursor that is positioned at the start of the next chunk
+/// Removes the chunk that starts at the given position.
+/// After that, cursor is positioned at the start of the next chunk.
 fn
 remove_chunk_at
 (
-	file_buffer:          &mut Vec<u8>,
-	chunk_start_position: usize,
+	cursor: &mut Cursor<&mut Vec<u8>>,
 )
--> Result<std::io::Cursor<&mut Vec<u8>>, std::io::Error>
+-> Result<(), std::io::Error>
 {
-	let mut cursor = Cursor::new(file_buffer);
-	cursor.seek(SeekFrom::Start(chunk_start_position as u64))?;
-
-	let chunk_length           = read_chunk_length(&mut cursor)?;
+	let chunk_start_position = cursor.position() as usize;
+	let chunk_length         = read_chunk_length(cursor)?;
 
 	// Seek to the end of the chunk, with the 8 additional bytes due to the 
 	// name and CRC fields
 	cursor.seek_relative(chunk_length as i64 + 8)?;
-
 	let chunk_end_position = cursor.position() as usize;
+
 	range_remove(
 		cursor.get_mut(), 
 		chunk_start_position, 
@@ -505,94 +501,43 @@ remove_chunk_at
 	);
 
 	// Set the position of the cursor to the original start position
-	cursor.seek(SeekFrom::Start(chunk_start_position as u64))?;
-	return Ok(cursor);
+	cursor.set_position(chunk_start_position as u64);
+
+	return Ok(());
 }
 
 
 
 fn
 clear_exif_from_xmp_metadata
-<T: Seek + Read + Write>
 (
-	cursor:       &mut T,
-	chunk_data:   &[u8],
+	cursor:     &mut Cursor<&mut Vec<u8>>,
+	chunk_data: &[u8],
 )
 -> Result<(), std::io::Error>
 {
-	// Get information about the chunk
+	// Read the chunk name and seek back
+	let _          = read_chunk_length(cursor)?;
+	let chunk_name = read_chunk_name(cursor)?;
+	cursor.seek_relative(-8)?;
 
-
-	// Cursor positioned at the start of the chunk
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	// The cursor, at this point, is positioned right at the start of the CRC
-	// field of the chunk containing the XMP metadata
-	// So, we use this opportunity and before we do *anything* else, we skip 
-	// the CRC and read in all of the subsequent chunks into a buffer
-	cursor.seek_relative(4)?;
-	let mut buffer = Vec::new();
-	cursor.read_to_end(&mut buffer)?;
-	
-	// We take the chunk_data already read and clean that up. 
-	let clean_chunk_data = remove_exif_from_xmp(
-		&chunk_data[XML_COM_ADOBE_XMP.len()..]
+	// Clear the EXIF from the XMP data
+	let clean_xmp_data = remove_exif_from_xmp(
+		// &chunk_data[XML_COM_ADOBE_XMP.len()..]
+		&get_data_from_text_chunk(chunk_name.as_str(), &chunk_data)?
 	).unwrap();
 
-	// Compute change in length of this data
-	let len_delta = (chunk_data.len() as i64) - (clean_chunk_data.len() as i64);
+	// Construct new chunk data field
+	let new_chunk_data = construct_similar_with_new_data(
+		chunk_name.as_str(), 
+		chunk_data, 
+		&clean_xmp_data
+	)?;
 
-	// Now we use this delta to update the chunk length field
-	{
-		cursor.seek(SeekFrom::Start(seek_counter as u64))?;
-
-		// Read in old chunk length
-		let mut chunk_length = read_chunk_length(cursor)?;
-
-		// Update with change in length due to cleaning the XMP data
-		chunk_length = (chunk_length as i64 - len_delta) as u32;
-
-		// Write the new length value
-		cursor.seek_relative(-4)?;
-		for i in 0..4
-		{
-			cursor.write(&[(chunk_length >> (8 * (3-i))) as u8])?;
-		}
-	}
-
-	// TODO: What if this is a zTXt chunk? The XML_COM_ADOBE_XMP doesn't need
-	// to be compressed - so can we simply replace the stuff 
-
-	// Now, compute the CRC
-	{
-		// Read in the data that remains the same
-		let mut crc_buffer = vec![0u8; 4 + XML_COM_ADOBE_XMP.len()];
-		cursor.read(&mut crc_buffer)?;
-
-		// Extend with the new, cleaned up XMP data
-
-
-	}
-
-
-
-
-	todo!()
+	// Replace chunk
+	remove_chunk_at(cursor)?;
+	return write_chunk(cursor, chunk_name.as_str(), &new_chunk_data);
 }
-
-
 
 
 
@@ -651,13 +596,13 @@ write_chunk
 <T: Seek + Read + Write>
 (
 	cursor:     &mut T,
-	chunk_name: [u8; 4],
+	chunk_name: &str,
 	chunk_data: &[u8],
 )
 -> Result<(), std::io::Error>
 {
 	// Create a new vec for computing the CRC
-	let mut data = chunk_name.to_vec();
+	let mut data = chunk_name.as_bytes().to_vec();
 	data.extend(chunk_data);
 
 	// Compute CRC and append it to the data vector
@@ -724,7 +669,7 @@ generic_write_metadata
 
 	// Seek to insert position and write the chunk
 	cursor.seek(SeekFrom::Start(seek_start))?;
-	return write_chunk(cursor, [0x7a, 0x54, 0x58, 0x74], &zTXt_chunk_data);
+	return write_chunk(cursor, "zTXt", &zTXt_chunk_data);
 }
 
 
