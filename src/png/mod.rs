@@ -450,9 +450,10 @@ clear_metadata
 				}
 
 				// If this is not the correct zTXt/iTXt chunk, 
-				// ignore it and continue with next chunk
+				// ignore it, skip its CRC and continue with next chunk
 				if !has_raw_profile_type_exif
 				{
+					cursor.seek_relative(4)?;
 					continue;
 				}
 			},
@@ -629,9 +630,13 @@ write_chunk
 		cursor.write(&[(chunk_data_len >> (8 * (3-i))) as u8])?;
 	}
 
-	// Write data of new chunk and rest of PNG file
+	// Write data of new chunk, remember that position, write remaining PNG
+	// data and revert position so that cursor now points to the chunk right
+	// after the one that has been written
 	cursor.write_all(&data)?;
+	let end_of_written_chunk_cursor_position = cursor.stream_position()?;
 	cursor.write_all(&buffer)?;
+	cursor.seek(SeekFrom::Start(end_of_written_chunk_cursor_position))?;
 
 	return Ok(());
 }
