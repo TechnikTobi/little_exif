@@ -272,7 +272,7 @@ file_write_metadata
 	// seek and write operations
 	let mut file = open_write_file(path)?;
 	let mut file_buffer: Vec<u8> = Vec::new();
-	perform_file_action!(file.read_to_end(&mut file_buffer));
+	file.read_to_end(&mut file_buffer)?;
 
 	// Writes the metadata to the file_buffer vec
 	// The called function handles the removal of old metadata and the JPG
@@ -280,8 +280,8 @@ file_write_metadata
 	write_metadata(&mut file_buffer, metadata)?;
 
 	// Seek back to start & write the file
-	perform_file_action!(file.seek(SeekFrom::Start(0)));
-	perform_file_action!(file.write_all(&file_buffer));
+	file.seek(SeekFrom::Start(0))?;
+	file.write_all(&file_buffer)?;
 
 	return Ok(());
 }
