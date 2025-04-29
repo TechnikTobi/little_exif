@@ -1,6 +1,10 @@
 // Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+pub mod chunk;
+mod read;
+mod text;
+
 use std::collections::VecDeque;
 use std::fs::File;
 use std::io::Cursor;
@@ -26,24 +30,29 @@ use crate::general_file_io::SPACE;
 
 use crate::metadata::Metadata;
 
-use crate::png_chunk::PngChunk;
+use crate::png::chunk::PngChunk;
+use crate::png::read::read_chunk_length;
+use crate::png::read::read_chunk_name;
+use crate::png::read::read_chunk_data;
+use crate::png::read::read_chunk_crc;
+use crate::png::text::extract_keyword_from_text_chunk_data;
 
 use crate::xmp::remove_exif_from_xmp;
 use crate::util::range_remove;
 
 pub(crate) const PNG_SIGNATURE: [u8; 8] = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-pub(crate) const RAW_PROFILE_TYPE_EXIF: [u8; 23] = [
+pub(crate) const RAW_PROFILE_TYPE_EXIF: [u8; 21] = [
 	0x52, 0x61, 0x77, 0x20,                             // Raw
 	0x70, 0x72, 0x6F, 0x66, 0x69, 0x6C, 0x65, 0x20,     // profile
 	0x74, 0x79, 0x70, 0x65, 0x20,                       // type
-	0x65, 0x78, 0x69, 0x66, 0x00, 0x00                  // exif NUL NUL
+	0x65, 0x78, 0x69, 0x66,                             // exif
 ];
 
-pub(crate) const XML_COM_ADOBE_XMP: [u8; 18] = [
+pub(crate) const XML_COM_ADOBE_XMP: [u8; 17] = [
 	0x58, 0x4d, 0x4c, 0x3a,                 // XML:
 	0x63, 0x6f, 0x6d, 0x2e,                 // com.
 	0x61, 0x64, 0x6f, 0x62, 0x65, 0x2e,     // adobe.
-	0x78, 0x6d, 0x70, 0x00,                 // xmp NUL
+	0x78, 0x6d, 0x70,                       // xmp
 ];
 
 
@@ -98,7 +107,7 @@ file_check_signature
 	
 	// Check the signature
 	let mut signature_buffer = [0u8; 8];
-	file.read(&mut signature_buffer).unwrap();
+	file.read(&mut signature_buffer)?;
 	check_signature(&signature_buffer.to_vec())?;
 
 	// Signature is valid - can proceed using the file as PNG file
@@ -173,51 +182,23 @@ get_next_chunk_descriptor
 )
 -> Result<PngChunk, std::io::Error>
 {
-	// Read the start of the chunk
-	let mut chunk_start = [0u8; 8];
-	let mut bytes_read = cursor.read(&mut chunk_start).unwrap();
-
-	// Check that indeed 8 bytes were read
-	if bytes_read != 8
-	{
-		return io_error!(Other, "Could not read start of chunk");
-	}
-
-	// Construct name of chunk and its length
-	let chunk_name = String::from_utf8((&chunk_start[4..8]).to_vec());
-	let mut chunk_length = 0u32;
-	for byte in &chunk_start[0..4]
-	{
-		chunk_length = chunk_length * 256 + *byte as u32;
-	}
-
-	// Read chunk data ...
-	let mut chunk_data_buffer = vec![0u8; chunk_length as usize];
-	bytes_read = cursor.read(&mut chunk_data_buffer).unwrap();
-	if bytes_read != chunk_length as usize
-	{
-		return io_error!(Other, "Could not read chunk data");
-	}
-
-	// ... and CRC values
-	let mut chunk_crc_buffer = [0u8; 4];
-	bytes_read = cursor.read(&mut chunk_crc_buffer).unwrap();
-	if bytes_read != 4
-	{
-		return io_error!(Other, "Could not read chunk CRC");
-	}
+	// Read the start of the chunk, its data and CRC
+	let chunk_length = read_chunk_length(cursor)?;
+	let chunk_name   = read_chunk_name(cursor)?;
+	let chunk_data   = read_chunk_data(cursor, chunk_length as usize)?;
+	let chunk_crc    = read_chunk_crc(cursor)?;
 
 	// Compute CRC on chunk
 	let mut crc_input = Vec::new();
-	crc_input.extend(chunk_start[4..8].iter());
-	crc_input.extend(chunk_data_buffer.iter());
+	crc_input.extend(chunk_name.bytes().into_iter());
+	crc_input.extend(chunk_data.iter());
 
 	let crc_struct = Crc::<u32>::new(&CRC_32_ISO_HDLC);
 	let checksum = crc_struct.checksum(&crc_input) as u32;
 
 	for i in 0..4
 	{
-		if ((checksum >> (8 * (3-i))) as u8) != chunk_crc_buffer[i]
+		if ((checksum >> (8 * (3-i))) as u8) != chunk_crc[i]
 		{
 			return io_error!(InvalidData, "Checksum check failed while reading PNG!");
 		}
@@ -226,7 +207,7 @@ get_next_chunk_descriptor
 	// If validating the chunk using the CRC was successful, return its descriptor
 	// Note: chunk_length does NOT include the +4 for the CRC area!
 	let png_chunk_result = PngChunk::from_string(
-		&chunk_name.clone().unwrap(),
+		&chunk_name.clone(),
 		chunk_length
 	);
 	if let Ok(png_chunk) = png_chunk_result
@@ -235,7 +216,7 @@ get_next_chunk_descriptor
 	}
 	else
 	{
-		warn!("Unknown PNG chunk name: {}", chunk_name.unwrap());
+		warn!("Unknown PNG chunk name: {}", chunk_name);
 		return Ok(png_chunk_result.err().unwrap());
 	}
 }
@@ -298,11 +279,10 @@ generic_read_metadata
 
 				// Read chunk data into buffer
 				// No need to verify this using CRC as already done by parse_png(path)
-				let mut eXIf_chunk_data = vec![0u8; chunk.length() as usize];
-				if cursor.read(&mut eXIf_chunk_data).unwrap() != chunk.length() as usize
-				{
-					return io_error!(Other, "Could not read chunk data");
-				}
+				let eXIf_chunk_data = read_chunk_data(
+					cursor, 
+					chunk.length() as usize
+				)?;
 				
 				return Ok(eXIf_chunk_data);
 			},
@@ -316,11 +296,10 @@ generic_read_metadata
 				// Read chunk data into buffer
 				// No need to verify this using CRC as already done by 
 				// previously calling parse_png(path)
-				let mut zTXt_chunk_data = vec![0u8; chunk.length() as usize];
-				if cursor.read(&mut zTXt_chunk_data).unwrap() != chunk.length() as usize
-				{
-					return io_error!(Other, "Could not read chunk data");
-				}
+				let zTXt_chunk_data = read_chunk_data(
+					cursor, 
+					chunk.length() as usize
+				)?;
 
 				// Check that this is the correct zTXt chunk...
 				let mut correct_zTXt_chunk = true;
@@ -413,62 +392,53 @@ clear_metadata
 	let mut cursor = Cursor::new(file_buffer);
 
 	// Skip the PNG file header (8 bytes)
-	let mut seek_counter = 8usize;
+	let mut remove_start;
 	cursor.seek(std::io::SeekFrom::Current(8))?;
 
 	for chunk in &parse_png_result
 	{
+		// Where the chunk that we might want to remove starts
+		remove_start = cursor.stream_position()? as usize;
+
 		match chunk.as_string().as_str()
 		{
 			"eXIf" => {
 				// Remove the entire chunk (done after the match)
-				// Position cursor accordingly.
-				// Skip the length field, chunk length, CRC and chunk data 
-				// Bytes:   4           , 4           , 4       chunk.length()
-				cursor.seek(std::io::SeekFrom::Current(12 + chunk.length() as i64))?;
 			},
 
 			"iTXt" | "zTXt" => {
+
 				// Skip chunk length and type (4+4 Bytes)
 				cursor.seek(std::io::SeekFrom::Current(4+4))?;
 
 				// Read chunk data into buffer for checking that this is the
 				// correct chunk to delete
-				let mut chunk_data = vec![0u8; chunk.length() as usize];
+				let chunk_data = read_chunk_data(
+					&mut cursor, 
+					chunk.length() as usize
+				)?;
 
-				if cursor.read(&mut chunk_data).unwrap() != chunk.length() as usize
-				{
-					return io_error!(Other, "Could not read chunk data");
-				}
+				let keyword = extract_keyword_from_text_chunk_data(&chunk_data);
 
 				// Compare to the "Raw profile type exif" string constant
-				let mut has_raw_profile_type_exif = true;
-				for i in 0..RAW_PROFILE_TYPE_EXIF.len()
+				let mut has_raw_profile_type_exif = false;
+				if keyword.len() == RAW_PROFILE_TYPE_EXIF.len()
 				{
-					if chunk_data[i] != RAW_PROFILE_TYPE_EXIF[i]
-					{
-						has_raw_profile_type_exif = false;
-						break;
-					}
+					has_raw_profile_type_exif = keyword
+						.bytes()
+						.zip(RAW_PROFILE_TYPE_EXIF.iter())
+						.all(|(a,b)| a == *b);
 				}
 
 				// Compare to the "XML:com.adobe.xmp" string constant
-				let mut has_xml_com_adobe_xmp = true;
-				for i in 0..XML_COM_ADOBE_XMP.len()
+				let mut has_xml_com_adobe_xmp = false;
+				if keyword.len() == XML_COM_ADOBE_XMP.len()
 				{
-					if chunk_data[i] != XML_COM_ADOBE_XMP[i]
-					{
-						has_xml_com_adobe_xmp = false;
-						break;
-					}
+					has_xml_com_adobe_xmp = keyword
+						.bytes()
+						.zip(XML_COM_ADOBE_XMP.iter())
+						.all(|(a,b)| a == *b);
 				}
-
-				if has_xml_com_adobe_xmp
-				{
-				}
-
-				// Skip the CRC as it is not important at this point
-				cursor.seek(std::io::SeekFrom::Current(4))?;
 
 				// If this is not the correct zTXt/iTXt chunk, 
 				// ignore it and continue with next chunk
@@ -476,31 +446,62 @@ clear_metadata
 					!has_raw_profile_type_exif &&
 					!has_xml_com_adobe_xmp
 				{
-					seek_counter = cursor.position() as usize;
 					continue;
 				}
 			},
 
 			_ => {
 				// In any other case, skip this chunk and continue with the 
-				// next one after adjusting the cursor and the seek counter
+				// next one after adjusting the cursor
 				cursor.seek(std::io::SeekFrom::Current(12 + chunk.length() as i64))?;
-				seek_counter = cursor.position() as usize;
 				continue;
 			}
 		}
 
 		// As we haven't continued to the next chunk in a previous match arm, 
 		// we have now established that we want to remove this chunk.
-		// The cursor has previously been positioned at the end of this chunk.
-		let remove_start = seek_counter;
-		let remove_end   = cursor.position() as usize;
-		range_remove(cursor.get_mut(), remove_start, remove_end);
-		cursor.set_position(seek_counter as u64);
+		let new_cursor_position = remove_chunk_at(
+			cursor.get_mut(), 
+			remove_start
+		)?.position();
+		cursor.set_position(new_cursor_position as u64);
 
 	}
 
 	return Ok(());
+}
+
+
+
+/// Removes the chunk that starts at the given position
+/// Returns a cursor that is positioned at the start of the next chunk
+fn
+remove_chunk_at
+(
+	file_buffer:          &mut Vec<u8>,
+	chunk_start_position: usize,
+)
+-> Result<std::io::Cursor<&mut Vec<u8>>, std::io::Error>
+{
+	let mut cursor = Cursor::new(file_buffer);
+	cursor.seek(SeekFrom::Start(chunk_start_position as u64))?;
+
+	let chunk_length           = read_chunk_length(&mut cursor)?;
+
+	// Seek to the end of the chunk, with the 8 additional bytes due to the 
+	// name and CRC fields
+	cursor.seek_relative(chunk_length as i64 + 8)?;
+
+	let chunk_end_position = cursor.position() as usize;
+	range_remove(
+		cursor.get_mut(), 
+		chunk_start_position, 
+		chunk_end_position
+	);
+
+	// Set the position of the cursor to the original start position
+	cursor.seek(SeekFrom::Start(chunk_start_position as u64))?;
+	return Ok(cursor);
 }
 
 
@@ -623,22 +624,10 @@ clear_exif_from_xmp_metadata
 	{
 		cursor.seek(SeekFrom::Start(seek_counter as u64))?;
 
-		// Read in old value
-		let mut length_field = [0u8; 4];
-		let bytes_read = cursor.read(&mut length_field).unwrap();
+		// Read in old chunk length
+		let mut chunk_length = read_chunk_length(cursor)?;
 
-		// Check that indeed 4 bytes were read
-		if bytes_read != 4
-		{
-			return io_error!(Other, "Could not read start of chunk");
-		}
-
-		let mut chunk_length = 0u32;
-		for byte in &length_field
-		{
-			chunk_length = chunk_length * 256 + *byte as u32;
-		}
-
+		// Update with change in length due to cleaning the XMP data
 		chunk_length = (chunk_length as i64 - len_delta) as u32;
 
 		// Write the new length value
@@ -721,6 +710,53 @@ file_write_metadata
 	return Ok(());
 }
 
+/// Assumes the cursor to be positioned at the insert position
+#[allow(non_snake_case)]
+fn
+write_chunk
+<T: Seek + Read + Write>
+(
+	cursor:     &mut T,
+	chunk_name: [u8; 4],
+	chunk_data: &[u8],
+)
+-> Result<(), std::io::Error>
+{
+	// Create a new vec for computing the CRC
+	let mut data = chunk_name.to_vec();
+	data.extend(chunk_data);
+
+	// Compute CRC and append it to the data vector
+	let crc_struct = Crc::<u32>::new(&CRC_32_ISO_HDLC);
+	let checksum = crc_struct.checksum(&data) as u32;
+	for i in 0..4
+	{
+		data.push( (checksum >> (8 * (3-i))) as u8);		
+	}
+
+	// Prepare writing: 
+	// - Backup cursor position 
+	// - Read everything from there onwards into a buffer
+	// - Go back to insert position
+	let     backup_cursor_position = cursor.stream_position()?;
+	let mut buffer                 = Vec::new();
+	cursor.read_to_end(&mut buffer)?;
+	cursor.seek(SeekFrom::Start(backup_cursor_position))?;
+
+	// Write length of the new chunk (which is 8 bytes shorter than `data`)
+	let chunk_data_len = chunk_data.len() as u32;
+	for i in 0..4
+	{
+		cursor.write(&[(chunk_data_len >> (8 * (3-i))) as u8])?;
+	}
+
+	// Write data of new chunk and rest of PNG file
+	cursor.write_all(&data)?;
+	cursor.write_all(&buffer)?;
+
+	return Ok(());
+}
+
 #[allow(non_snake_case)]
 fn
 generic_write_metadata
@@ -748,41 +784,14 @@ generic_write_metadata
 	+ 12                  as u64; // rest of IHDR chunk (length, type, CRC)
 
 	// Build data of new chunk using zlib compression (level=8 -> default)
-	let mut zTXt_chunk_data: Vec<u8> = vec![0x7a, 0x54, 0x58, 0x74];
+	let mut zTXt_chunk_data: Vec<u8> = Vec::new();
 	zTXt_chunk_data.extend(RAW_PROFILE_TYPE_EXIF.iter());
 	zTXt_chunk_data.extend(compress_to_vec_zlib(&encoded_metadata, 8).iter());
 
-	// Compute CRC and append it to the chunk data
-	let crc_struct = Crc::<u32>::new(&CRC_32_ISO_HDLC);
-	let checksum = crc_struct.checksum(&zTXt_chunk_data) as u32;
-	for i in 0..4
-	{
-		zTXt_chunk_data.push( (checksum >> (8 * (3-i))) as u8);		
-	}
-
-	// Prepare writing: 
-	// - Seek to insert position
-	// - Read everything from there onwards into a buffer
-	// - Go back to insert position
-	let mut buffer = Vec::new();
+	// Seek to insert position and write the chunk
 	cursor.seek(SeekFrom::Start(seek_start))?;
-	cursor.read_to_end(&mut buffer)?;
-	cursor.seek(SeekFrom::Start(seek_start))?;
-
-	// Write length of the new chunk (subtracting 8 for type and CRC)
-	let chunk_data_len = zTXt_chunk_data.len() as u32 - 8;
-	for i in 0..4
-	{
-		cursor.write(&[(chunk_data_len >> (8 * (3-i))) as u8])?;
-	}
-
-	// Write data of new chunk and rest of PNG file
-	cursor.write_all(&zTXt_chunk_data)?;
-	cursor.write_all(&buffer)?;
-
-	return Ok(());
+	return write_chunk(cursor, [0x7a, 0x54, 0x58, 0x74], &zTXt_chunk_data);
 }
-
 
 
 
