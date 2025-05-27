@@ -668,9 +668,10 @@ generic_write_metadata
 	+ 12                  as u64; // rest of IHDR chunk (length, type, CRC)
 
 	// Build data of new chunk using zlib compression (level=8 -> default)
-	let mut zTXt_chunk_data: Vec<u8> = Vec::new();
-	zTXt_chunk_data.extend(RAW_PROFILE_TYPE_EXIF.iter());
-	zTXt_chunk_data.extend(compress_to_vec_zlib(&encoded_metadata, 8).iter());
+	let zTXt_chunk_data: Vec<u8> = construct_zTXt_chunk_data(
+		Vec::new(),
+		&encoded_metadata
+	);
 
 	// Seek to insert position and write the chunk
 	cursor.seek(SeekFrom::Start(seek_start))?;
@@ -881,15 +882,32 @@ as_u8_vec
 		return basic_png_encode_result;
 	}
 
-	// Build data of new chunk using zlib compression (level=8 -> default)
-	let mut zTXt_chunk_data: Vec<u8> = vec![0x7a, 0x54, 0x58, 0x74];
-	zTXt_chunk_data.extend(RAW_PROFILE_TYPE_EXIF.iter());
-	zTXt_chunk_data.extend(compress_to_vec_zlib(&basic_png_encode_result, 8).iter());
-
-	return zTXt_chunk_data;
+	return construct_zTXt_chunk_data(
+		vec![0x7a, 0x54, 0x58, 0x74], 
+		&basic_png_encode_result
+	);
 }
 
 
+
+#[allow(non_snake_case)]
+fn
+construct_zTXt_chunk_data
+(
+	prefix:                   Vec<u8>,
+	basic_png_encode_result: &Vec<u8>
+)
+-> Vec<u8>
+{
+	// Build data of new chunk using zlib compression (level=8 -> default)
+	let mut zTXt_chunk_data: Vec<u8> = Vec::new();
+	zTXt_chunk_data.extend(prefix.iter());
+	zTXt_chunk_data.push(0x00);
+	zTXt_chunk_data.push(0x00);
+	zTXt_chunk_data.extend(compress_to_vec_zlib(basic_png_encode_result, 8).iter());
+
+	return zTXt_chunk_data;
+}
 
 
 
