@@ -62,9 +62,11 @@ This could be due to the such called APP12 or APP13 segment stored in the JPEG, 
 
 ```rust
 // File in a Vec<u8>
+Metadata::clear_app12_segment(&mut file_content, file_extension)?;
 Metadata::clear_app13_segment(&mut file_content, file_extension)?;
 
 // File at a given path
+Metadata::file_clear_app12_segment(&given_path)?;
 Metadata::file_clear_app13_segment(&given_path)?;
 ```
 
