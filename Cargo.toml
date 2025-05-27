@@ -1,7 +1,7 @@
 [package]
 name = "little_exif"
 
-version = "0.6.5"
+version = "0.6.6"
 edition = "2021"
 rust-version = "1.65"
 
@@ -28,9 +28,9 @@ exclude = [
 ]
 
 [dependencies]
-crc = "3.2.1"
+crc = "3.3.0"
 paste = "1.0.15"
-miniz_oxide = "0.8.0"
+miniz_oxide = "0.8.8"
 log = "0.4"
 quick-xml = "0.37.5"
 
