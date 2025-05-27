@@ -899,11 +899,26 @@ construct_zTXt_chunk_data
 )
 -> Vec<u8>
 {
+	// For further information on this see paragraph 11.3.3.3 of the this
+	// document: https://www.w3.org/TR/png/#11zTXt
+
 	// Build data of new chunk using zlib compression (level=8 -> default)
 	let mut zTXt_chunk_data: Vec<u8> = Vec::new();
+
+	// Optional prefix, needed by the `as_u8_vec` function
 	zTXt_chunk_data.extend(prefix.iter());
+
+	// Exif Keyword
+	zTXt_chunk_data.extend(RAW_PROFILE_TYPE_EXIF.iter());
+
+	// Null separator that signals the end of the keyword
 	zTXt_chunk_data.push(0x00);
+
+	// The compression method for the zTXt chunk, with 0 telling a reader to
+	// use the standard deflate compression
 	zTXt_chunk_data.push(0x00);
+
+	// The actual data bytes, compressed using the deflate method
 	zTXt_chunk_data.extend(compress_to_vec_zlib(basic_png_encode_result, 8).iter());
 
 	return zTXt_chunk_data;
