@@ -20,6 +20,13 @@ This section lists useful resources to be used during development.
 ## JPEG
 - [Format description](https://github.com/corkami/formats/blob/master/image/jpeg.md)
 
+## HEIC/HEIF
+- [Technical Information](https://nokiatech.github.io/heif/technical.html)
+- [High Efficiency Image File (HEIF) Format, MPEG-H Part 12](https://www.loc.gov/preservation/digital/formats/fdd/fdd000525.shtml)
+- [High Efficiency Image File Format, HEIC/HEIX brands](https://www.loc.gov/preservation/digital/formats/fdd/fdd000526.shtml)
+- [ISO Base Media File Format](https://www.loc.gov/preservation/digital/formats/fdd/fdd000079.shtml)
+- [libheif](https://github.com/strukturag/libheif)
+
 ## Compression
 - [DEFLATE/INFLATE](https://www.w3.org/TR/PNG-Compression.html)
 - [Implementing zlib.decompress()](https://pyokagan.name/blog/2019-10-18-zlibinflate/)
