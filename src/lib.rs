@@ -32,6 +32,7 @@ mod general_file_io;
 pub mod ifd;
 
 mod png;
+mod heif;
 mod jpg;
 mod jxl;
 mod tiff;
