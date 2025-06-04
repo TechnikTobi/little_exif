@@ -6,12 +6,29 @@
 /// top level, the Image File Format standard 23008-12 tells us that files with
 /// the brand `mif1` do *not* require such a box. 
 
+mod iso_box;
+
+use iso_box::BoxHeader;
+use iso_box::IsoBox;
+
+pub(crate) fn
+vec_parse_heif
+(
+    file_buffer: &[u8]
+)
+-> Result<Vec<IsoBox>, std::io::Error>
+{
+    todo!()
+}
+
+
 pub(crate) fn
 read_metadata
 (
-    file_buffer: &Vec<u8>
+    file_buffer: &[u8]
 )
 -> Result<Vec<u8>, std::io::Error>
 {
+    vec_parse_heif(file_buffer)?;
     todo!()
 }
