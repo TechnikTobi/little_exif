@@ -15,7 +15,8 @@ FileExtension
 	JPEG,
 	JXL,
 	TIFF,
-	WEBP
+	WEBP,
+	HEIF,
 }
 
 impl 
@@ -34,6 +35,8 @@ FileExtension
 	{
 		match input 
 		{
+			"heif"  => Ok(FileExtension::HEIF),
+			"heic"  => Ok(FileExtension::HEIF),
 			"jpg"   => Ok(FileExtension::JPEG),
 			"jpeg"  => Ok(FileExtension::JPEG),
 			"jxl"   => Ok(FileExtension::JXL),
