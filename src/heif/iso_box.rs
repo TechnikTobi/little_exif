@@ -7,111 +7,50 @@ use std::io::Seek;
 use crate::util::read_1_bytes;
 use crate::util::read_3_bytes;
 use crate::util::read_4_bytes;
+use crate::util::read_be_u16;
 use crate::util::read_be_u32;
 use crate::util::read_be_u64;
+use crate::util::read_null_terminated_string;
 
 use super::box_type::BoxType;
+use super::box_header::BoxHeader;
 
-#[derive(Debug)]
+
+pub struct 
+MetaBox
+{
+    header:           BoxHeader,
+    handler_box:      HandlerBox,
+    primary_item_box: Option<IsoBox>,
+    data_info_box:    Option<IsoBox>,
+    item_loc_box:     Option<IsoBox>,
+    item_protect_box: Option<IsoBox>,
+    item_info_box:    Option<IsoBox>,
+    ipmp_control_box: Option<IsoBox>,
+    item_ref_box:     Option<IsoBox>,
+    item_data_box:    Option<IsoBox>,
+    other_boxes:      Vec<IsoBox>,
+}
+
+//  extends FullBox(‘meta’, version = 0, 0) {
+
+// HandlerBox(handler_type) theHandler;
+// PrimaryItemBox primary_resource; // optional
+// DataInformationBox file_locations; // optional
+// ItemLocationBox item_locations; // optional
+// ItemProtectionBox protections; // optional
+// ItemInfoBox item_infos; // optional
+// IPMPControlBox IPMP_control; // optional
+// ItemReferenceBox item_refs; // optional
+// ItemDataBox item_data; // optional
+// Box other_boxes[]; // optional 
+
+
 pub struct
-BoxHeader
+HandlerBox
 {
-    box_size:    usize,
-    box_type:    BoxType,
-    header_size: usize,           // not sure if needed
-    version:     Option<u8>,      // only if box type uses full headers
-    flags:       Option<[u8; 3]>, // only if box type uses full headers
+    header: BoxHeader,
 }
-
-impl
-BoxHeader
-{
-    pub(super) fn
-    read_box_header
-    <T: Seek + Read>
-    (
-        cursor: &mut T
-    )
-    -> Result<Self, std::io::Error>
-    {
-        // Read in the size
-        let box_size = read_be_u32(cursor)?;
-
-        // Read in the box type
-        let box_type = BoxType::from_4_bytes(read_4_bytes(cursor)?);
-
-        let mut header = Self {
-            box_size:    box_size as usize,
-            box_type:    box_type.clone(),
-            header_size: 0,
-            version:     None,
-            flags:       None,
-        };
-
-        if box_type.extends_fullbox()
-        {
-            header.version = Some(read_1_bytes(cursor)?[0]);
-            header.flags   = Some(read_3_bytes(cursor)?);
-        }
-
-        // Uses largesize box size
-        if header.box_size == 1
-        {
-            header.box_size = read_be_u64(cursor)? as usize;
-        }
-
-        return Ok(header);
-    }
-
-    pub(super) fn
-    get_box_size
-    (
-        &self
-    )
-    -> usize
-    {
-        return self.box_size;
-    }
-
-    pub(super) fn
-    get_header_size
-    (
-        &self
-    )
-    -> usize
-    {
-        if self.version.is_none() && self.flags.is_none()
-        {
-            return 8;
-        }
-
-        if self.version.is_some() && self.flags.is_some()
-        {
-            return 12;
-        }
-
-        panic!("This should not happen!");
-    }
-}
-
-
-fn
-get_next_box
-<T: Seek + Read>
-(
-    cursor: &mut T
-)
--> Result<Box<dyn GenericIsoBox>, std::io::Error>
-{
-    // Read header
-    let header = BoxHeader::read_box_header(cursor)?;
-
-    println!("{:?}: {}", header.box_type, header.box_size);
-
-    todo!()
-}
-
-
 
 // Examples:
 // - infe
@@ -136,6 +75,63 @@ ItemInfoEntryBox
     additional_data:       Vec<u8>,
 }
 
+impl
+ItemInfoEntryBox
+{
+    fn
+    construct_from_cursor_unboxed
+    <T: Seek + Read>
+    (
+        cursor: &mut T,
+        header:  BoxHeader
+    )
+    -> Result<Self, std::io::Error>
+    {
+        let item_id               = read_be_u16(cursor)?;
+        let item_protection_index = read_be_u16(cursor)?;
+        let item_name             = read_null_terminated_string(cursor)?;
+
+        // Determine how much data is left for this entry
+        let data_read_so_far = header.get_header_size() 
+            + 2 // item_id
+            + 2 // item_protection_index
+            + item_name.len();
+        let data_left_to_read = header.get_box_size() - data_read_so_far;
+
+        let mut additional_data = vec![0u8; data_left_to_read];
+        cursor.read_exact(&mut additional_data)?;
+
+        return Ok(ItemInfoEntryBox {
+            header:                header,
+            item_id:               item_id,
+            item_protection_index: item_protection_index,
+            item_name:             item_name,
+            additional_data:       additional_data,
+        });
+    }
+}
+
+impl
+GenericIsoBox
+for
+ItemInfoEntryBox
+{
+    fn
+    construct_from_cursor
+    <T: Seek + Read>
+    (
+        cursor: &mut T,
+        header:  BoxHeader
+    )
+    -> Result<Box<Self>, std::io::Error>
+    {
+        return Ok(Box::new(ItemInfoEntryBox::construct_from_cursor_unboxed(
+            cursor, 
+            header
+        )?));
+    }
+}
+
 // - iinf
 // 00000603:   size of 0x603 bytes (including the 0x04 bytes of the size field itself)
 // 69696E66:   byte representation of `iinf` 
@@ -148,13 +144,112 @@ pub struct
 ItemInfoBox
 {
     header:     BoxHeader,
-    item_count: u16,
+    item_count: usize,
+    items:      Vec<ItemInfoEntryBox>
 }
+
+impl
+GenericIsoBox
+for
+ItemInfoBox
+{
+    fn
+    construct_from_cursor
+    <T: Seek + Read>
+    (
+        cursor: &mut T,
+        header:  BoxHeader
+    )
+    -> Result<Box<Self>, std::io::Error>
+    {
+        let item_count;
+
+        // See: ISO/IEC 14496-12:2015, § 8.11.6.2
+        if header.get_version() == 0
+        {
+            item_count = read_be_u16(cursor)? as usize;
+        }
+        else
+        {
+            item_count = read_be_u32(cursor)? as usize;
+        }
+
+        let mut items = Vec::new();
+        for _ in 0..item_count
+        {
+            let header = BoxHeader::read_box_header(cursor)?;
+            items.push(ItemInfoEntryBox::construct_from_cursor_unboxed(
+                cursor, 
+                header
+            )?);
+        }
+
+        return Ok(Box::new(ItemInfoBox { 
+            header:     header,
+            item_count: item_count, 
+            items:      items 
+        }));
+    }
+
+}
+
+// - iloc
 
 
 pub trait
 GenericIsoBox
 {
-
+    fn
+    construct_from_cursor
+    <T: Seek + Read>
+    (
+        cursor: &mut T,
+        header:  BoxHeader
+    )
+    -> Result<Box<Self>, std::io::Error>;
 }
 
+pub struct
+IsoBox
+{
+    header:    BoxHeader,
+    data:      Vec<u8>,
+}
+
+impl
+GenericIsoBox
+for
+IsoBox
+{
+    fn
+    construct_from_cursor
+    <T: Seek + Read>
+    (
+        cursor: &mut T,
+        header:  BoxHeader
+    )
+    -> Result<Box<Self>, std::io::Error> 
+    {
+        // Check if this box is the last in the file
+        // See also: ISO/IEC 14496-12:2015, § 4.2
+        if header.get_box_size() == 0
+        {
+            let mut buffer = Vec::new();
+            cursor.read_to_end(&mut buffer);
+            return Ok(Box::new(IsoBox {
+                header: header,
+                data:   buffer
+            }));
+        }
+
+        let data_left_to_read = header.get_box_size() - header.get_header_size();
+
+        let mut buffer = vec![0u8; data_left_to_read];
+        cursor.read_exact(&mut buffer)?;
+
+        return Ok(Box::new(IsoBox {
+            header: header,
+            data:   buffer
+        }));
+    }
+}

@@ -12,7 +12,7 @@ pub(crate) fn
 read_1_bytes
 <T: Seek + Read>
 (
-	cursor: &mut T
+    cursor: &mut T
 )
 -> Result<[u8; 1], std::io::Error>
 {
@@ -35,7 +35,7 @@ pub(crate) fn
 read_2_bytes
 <T: Seek + Read>
 (
-	cursor: &mut T
+    cursor: &mut T
 )
 -> Result<[u8; 2], std::io::Error>
 {
@@ -58,7 +58,7 @@ pub(crate) fn
 read_3_bytes
 <T: Seek + Read>
 (
-	cursor: &mut T
+    cursor: &mut T
 )
 -> Result<[u8; 3], std::io::Error>
 {
@@ -81,7 +81,7 @@ pub(crate) fn
 read_4_bytes
 <T: Seek + Read>
 (
-	cursor: &mut T
+    cursor: &mut T
 )
 -> Result<[u8; 4], std::io::Error>
 {
@@ -104,7 +104,7 @@ pub(crate) fn
 read_8_bytes
 <T: Seek + Read>
 (
-	cursor: &mut T
+    cursor: &mut T
 )
 -> Result<[u8; 8], std::io::Error>
 {
@@ -127,7 +127,7 @@ pub(crate) fn
 read_be_u16
 <T: Seek + Read>
 (
-	cursor: &mut T
+    cursor: &mut T
 )
 -> Result<u16, std::io::Error>
 {
@@ -141,7 +141,7 @@ pub(crate) fn
 read_be_u32
 <T: Seek + Read>
 (
-	cursor: &mut T
+    cursor: &mut T
 )
 -> Result<u32, std::io::Error>
 {
@@ -162,7 +162,7 @@ pub(crate) fn
 read_be_u64
 <T: Seek + Read>
 (
-	cursor: &mut T
+    cursor: &mut T
 )
 -> Result<u64, std::io::Error>
 {
@@ -177,6 +177,24 @@ read_be_u64
     return Ok(value);
 }
 
+pub(crate) fn
+read_null_terminated_string
+<T: Seek + Read>
+(
+    cursor: &mut T
+)
+-> Result<String, std::io::Error>
+{
+    let mut string_buffer    = Vec::new();
+    let mut character_buffer = read_1_bytes(cursor)?;
+    while character_buffer[0] != 0x00
+    {
+        string_buffer.push(character_buffer[0]);
+        character_buffer = read_1_bytes(cursor)?;
+    }
+
+    return Ok(String::from_utf8(string_buffer).unwrap());
+}
 
 
 /// Inserts a slice into a vector at a given offset, shifting elements 
