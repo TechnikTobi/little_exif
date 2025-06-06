@@ -1,9 +1,12 @@
 // Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
 
+use crate::general_file_io::io_error;
+use crate::heif::iso_box;
 use crate::util::read_1_bytes;
 use crate::util::read_3_bytes;
 use crate::util::read_4_bytes;
@@ -21,35 +24,147 @@ MetaBox
 {
     header:           BoxHeader,
     handler_box:      HandlerBox,
-    primary_item_box: Option<IsoBox>,
-    data_info_box:    Option<IsoBox>,
-    item_loc_box:     Option<IsoBox>,
-    item_protect_box: Option<IsoBox>,
-    item_info_box:    Option<IsoBox>,
-    ipmp_control_box: Option<IsoBox>,
-    item_ref_box:     Option<IsoBox>,
-    item_data_box:    Option<IsoBox>,
+    // primary_item_box: Option<IsoBox>, // pitm
+    // data_info_box:    Option<IsoBox>, // dinf
+    // item_loc_box:     Option<IsoBox>, // iloc
+    // item_protect_box: Option<IsoBox>, // ipro
+    // item_info_box:    Option<IsoBox>, // iinf
+    // ipmp_control_box: Option<IsoBox>, // ipmc
+    // item_ref_box:     Option<IsoBox>, // iref
+    // item_data_box:    Option<IsoBox>, // idat
     other_boxes:      Vec<IsoBox>,
 }
 
-//  extends FullBox(‘meta’, version = 0, 0) {
+impl
+ParsableIsoBox
+for
+MetaBox
+{
+    fn
+    construct_from_cursor
+    <T: Seek + Read>
+    (
+        cursor: &mut T,
+        header:  BoxHeader
+    )
+    -> Result<Box<dyn GenericIsoBox>, std::io::Error>
+    {
+        // Read in the remaining bytes for this box
+        let     remaining_bytes = header.get_box_size() - header.get_header_size();
+        let mut meta_box_bytes  = vec![0u8; remaining_bytes];
+        cursor.read_exact(&mut meta_box_bytes)?;
 
-// HandlerBox(handler_type) theHandler;
-// PrimaryItemBox primary_resource; // optional
-// DataInformationBox file_locations; // optional
-// ItemLocationBox item_locations; // optional
-// ItemProtectionBox protections; // optional
-// ItemInfoBox item_infos; // optional
-// IPMPControlBox IPMP_control; // optional
-// ItemReferenceBox item_refs; // optional
-// ItemDataBox item_data; // optional
-// Box other_boxes[]; // optional 
+        // Construct local cursor for these bytes
+        let mut local_cursor = Cursor::new(meta_box_bytes);
 
+        // Read in the mandatory handler box
+        let handler_box_header = BoxHeader::read_box_header(&mut local_cursor)?;
+        let handler_box        = HandlerBox::construct_from_cursor_unboxed(
+            &mut local_cursor, 
+            handler_box_header
+        )?;
+
+        // Read in other boxes
+        let mut other_boxes = Vec::new();
+        while local_cursor.position() < remaining_bytes as u64
+        {
+            let sub_header = BoxHeader::read_box_header(&mut local_cursor)?;
+            // let sub_box    = IsoBox::construct_from_cursor_unboxed(&mut local_cursor, sub_header);
+
+            let boxed_sub_box = IsoBox::construct_from_cursor(&mut local_cursor, sub_header)?;
+            let sub_box = match boxed_sub_box.as_any().downcast_ref::<IsoBox>() {
+                Some(iso_box) => iso_box,
+                None          => panic!("&a isn't a B!")
+            };
+
+            other_boxes.push(sub_box.clone());
+        }
+
+        return Ok(Box::new(MetaBox { 
+            header:           header,
+            handler_box:      handler_box,
+            // primary_item_box: None,
+            // data_info_box:    None,
+            // item_loc_box:     None,
+            // item_protect_box: None,
+            // item_info_box:    None,
+            // ipmp_control_box: None,
+            // item_ref_box:     None,
+            // item_data_box:    None,
+            other_boxes:      other_boxes,
+        }));
+    }
+}
 
 pub struct
 HandlerBox
 {
-    header: BoxHeader,
+    header:       BoxHeader,
+    pre_defined:  u32,
+    handler_type: u32,
+    reserved:     [u32; 3],
+    name:         Vec<u8> // UTF-8 string, don't bother decoding
+}
+
+impl
+HandlerBox
+{
+    fn
+    construct_from_cursor_unboxed
+    <T: Seek + Read>
+    (
+        cursor: &mut T,
+        header:  BoxHeader
+    )
+    -> Result<Self, std::io::Error>
+    {
+        let pre_defined  = read_be_u32(cursor)?;
+        let handler_type = read_be_u32(cursor)?;
+        let reserved     = [
+            read_be_u32(cursor)?,
+            read_be_u32(cursor)?,
+            read_be_u32(cursor)?
+        ];
+
+        let number_of_bytes_that_form_the_name = header.get_box_size() 
+            - header.get_header_size() // header
+            - 4                        // pre_defined
+            - 4                        // handler_type
+            - 12                       // reserved
+            ;
+
+        let mut name_buffer = vec![0u8; number_of_bytes_that_form_the_name];
+        cursor.read_exact(&mut name_buffer)?;
+
+        return Ok(HandlerBox { 
+            header:       header, 
+            pre_defined:  pre_defined, 
+            handler_type: handler_type, 
+            reserved:     reserved, 
+            name:         name_buffer 
+        });
+    }
+}
+
+impl
+ParsableIsoBox
+for
+HandlerBox
+{
+    fn
+    construct_from_cursor
+    <T: Seek + Read>
+    (
+        cursor: &mut T,
+        header:  BoxHeader
+    )
+    -> Result<Box<dyn GenericIsoBox>, std::io::Error>
+    {
+        return Ok(Box::new(HandlerBox::construct_from_cursor_unboxed(
+            cursor, 
+            header
+        )?));
+    }
 }
 
 // Examples:
@@ -112,7 +227,7 @@ ItemInfoEntryBox
 }
 
 impl
-GenericIsoBox
+ParsableIsoBox
 for
 ItemInfoEntryBox
 {
@@ -123,7 +238,7 @@ ItemInfoEntryBox
         cursor: &mut T,
         header:  BoxHeader
     )
-    -> Result<Box<Self>, std::io::Error>
+    -> Result<Box<dyn GenericIsoBox>, std::io::Error>
     {
         return Ok(Box::new(ItemInfoEntryBox::construct_from_cursor_unboxed(
             cursor, 
@@ -149,7 +264,7 @@ ItemInfoBox
 }
 
 impl
-GenericIsoBox
+ParsableIsoBox
 for
 ItemInfoBox
 {
@@ -160,7 +275,7 @@ ItemInfoBox
         cursor: &mut T,
         header:  BoxHeader
     )
-    -> Result<Box<Self>, std::io::Error>
+    -> Result<Box<dyn GenericIsoBox>, std::io::Error>
     {
         let item_count;
 
@@ -190,14 +305,24 @@ ItemInfoBox
             items:      items 
         }));
     }
-
 }
 
 // - iloc
 
+pub trait 
+GenericIsoBox 
+{
+    fn as_any(&self) -> &dyn std::any::Any;
+}
+
+impl GenericIsoBox for MetaBox          { fn as_any(&self) -> &dyn std::any::Any {self} }
+impl GenericIsoBox for HandlerBox       { fn as_any(&self) -> &dyn std::any::Any {self} }
+impl GenericIsoBox for ItemInfoBox      { fn as_any(&self) -> &dyn std::any::Any {self} }
+impl GenericIsoBox for ItemInfoEntryBox { fn as_any(&self) -> &dyn std::any::Any {self} }
+impl GenericIsoBox for IsoBox           { fn as_any(&self) -> &dyn std::any::Any {self} }
 
 pub trait
-GenericIsoBox
+ParsableIsoBox: GenericIsoBox
 {
     fn
     construct_from_cursor
@@ -206,9 +331,10 @@ GenericIsoBox
         cursor: &mut T,
         header:  BoxHeader
     )
-    -> Result<Box<Self>, std::io::Error>;
+    -> Result<Box<dyn GenericIsoBox>, std::io::Error>;
 }
 
+#[derive(Clone)]
 pub struct
 IsoBox
 {
@@ -217,7 +343,45 @@ IsoBox
 }
 
 impl
-GenericIsoBox
+IsoBox
+{
+    fn
+    construct_from_cursor_unboxed
+    <T: Seek + Read>
+    (
+        cursor: &mut T,
+        header:  BoxHeader
+    )
+    -> Result<IsoBox, std::io::Error> 
+    {
+        println!("Constructing generic ISO box for type {:?}", header.get_box_type());
+
+        // Check if this box is the last in the file
+        // See also: ISO/IEC 14496-12:2015, § 4.2
+        if header.get_box_size() == 0
+        {
+            let mut buffer = Vec::new();
+            cursor.read_to_end(&mut buffer)?;
+            return Ok(IsoBox {
+                header: header,
+                data:   buffer
+            });
+        }
+
+        let data_left_to_read = header.get_box_size() - header.get_header_size();
+
+        let mut buffer = vec![0u8; data_left_to_read];
+        cursor.read_exact(&mut buffer)?;
+
+        return Ok(IsoBox {
+            header: header,
+            data:   buffer
+        });
+    }
+}
+
+impl
+ParsableIsoBox
 for
 IsoBox
 {
@@ -228,28 +392,44 @@ IsoBox
         cursor: &mut T,
         header:  BoxHeader
     )
-    -> Result<Box<Self>, std::io::Error> 
+    -> Result<Box<dyn GenericIsoBox>, std::io::Error> 
     {
-        // Check if this box is the last in the file
-        // See also: ISO/IEC 14496-12:2015, § 4.2
-        if header.get_box_size() == 0
-        {
-            let mut buffer = Vec::new();
-            cursor.read_to_end(&mut buffer);
-            return Ok(Box::new(IsoBox {
-                header: header,
-                data:   buffer
-            }));
-        }
-
-        let data_left_to_read = header.get_box_size() - header.get_header_size();
-
-        let mut buffer = vec![0u8; data_left_to_read];
-        cursor.read_exact(&mut buffer)?;
-
-        return Ok(Box::new(IsoBox {
-            header: header,
-            data:   buffer
-        }));
+        return Ok(Box::new(IsoBox::construct_from_cursor_unboxed(
+            cursor, 
+            header
+        )?));
     }
+}
+
+
+pub(super) fn
+read_box_based_on_header
+<T: Seek + Read>
+(
+    cursor: &mut T,
+    header:  BoxHeader
+)
+-> Result<Box<dyn GenericIsoBox>, std::io::Error>
+{
+    return match header.get_box_type()
+    {
+        BoxType::meta => MetaBox::    construct_from_cursor(cursor, header),
+        BoxType::iinf => ItemInfoBox::construct_from_cursor(cursor, header),
+        _             => IsoBox::     construct_from_cursor(cursor, header)
+    };
+}
+
+pub(super) fn
+read_next_box
+<T: Seek + Read>
+(
+    cursor: &mut T,
+)
+-> Result<Box<dyn GenericIsoBox>, std::io::Error>
+{
+    let header = BoxHeader::read_box_header(cursor)?;
+
+    println!("{:?}", header);
+
+    return read_box_based_on_header(cursor, header);
 }

@@ -12,7 +12,7 @@ use crate::util::read_be_u64;
 
 use super::box_type::BoxType;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct
 BoxHeader
 {
