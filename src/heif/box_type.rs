@@ -9,7 +9,8 @@ BoxType
     ftyp,
     meta,
     hdlr,
-    ptim,
+    dinf,
+    pitm,
     iinf,
     iloc,
     iref,
@@ -37,7 +38,8 @@ BoxType
             "ftyp" => BoxType::ftyp,
             "meta" => BoxType::meta, 
             "hdlr" => BoxType::hdlr, 
-            "ptim" => BoxType::ptim, 
+            "dinf" => BoxType::dinf,
+            "pitm" => BoxType::pitm, 
             "iinf" => BoxType::iinf, 
             "iloc" => BoxType::iloc, 
             "iref" => BoxType::iref, 
@@ -46,7 +48,7 @@ BoxType
             "ipma" => BoxType::ipma, 
             "mdat" => BoxType::mdat, 
             "idat" => BoxType::idat, 
-            _      => panic!("Unknown Box Type! {}", box_type_str),
+            _      => panic!("Unknown Box Type! {:?}", box_type_str),
         }
     }
 

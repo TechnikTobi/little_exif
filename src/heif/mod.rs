@@ -17,52 +17,21 @@ use std::path::Path;
 
 use box_header::BoxHeader;
 use iso_box::GenericIsoBox;
+use iso_box::IsoBox;
 
 use crate::general_file_io::open_read_file;
+use crate::heif::iso_box::read_next_box;
 
-fn
-get_next_box
-<T: Seek + Read>
-(
-    cursor: &mut T
-)
--> Result<Box<dyn GenericIsoBox>, std::io::Error>
-{
-    // Read header
-    let header = BoxHeader::read_box_header(cursor)?;
 
-    println!("{:?}", header);
-
-    
-
-    if header.get_box_size() > 0
-    {
-        // Only advance the cursor if this is *not* the last box
-        // Boxes with size zero are the last box in the file
-        let advance_cursor_by = header.get_box_size() - header.get_header_size();
-        cursor.seek_relative(advance_cursor_by as i64)?;
-    }
-
-    return Ok(Box::new(
-        IsoBox
-        {
-            header:    header,
-            sub_boxes: None,
-            data:      Vec::new(),
-        }
-    ));
-
-}
-
-pub(crate) fn
-vec_parse_heif
-(
-    file_buffer: &[u8]
-)
--> Result<Vec<IsoBox>, std::io::Error>
-{
-    todo!()
-}
+// pub(crate) fn
+// vec_parse_heif
+// (
+//     file_buffer: &[u8]
+// )
+// -> Result<Vec<IsoBox>, std::io::Error>
+// {
+//     todo!()
+// }
 
 fn
 generic_parse_heif
@@ -76,7 +45,7 @@ generic_parse_heif
 
     loop 
     {
-        if let Ok(next_box) = get_next_box(cursor)
+        if let Ok(next_box) = read_next_box(cursor)
         {
             boxes.push(next_box);
         }
@@ -99,8 +68,8 @@ read_metadata
 )
 -> Result<Vec<u8>, std::io::Error>
 {
-    vec_parse_heif(file_buffer)?;
-    println!("HEIC!");
+    // vec_parse_heif(file_buffer)?;
+    // println!("HEIF!");
     todo!()
 }
 
