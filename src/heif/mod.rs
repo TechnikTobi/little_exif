@@ -6,10 +6,69 @@
 /// top level, the Image File Format standard 23008-12 tells us that files with
 /// the brand `mif1` do *not* require such a box. 
 
+mod box_type;
 mod iso_box;
 
+
+use std::io::Read;
+use std::io::Seek;
+use std::path::Path;
+
 use iso_box::BoxHeader;
-use iso_box::IsoBox;
+use iso_box::GenericIsoBox;
+
+use crate::general_file_io::open_read_file;
+use crate::heif::box_type::BoxType;
+use crate::util::read_4_bytes;
+use crate::util::read_be_u32;
+
+pub struct
+IsoBox
+{
+    header:    BoxHeader,
+    sub_boxes: Option<Vec<IsoBox>>,
+    data:      Vec<u8>,
+}
+
+impl
+GenericIsoBox
+for
+IsoBox
+{
+
+}
+
+fn
+get_next_box
+<T: Seek + Read>
+(
+    cursor: &mut T
+)
+-> Result<Box<dyn GenericIsoBox>, std::io::Error>
+{
+    // Read header
+    let header = BoxHeader::read_box_header(cursor)?;
+
+    println!("{:?}", header);
+
+    if header.get_box_size() > 0
+    {
+        // Only advance the cursor if this is *not* the last box
+        // Boxes with size zero are the last box in the file
+        let advance_cursor_by = header.get_box_size() - header.get_header_size();
+        cursor.seek_relative(advance_cursor_by as i64)?;
+    }
+
+    return Ok(Box::new(
+        IsoBox
+        {
+            header:    header,
+            sub_boxes: None,
+            data:      Vec::new(),
+        }
+    ));
+
+}
 
 pub(crate) fn
 vec_parse_heif
@@ -21,6 +80,33 @@ vec_parse_heif
     todo!()
 }
 
+fn
+generic_parse_heif
+<T: Seek + Read>
+(
+	cursor: &mut T
+)
+-> Result<Vec<Box<dyn GenericIsoBox>>, std::io::Error>
+{
+    let mut boxes = Vec::new();
+
+    loop 
+    {
+        if let Ok(next_box) = get_next_box(cursor)
+        {
+            boxes.push(next_box);
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    println!("HEIF!");
+
+	return Ok(boxes);
+}
+
 
 pub(crate) fn
 read_metadata
@@ -30,5 +116,29 @@ read_metadata
 -> Result<Vec<u8>, std::io::Error>
 {
     vec_parse_heif(file_buffer)?;
+    println!("HEIC!");
+    todo!()
+}
+
+pub(crate) fn
+file_read_metadata
+(
+	path: &Path
+)
+-> Result<Vec<u8>, std::io::Error>
+{
+    /* 
+	// Parse the PNG - if this fails, the read fails as well
+	let parse_png_result = file_parse_png(path)?;
+
+	// Parsed PNG is Ok to use - Open the file and go through the chunks
+	let mut file = file_check_signature(path).unwrap();
+
+	return generic_read_metadata(&mut file, &parse_png_result);
+    */
+
+    let mut file = open_read_file(path)?;
+    generic_parse_heif(&mut file)?;
+
     todo!()
 }

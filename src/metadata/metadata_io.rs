@@ -91,6 +91,8 @@ Metadata
 		// the raw EXIF data that gets further processed
 		let raw_pre_decode_general = match file_type
 		{
+			FileExtension::HEIF
+				=> heif::file_read_metadata(&path),
 			FileExtension::JPEG 
 				=>  jpg::file_read_metadata(&path),
 			FileExtension::JXL
