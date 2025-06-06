@@ -7,6 +7,7 @@
 /// the brand `mif1` do *not* require such a box. 
 
 mod box_type;
+mod box_header;
 mod iso_box;
 
 
@@ -14,29 +15,10 @@ use std::io::Read;
 use std::io::Seek;
 use std::path::Path;
 
-use iso_box::BoxHeader;
+use box_header::BoxHeader;
 use iso_box::GenericIsoBox;
 
 use crate::general_file_io::open_read_file;
-use crate::heif::box_type::BoxType;
-use crate::util::read_4_bytes;
-use crate::util::read_be_u32;
-
-pub struct
-IsoBox
-{
-    header:    BoxHeader,
-    sub_boxes: Option<Vec<IsoBox>>,
-    data:      Vec<u8>,
-}
-
-impl
-GenericIsoBox
-for
-IsoBox
-{
-
-}
 
 fn
 get_next_box
@@ -50,6 +32,8 @@ get_next_box
     let header = BoxHeader::read_box_header(cursor)?;
 
     println!("{:?}", header);
+
+    
 
     if header.get_box_size() > 0
     {

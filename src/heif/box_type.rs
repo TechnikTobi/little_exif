@@ -1,3 +1,6 @@
+// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// See https://github.com/TechnikTobi/little_exif#license for licensing details
+
 #[allow(non_camel_case_types)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum
@@ -66,7 +69,7 @@ BoxType
     }
 
     pub(super) fn 
-    has_sub_box
+    is_container_type
     (
         &self
     )
