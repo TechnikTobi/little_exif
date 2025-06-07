@@ -2,6 +2,7 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::io;
+use std::io::ErrorKind;
 use std::path::Path;
 use std::str::FromStr;
 
@@ -42,23 +43,18 @@ pub fn get_file_type(path: &Path) -> Result<FileExtension, io::Error> {
         return io_error!(Other, "File does not exist!");
     }
 
-	let raw_file_type_str = path.extension();
-	if raw_file_type_str.is_none()
-	{
-		return io_error!(Other, "Can't get extension from given path!");
-	}
+	let raw_file_type_str = path.extension()
+        .ok_or(io::Error::new(ErrorKind::Other, "Cannot get file extension!"))?;
 
-    let file_type_str = raw_file_type_str.unwrap().to_str();
-    if file_type_str.is_none() {
-        return io_error!(Other, "Can't convert file type to string!");
-    }
+    let file_type_str = raw_file_type_str.to_str()
+        .ok_or(io::Error::new(ErrorKind::Other, "Can't convert file type to string!"))?;
 
-    let raw_file_type = FileExtension::from_str(file_type_str.unwrap().to_lowercase().as_str());
-    if raw_file_type.is_err() {
-        io_error!(Unsupported, "Unsupported file type!")
-    } else {
-        Ok(raw_file_type.unwrap())
-    }
+    FileExtension::from_str(file_type_str.to_lowercase().as_str()).map_err(|e| {
+        io::Error::new(
+            ErrorKind::Unsupported,
+            format!("Unsupported file type: {} - {}", file_type_str, e),
+        )
+    })
 }
 
 #[cfg(test)]
@@ -66,7 +62,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn png_parse() {
+    fn str_parse() {
         let table = vec![
             ("png", FileExtension::PNG { as_zTXt_chunk: true }),
             ("jpg", FileExtension::JPEG),
