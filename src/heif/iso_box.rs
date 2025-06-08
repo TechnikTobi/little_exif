@@ -308,6 +308,99 @@ ItemInfoBox
 }
 
 // - iloc
+pub struct
+ItemLocationBox
+{
+    header:           BoxHeader,
+    offset_size:      u8,  // actually u4
+    length_size:      u8,  // actually u4
+    base_offset_size: u8,  // actually u4
+    reserved:         u8,  // actually u4, 
+                           // if version == 1 || 2 this is called index_size
+    item_count:       u32, // only if version == 2, if version < 2 this is u16
+    items:            Vec<ItemLocationEntry>
+}
+
+pub struct
+ItemLocationEntry
+{
+    item_id:                          u32, // only if version == 2, 
+                                           // if version < 2 this is u16
+    reserved_and_construction_method: u16, // first 12 bits are reserved, the
+                                           // other 4 are construction method:
+                                           // - 0: file
+                                           // - 1: idat
+                                           // - 2: item
+                                           // only present if version == 1 || 2
+    data_reference_index:             u16,
+    base_offset:                      u64, // actual size depends on value of
+                                           // base_offset_size * 8
+    extent_count:                     u16, 
+    extents:                          Vec<ItemLocationEntryExtentEntry>,
+}
+
+pub struct
+ItemLocationEntryExtentEntry
+{
+    extent_index:  Option<u64>, // only if (version == 1 || 2) && index_size>0
+                                // actual size depends on index_size  * 8
+    extent_offset: u64,         // actual size depends on offset_size * 8
+    extent_length: u64,         // actual size depends on length_size * 8
+}
+
+/*
+0001: item_id
+0000: reserved and construction method
+0000: data ref index
+// as base offset size is zero, no bytes for base offset
+0001: extent count
+// as index size is also zero, no bytes for extent index
+00004841: extent offset
+0000052D: extent length
+*/
+
+impl 
+ItemLocationEntryExtentEntry
+{
+    fn
+    read_from_cursor
+    <T: Seek + Read>
+    (
+        cursor:     &mut T,
+        header:     &BoxHeader,
+        offset_size: u8,
+        length_size: u8,
+        index_size:  u8,
+    )
+    -> Result<Self, std::io::Error>
+    {
+        let extent_index = if 
+            (header.get_version() == 1 || header.get_version() == 2)
+            &&
+            index_size > 0
+        {
+            match index_size
+            {
+                4 => Some(read_be_u32(cursor)? as u64),
+                8 => Some(read_be_u64(cursor)?),
+                _ => panic!("Invalid index_size!")
+            }
+        }
+        else
+        {
+            None
+        };
+
+        let extent_offset = match offset_size
+        {
+
+        }
+
+        todo!()
+
+
+    }
+}
 
 pub trait 
 GenericIsoBox 

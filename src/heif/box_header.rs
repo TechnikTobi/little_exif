@@ -4,6 +4,7 @@
 use std::io::Read;
 use std::io::Seek;
 
+use crate::util::read_16_bytes;
 use crate::util::read_1_bytes;
 use crate::util::read_3_bytes;
 use crate::util::read_4_bytes;
@@ -64,6 +65,15 @@ BoxHeader
 
             // Adjust header size information
             header.header_size += 8;
+        }
+
+        if let BoxType::uuid { usertype: _ } = header.box_type
+        {
+            let new_usertype = read_16_bytes(cursor)?;
+            header.box_type = BoxType::uuid { usertype: new_usertype };
+
+            // Adjust header size information
+            header.header_size += 16;
         }
 
         return Ok(header);

@@ -121,6 +121,29 @@ read_8_bytes
     return Ok(field);
 }
 
+/// Reads in the next 16 bytes, starting at the current position of the cursor.
+/// The function call advances the cursor by 16 bytes.
+pub(crate) fn
+read_16_bytes
+<T: Seek + Read>
+(
+    cursor: &mut T
+)
+-> Result<[u8; 16], std::io::Error>
+{
+    // Read in the 16 bytes
+    let mut field = [0u8; 16];
+    let bytes_read = cursor.read(&mut field)?;
+
+    // Check that indeed 16 bytes were read
+    if bytes_read != 16
+    {
+        return io_error!(Other, "Could not read the next 16 bytes!");
+    }
+
+    return Ok(field);
+}
+
 /// Reads in a u16 in big endian format at the current cursor position
 /// The function call advances the cursor by 2 bytes.
 pub(crate) fn
