@@ -1,4 +1,4 @@
-// Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::io;
@@ -27,7 +27,6 @@ for
 FileExtension 
 {
     type Err = std::io::Error;
-
 
     fn 
     from_str
@@ -65,18 +64,19 @@ get_file_type
     }
 
     let raw_file_type_str = path.extension()
-        .ok_or(io::Error::new(ErrorKind::Other, "Cannot get file extension!"))?;
+        .ok_or(io::Error::new(ErrorKind::Other, "Can't get file extension!"))?;
 
     let file_type_str = raw_file_type_str.to_str()
-        .ok_or(io::Error::new(ErrorKind::Other, "Can't convert file type to string!"))?;
+        .ok_or(io::Error::new(ErrorKind::Other, "Can't convert extension!"))?;
 
     FileExtension::from_str(file_type_str.to_lowercase().as_str()).map_err(|e| 
         {
-        io::Error::new(
-            ErrorKind::Unsupported,
-            format!("Unsupported file type: {} - {}", file_type_str, e),
-        )
-    })
+            io::Error::new(
+                ErrorKind::Unsupported,
+                format!("Unsupported file type: {} - {}", file_type_str, e),
+            )
+        }
+    )
 }
 
 #[cfg(test)]
