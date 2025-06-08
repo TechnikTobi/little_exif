@@ -379,6 +379,8 @@ Metadata
 
 		match file_type
 		{
+			FileExtension::HEIF
+				=> heif::file_write_metadata(&path, &self),
 			FileExtension::JPEG 
 				=>  jpg::file_write_metadata(&path, &self),
 			FileExtension::JXL 
