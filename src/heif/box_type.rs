@@ -12,6 +12,7 @@ BoxType
     dinf,
     pitm,
     iinf,
+    infe,
     iloc,
     iref,
     iprp,
@@ -42,6 +43,7 @@ BoxType
             "dinf" => BoxType::dinf,
             "pitm" => BoxType::pitm, 
             "iinf" => BoxType::iinf, 
+            "infe" => BoxType::infe,
             "iloc" => BoxType::iloc, 
             "iref" => BoxType::iref, 
             "iprp" => BoxType::iprp, 
@@ -65,6 +67,8 @@ BoxType
         {
             BoxType::meta |
             BoxType::hdlr |
+            BoxType::iinf |
+            BoxType::infe |
             BoxType::iloc
             => true,
 

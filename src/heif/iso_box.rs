@@ -32,7 +32,7 @@ MetaBox
     // ipmp_control_box: Option<IsoBox>, // ipmc
     // item_ref_box:     Option<IsoBox>, // iref
     // item_data_box:    Option<IsoBox>, // idat
-    other_boxes:      Vec<IsoBox>,
+    other_boxes:      Vec<Box<dyn GenericIsoBox>>,
 }
 
 impl
@@ -71,13 +71,50 @@ MetaBox
             let sub_header = BoxHeader::read_box_header(&mut local_cursor)?;
             // let sub_box    = IsoBox::construct_from_cursor_unboxed(&mut local_cursor, sub_header);
 
+            /*
             let boxed_sub_box = IsoBox::construct_from_cursor(&mut local_cursor, sub_header)?;
             let sub_box = match boxed_sub_box.as_any().downcast_ref::<IsoBox>() {
                 Some(iso_box) => iso_box,
                 None          => panic!("&a isn't a B!")
             };
+            */
+            let boxed_sub_box = read_box_based_on_header(
+                &mut local_cursor, 
+                sub_header
+            )? as Box<dyn GenericIsoBox>;
 
-            other_boxes.push(sub_box.clone());
+            /*
+            let sub_box = match boxed_sub_box.get_header().get_box_type()
+            {
+                BoxType::meta => {
+                    match boxed_sub_box.as_any().downcast_ref::<MetaBox>() {
+                        Some(unboxed) => unboxed,
+                        None          => panic!("&a isn't a B!")
+                    }
+                },
+                BoxType::iinf => {
+                    match boxed_sub_box.as_any().downcast_ref::<ItemInfoBox>() {
+                        Some(unboxed) => unboxed,
+                        None          => panic!("&a isn't a B!")
+                    }
+                },
+                BoxType::iloc => {
+                    match boxed_sub_box.as_any().downcast_ref::<ItemLocationBox>() {
+                        Some(unboxed) => unboxed,
+                        None          => panic!("&a isn't a B!")
+                    }
+                },
+                _ => {
+                    match boxed_sub_box.as_any().downcast_ref::<IsoBox>() {
+                        Some(unboxed) => unboxed,
+                        None          => panic!("&a isn't a B!")
+                    }
+                }
+            };
+            */
+
+            // other_boxes.push(sub_box.clone());
+            other_boxes.push(boxed_sub_box);
         }
 
         return Ok(Box::new(MetaBox { 
@@ -208,9 +245,9 @@ ItemInfoEntryBox
 
         // Determine how much data is left for this entry
         let data_read_so_far = header.get_header_size() 
-            + 2 // item_id
-            + 2 // item_protection_index
-            + item_name.len();
+            + 2                    // item_id
+            + 2                    // item_protection_index
+            + item_name.len() + 1; // string len + null terminator
         let data_left_to_read = header.get_box_size() - data_read_so_far;
 
         let mut additional_data = vec![0u8; data_left_to_read];
@@ -315,8 +352,9 @@ ItemLocationBox
     offset_size:      u8,  // actually u4
     length_size:      u8,  // actually u4
     base_offset_size: u8,  // actually u4
-    reserved:         u8,  // actually u4, 
-                           // if version == 1 || 2 this is called index_size
+    index_size:       u8,  // actually u4, 
+                           // only available if version == 1 || 2, otherwise
+                           // these 4 bytes are handled as `reserved`
     item_count:       u32, // only if version == 2, if version < 2 this is u16
     items:            Vec<ItemLocationEntry>
 }
@@ -473,18 +511,152 @@ ItemLocationEntry
     }
 }
 
+impl
+ItemLocationBox
+{
+    fn
+    construct_from_cursor_unboxed
+    <T: Seek + Read>
+    (
+        cursor: &mut T,
+        header:  BoxHeader
+    )
+    -> Result<Self, std::io::Error>
+    {
+        let temp = read_be_u16(cursor)?;
+        let (offset_size,        length_size,              base_offset_size) =
+            ((temp >> 12) as u8, (temp >> 8 & 0x0f) as u8, (temp >> 4 & 0x0f) as u8);
+        let index_size = match header.get_version()
+        {
+            1 | 2 => temp as u8 & 0x0f,
+            _     => 0,
+        };
+
+        let item_count = match header.get_version()
+        {
+            0 | 1 => read_be_u16(cursor)? as u32,
+            2     => read_be_u32(cursor)?,
+            _     => panic!("Invalid version for ItemLocationBox decode!")
+        };
+
+        let mut items = Vec::new();
+        for _ in 0..item_count
+        {
+            items.push(ItemLocationEntry::read_from_cursor(
+                cursor, 
+                &header, 
+                offset_size, 
+                length_size, 
+                base_offset_size, 
+                index_size
+            )?);
+        }
+
+        return Ok(ItemLocationBox {
+            header,
+            offset_size,
+            length_size,
+            base_offset_size,
+            index_size,
+            item_count,
+            items
+        });
+    }
+}
+
+impl
+ParsableIsoBox
+for
+ItemLocationBox
+{
+    fn
+    construct_from_cursor
+    <T: Seek + Read>
+    (
+        cursor: &mut T,
+        header:  BoxHeader
+    )
+    -> Result<Box<dyn GenericIsoBox>, std::io::Error> 
+    {
+        return Ok(Box::new(ItemLocationBox::construct_from_cursor_unboxed(
+            cursor, 
+            header
+        )?));
+    }
+}
+
+
 
 pub trait 
 GenericIsoBox 
 {
-    fn as_any(&self) -> &dyn std::any::Any;
+    fn as_any    (&self) -> &dyn std::any::Any;
+    fn get_header(&self) -> &BoxHeader;
 }
 
-impl GenericIsoBox for MetaBox          { fn as_any(&self) -> &dyn std::any::Any {self} }
-impl GenericIsoBox for HandlerBox       { fn as_any(&self) -> &dyn std::any::Any {self} }
-impl GenericIsoBox for ItemInfoBox      { fn as_any(&self) -> &dyn std::any::Any {self} }
-impl GenericIsoBox for ItemInfoEntryBox { fn as_any(&self) -> &dyn std::any::Any {self} }
-impl GenericIsoBox for IsoBox           { fn as_any(&self) -> &dyn std::any::Any {self} }
+macro_rules! impl_generic_iso_box 
+{
+    ( $( $type:ty ),* ) => {
+        $(
+            impl GenericIsoBox for $type 
+            {
+                fn as_any(&self) -> &dyn std::any::Any 
+                {
+                    self
+                }
+
+                fn get_header(&self) -> &BoxHeader 
+                {
+                    &self.header
+                }
+            }
+        )*
+    };
+}
+
+// Usage:
+impl_generic_iso_box!(
+    MetaBox,
+    HandlerBox,
+    ItemInfoBox,
+    ItemInfoEntryBox,
+    ItemLocationBox,
+    IsoBox
+);
+
+/*
+impl GenericIsoBox for MetaBox          
+{
+    fn as_any    (&self) -> &dyn std::any::Any { self } 
+    fn get_header(&self) -> &BoxHeader         { &self.header }
+}
+
+impl GenericIsoBox for HandlerBox
+{
+    fn as_any    (&self) -> &dyn std::any::Any { self } 
+    fn get_header(&self) -> &BoxHeader         { &self.header }
+}
+impl GenericIsoBox for ItemInfoBox
+{
+    fn as_any    (&self) -> &dyn std::any::Any { self } 
+    fn get_header(&self) -> &BoxHeader         { &self.header }
+}
+impl GenericIsoBox for ItemInfoEntryBox
+{
+    fn as_any    (&self) -> &dyn std::any::Any { self } 
+    fn get_header(&self) -> &BoxHeader         { &self.header }
+}
+impl GenericIsoBox for ItemLocationBox
+{
+    fn as_any    (&self) -> &dyn std::any::Any { self } 
+    fn get_header(&self) -> &BoxHeader         { &self.header }
+}
+impl GenericIsoBox for IsoBox
+{
+    fn as_any    (&self) -> &dyn std::any::Any { self } 
+    fn get_header(&self) -> &BoxHeader         { &self.header }
+}
+*/
 
 pub trait
 ParsableIsoBox: GenericIsoBox
@@ -578,9 +750,10 @@ read_box_based_on_header
 {
     return match header.get_box_type()
     {
-        BoxType::meta => MetaBox::    construct_from_cursor(cursor, header),
-        BoxType::iinf => ItemInfoBox::construct_from_cursor(cursor, header),
-        _             => IsoBox::     construct_from_cursor(cursor, header)
+        BoxType::meta => MetaBox::        construct_from_cursor(cursor, header),
+        BoxType::iinf => ItemInfoBox::    construct_from_cursor(cursor, header),
+        BoxType::iloc => ItemLocationBox::construct_from_cursor(cursor, header),
+        _             => IsoBox::         construct_from_cursor(cursor, header)
     };
 }
 
