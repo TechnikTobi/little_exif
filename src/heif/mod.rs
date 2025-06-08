@@ -8,19 +8,15 @@
 
 mod box_type;
 mod box_header;
-mod iso_box;
-
+mod boxes;
 
 use std::io::Read;
 use std::io::Seek;
 use std::path::Path;
 
-use box_header::BoxHeader;
-use iso_box::GenericIsoBox;
-use iso_box::IsoBox;
-
 use crate::general_file_io::open_read_file;
-use crate::heif::iso_box::read_next_box;
+use crate::heif::boxes::GenericIsoBox;
+use crate::heif::boxes::read_next_box;
 
 
 // pub(crate) fn
