@@ -7,10 +7,10 @@ use std::io::Seek;
 use super::box_type::BoxType;
 use super::box_header::BoxHeader;
 
-mod iso;
-mod meta;
-mod item_info;
-mod item_location;
+pub(super) mod iso;
+pub(super) mod meta;
+pub(super) mod item_info;
+pub(super) mod item_location;
 
 use iso::IsoBox;
 use meta::MetaBox;

@@ -9,6 +9,7 @@
 mod box_type;
 mod box_header;
 mod boxes;
+mod container;
 
 use std::io::Read;
 use std::io::Seek;
@@ -17,6 +18,7 @@ use std::path::Path;
 use crate::general_file_io::open_read_file;
 use crate::heif::boxes::GenericIsoBox;
 use crate::heif::boxes::read_next_box;
+use crate::heif::container::HeifContainer;
 
 
 // pub(crate) fn
@@ -87,7 +89,9 @@ file_read_metadata
     */
 
     let mut file = open_read_file(path)?;
-    generic_parse_heif(&mut file)?;
+    // generic_parse_heif(&mut file)?;
 
-    todo!()
+    let container = HeifContainer::construct_from_cursor_unboxed(&mut file)?;
+
+    return Ok(container.get_exif_data(&mut file)?[4..].to_vec());
 }

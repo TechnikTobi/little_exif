@@ -36,6 +36,22 @@ ItemInfoEntryBox
     additional_data:       Vec<u8>,
 }
 
+// - iinf
+// 00000603:   size of 0x603 bytes (including the 0x04 bytes of the size field itself)
+// 69696E66:   byte representation of `iinf` 
+// 00000000:   version (here: 0) and 24 bits of flags
+// 0041:       number of item info entries, here 0x41 = 65
+// 0000001569: start of first info entry
+
+#[allow(dead_code)]
+pub struct
+ItemInfoBox
+{
+    header:     BoxHeader,
+    item_count: usize,
+    items:      Vec<ItemInfoEntryBox>
+}
+
 impl
 ItemInfoEntryBox
 {
@@ -62,12 +78,14 @@ ItemInfoEntryBox
         let mut additional_data = vec![0u8; data_left_to_read];
         cursor.read_exact(&mut additional_data)?;
 
+        println!("ID: {}, Name: {}", item_id, item_name);
+
         return Ok(ItemInfoEntryBox {
-            header:                header,
-            item_id:               item_id,
-            item_protection_index: item_protection_index,
-            item_name:             item_name,
-            additional_data:       additional_data,
+            header,
+            item_id,
+            item_protection_index,
+            item_name,
+            additional_data,
         });
     }
 }
@@ -93,21 +111,21 @@ ItemInfoEntryBox
     }
 }
 
-// - iinf
-// 00000603:   size of 0x603 bytes (including the 0x04 bytes of the size field itself)
-// 69696E66:   byte representation of `iinf` 
-// 00000000:   version (here: 0) and 24 bits of flags
-// 0041:       number of item info entries, here 0x41 = 65
-// 0000001569: start of first info entry
-
-
-#[allow(dead_code)]
-pub struct
+impl
 ItemInfoBox
 {
-    header:     BoxHeader,
-    item_count: usize,
-    items:      Vec<ItemInfoEntryBox>
+    pub fn
+    get_exif_item_id
+    (
+        &self
+    )
+    -> u16
+    {
+        return self.items.iter()
+            .find(|item| item.item_name == "Exif")
+            .unwrap()
+            .item_id;
+    }
 }
 
 impl
