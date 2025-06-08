@@ -19,6 +19,7 @@ BoxType
     ipma,
     mdat,
     idat,
+    uuid    { usertype: [u8; 16] },
     unknown { box_type: String }
 }
 
@@ -48,6 +49,7 @@ BoxType
             "ipma" => BoxType::ipma, 
             "mdat" => BoxType::mdat, 
             "idat" => BoxType::idat, 
+            "uuid" => BoxType::uuid { usertype: [0u8; 16] },
             _      => panic!("Unknown Box Type! {:?}", box_type_str),
         }
     }
@@ -62,7 +64,8 @@ BoxType
         match self
         {
             BoxType::meta |
-            BoxType::hdlr
+            BoxType::hdlr |
+            BoxType::iloc
             => true,
 
             _ 
