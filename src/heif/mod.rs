@@ -11,53 +11,26 @@ mod box_header;
 mod boxes;
 mod container;
 
+use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
 use std::path::Path;
 
 use crate::general_file_io::open_read_file;
-use crate::heif::boxes::GenericIsoBox;
 use crate::heif::boxes::read_next_box;
 use crate::heif::container::HeifContainer;
 
-
-// pub(crate) fn
-// vec_parse_heif
-// (
-//     file_buffer: &[u8]
-// )
-// -> Result<Vec<IsoBox>, std::io::Error>
-// {
-//     todo!()
-// }
-
 fn
-generic_parse_heif
+generic_read_metadata
 <T: Seek + Read>
 (
-	cursor: &mut T
+    cursor: &mut T
 )
--> Result<Vec<Box<dyn GenericIsoBox>>, std::io::Error>
+-> Result<Vec<u8>, std::io::Error>
 {
-    let mut boxes = Vec::new();
-
-    loop 
-    {
-        if let Ok(next_box) = read_next_box(cursor)
-        {
-            boxes.push(next_box);
-        }
-        else
-        {
-            break;
-        }
-    }
-
-    println!("HEIF!");
-
-	return Ok(boxes);
+    let container = HeifContainer::construct_from_cursor_unboxed(cursor)?;
+    return Ok(container.get_exif_data(cursor)?[4..].to_vec());
 }
-
 
 pub(crate) fn
 read_metadata
@@ -66,32 +39,17 @@ read_metadata
 )
 -> Result<Vec<u8>, std::io::Error>
 {
-    // vec_parse_heif(file_buffer)?;
-    // println!("HEIF!");
-    todo!()
+    let mut cursor = Cursor::new(file_buffer);
+    return generic_read_metadata(&mut cursor);
 }
 
 pub(crate) fn
 file_read_metadata
 (
-	path: &Path
+    path: &Path
 )
 -> Result<Vec<u8>, std::io::Error>
 {
-    /* 
-	// Parse the PNG - if this fails, the read fails as well
-	let parse_png_result = file_parse_png(path)?;
-
-	// Parsed PNG is Ok to use - Open the file and go through the chunks
-	let mut file = file_check_signature(path).unwrap();
-
-	return generic_read_metadata(&mut file, &parse_png_result);
-    */
-
     let mut file = open_read_file(path)?;
-    // generic_parse_heif(&mut file)?;
-
-    let container = HeifContainer::construct_from_cursor_unboxed(&mut file)?;
-
-    return Ok(container.get_exif_data(&mut file)?[4..].to_vec());
+    return generic_read_metadata(&mut file);
 }
