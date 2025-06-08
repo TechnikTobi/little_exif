@@ -28,7 +28,7 @@ MetaBox
     // ipmp_control_box: Option<IsoBox>, // ipmc
     // item_ref_box:     Option<IsoBox>, // iref
     // item_data_box:    Option<IsoBox>, // idat
-    other_boxes:      Vec<Box<dyn GenericIsoBox>>,
+    pub(crate) other_boxes:      Vec<Box<dyn GenericIsoBox>>,
 }
 
 impl
@@ -78,6 +78,8 @@ MetaBox
                 &mut local_cursor, 
                 sub_header
             )? as Box<dyn GenericIsoBox>;
+
+            println!("SUB BOX HEADER: {:?}", boxed_sub_box.get_header());
 
             /*
             let sub_box = match boxed_sub_box.get_header().get_box_type()

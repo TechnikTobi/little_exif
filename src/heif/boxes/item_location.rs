@@ -14,47 +14,66 @@ use crate::heif::boxes::ParsableIsoBox;
 use crate::heif::boxes::impl_generic_iso_box;
 
 #[allow(dead_code)]
-pub struct
+pub(crate) struct
 ItemLocationBox
 {
-    header:           BoxHeader,
-    offset_size:      u8,  // actually u4
-    length_size:      u8,  // actually u4
-    base_offset_size: u8,  // actually u4
-    index_size:       u8,  // actually u4, 
+    pub(self)  header:           BoxHeader,
+    pub(crate) offset_size:      u8,  // actually u4
+    pub(crate) length_size:      u8,  // actually u4
+    pub(crate) base_offset_size: u8,  // actually u4
+    pub(crate) index_size:       u8,  // actually u4, 
                            // only available if version == 1 || 2, otherwise
                            // these 4 bytes are handled as `reserved`
-    item_count:       u32, // only if version == 2, if version < 2 this is u16
-    items:            Vec<ItemLocationEntry>
+    pub(crate) item_count:       u32, // only if version == 2, if version < 2 this is u16
+    pub(crate) items:            Vec<ItemLocationEntry>
+}
+
+#[derive(Debug)]
+pub(crate) enum
+ItemConstructionMethod
+{
+    FILE,
+    IDAT,
+    ITEM,
 }
 
 #[allow(dead_code)]
-pub struct
+pub(crate) struct
 ItemLocationEntry
 {
-    item_id:                          u32, // only if version == 2, 
-                                           // if version < 2 this is u16
-    reserved_and_construction_method: u16, // first 12 bits are reserved, the
-                                           // other 4 are construction method:
-                                           // - 0: file
-                                           // - 1: idat
-                                           // - 2: item
-                                           // only present if version == 1 || 2
-    data_reference_index:             u16,
-    base_offset:                      u64, // actual size depends on value of
-                                           // base_offset_size * 8
-    extent_count:                     u16, // must be equal or greater 1
-    extents:                          Vec<ItemLocationEntryExtentEntry>,
+    pub(crate) item_id:                          u32, 
+        // only if version == 2,  if version < 2 this is u16
+
+    pub(crate) reserved_and_construction_method: u16, 
+        // first 12 bits are reserved, the other 4 are construction method:
+        // - 0: file
+        // - 1: idat
+        // - 2: item
+        // only present if version == 1 || 2
+
+    pub(crate) data_reference_index:             u16,
+    pub(crate) base_offset:                      u64, 
+        // actual size depends on value of base_offset_size * 8
+
+    pub(crate) extent_count:                     u16, 
+        // must be equal or greater 1
+
+    pub(crate) extents:                          Vec<ItemLocationEntryExtentEntry>,
 }
 
 #[allow(dead_code)]
-pub struct
+pub(crate) struct
 ItemLocationEntryExtentEntry
 {
-    extent_index:  Option<u64>, // only if (version == 1 || 2) && index_size>0
-                                // actual size depends on index_size  * 8
-    extent_offset: u64,         // actual size depends on offset_size * 8
-    extent_length: u64,         // actual size depends on length_size * 8
+    pub(crate) extent_index:  Option<u64>, 
+        // only if (version == 1 || 2) && index_size>0
+        // actual size depends on index_size  * 8
+
+    pub(crate) extent_offset: u64,
+        // actual size depends on offset_size * 8
+
+    pub(crate) extent_length: u64,
+        // actual size depends on length_size * 8
 }
 
 /*
@@ -171,14 +190,39 @@ ItemLocationEntry
             )?);
         }
 
-        return Ok(Self { 
+        let entry = Self { 
             item_id, 
             reserved_and_construction_method, 
             data_reference_index, 
             base_offset, 
             extent_count, 
             extents
-        });
+        };
+
+        // println!("Item: {} Location: {:x}, Length: {:x}, Construction: {:?}", 
+        //     item_id, 
+        //     entry.extents.first().unwrap().extent_offset, 
+        //     entry.extents.first().unwrap().extent_length, 
+        //     entry.get_construction_method()
+        // );
+
+        return Ok(entry);
+    }
+
+    pub(super) fn
+    get_construction_method
+    (
+        &self
+    )
+    -> ItemConstructionMethod
+    {
+        return match self.reserved_and_construction_method as u8 & 0x0f
+        {
+            0 => ItemConstructionMethod::FILE,
+            1 => ItemConstructionMethod::IDAT,
+            2 => ItemConstructionMethod::ITEM,
+            _ => panic!("Unknown item construction method!")
+        };
     }
 }
 
