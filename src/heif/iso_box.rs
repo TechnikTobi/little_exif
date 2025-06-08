@@ -335,7 +335,7 @@ ItemLocationEntry
     data_reference_index:             u16,
     base_offset:                      u64, // actual size depends on value of
                                            // base_offset_size * 8
-    extent_count:                     u16, 
+    extent_count:                     u16, // must be equal or greater 1
     extents:                          Vec<ItemLocationEntryExtentEntry>,
 }
 
@@ -393,14 +393,86 @@ ItemLocationEntryExtentEntry
 
         let extent_offset = match offset_size
         {
+            0 => 0,
+            4 => read_be_u32(cursor)? as u64,
+            8 => read_be_u64(cursor)?,
+            _ => panic!("Invalid offset_size!")
+        };
 
-        }
+        let extent_length = match length_size
+        {
+            0 => 0,
+            4 => read_be_u32(cursor)? as u64,
+            8 => read_be_u64(cursor)?,
+            _ => panic!("Invalid length_size!")
+        };
 
-        todo!()
-
-
+        return Ok(Self{extent_index, extent_offset, extent_length});
     }
 }
+
+impl
+ItemLocationEntry
+{
+    fn
+    read_from_cursor
+    <T: Seek + Read>
+    (
+        cursor:           &mut T,
+        header:           &BoxHeader,
+        offset_size:       u8,
+        length_size:       u8,
+        base_offset_size:  u8,
+        index_size:        u8,
+    )
+    -> Result<Self, std::io::Error>
+    {
+        let item_id = match header.get_version()
+        {
+            0 | 1 => read_be_u16(cursor)? as u32,
+            2     => read_be_u32(cursor)?,
+            _     => panic!("Invalid version for ItemLocationEntry decode!")
+        };
+
+        let reserved_and_construction_method = if 
+        (header.get_version() == 1) || (header.get_version() == 2)
+        { read_be_u16(cursor)? } else { 0 };
+
+        let data_reference_index = read_be_u16(cursor)?;
+        let base_offset = match base_offset_size
+        {
+            0 => 0,
+            4 => read_be_u32(cursor)? as u64,
+            8 => read_be_u64(cursor)?,
+            _ => panic!("Invalid base_offset_size!")
+        };
+
+        let extent_count = read_be_u16(cursor)?;
+
+        let mut extents = Vec::new();
+
+        for _ in 0..extent_count
+        {
+            extents.push(ItemLocationEntryExtentEntry::read_from_cursor(
+                cursor, 
+                header, 
+                offset_size, 
+                length_size, 
+                index_size
+            )?);
+        }
+
+        return Ok(Self { 
+            item_id, 
+            reserved_and_construction_method, 
+            data_reference_index, 
+            base_offset, 
+            extent_count, 
+            extents
+        });
+    }
+}
+
 
 pub trait 
 GenericIsoBox 
