@@ -18,15 +18,23 @@ pub(crate) struct
 ItemLocationBox
 {
     pub(self)  header:           BoxHeader,
+
     pub(crate) offset_size:      u8,  // actually u4
     pub(crate) length_size:      u8,  // actually u4
     pub(crate) base_offset_size: u8,  // actually u4
-    pub(crate) index_size:       u8,  // actually u4, 
-                           // only available if version == 1 || 2, otherwise
-                           // these 4 bytes are handled as `reserved`
-    pub(crate) item_count:       u32, // only if version == 2, if version < 2 this is u16
+
+    pub(crate) index_size:       u8,  
+        // actually u4, 
+        // only available if version == 1 || 2, otherwise these 4 bytes are
+        // handled as `reserved`
+
+    pub(crate) item_count:       u32, 
+        // only if version == 2, if version < 2 this is u16
+
     pub(crate) items:            Vec<ItemLocationEntry>
 }
+
+
 
 #[derive(Debug)]
 pub(crate) enum
@@ -36,6 +44,8 @@ ItemConstructionMethod
     IDAT,
     ITEM,
 }
+
+
 
 #[allow(dead_code)]
 pub(crate) struct
@@ -60,6 +70,8 @@ ItemLocationEntry
 
     pub(crate) extents:                          Vec<ItemLocationEntryExtentEntry>,
 }
+
+
 
 #[allow(dead_code)]
 pub(crate) struct
