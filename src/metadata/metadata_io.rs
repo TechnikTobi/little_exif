@@ -7,6 +7,7 @@ use crate::filetype::get_file_type;
 use crate::filetype::FileExtension;
 use crate::general_file_io::io_error;
 
+use crate::heif;
 use crate::jpg;
 use crate::jxl;
 use crate::png;
@@ -41,6 +42,8 @@ Metadata
 	{
 		let raw_pre_decode_general = match file_type
 		{
+			FileExtension::HEIF
+				=> heif::read_metadata(file_buffer),
 			FileExtension::JPEG 
 				=>  jpg::read_metadata(file_buffer),
 			FileExtension::JXL
@@ -88,6 +91,8 @@ Metadata
 		// the raw EXIF data that gets further processed
 		let raw_pre_decode_general = match file_type
 		{
+			FileExtension::HEIF
+				=> heif::file_read_metadata(&path),
 			FileExtension::JPEG 
 				=>  jpg::file_read_metadata(&path),
 			FileExtension::JXL
