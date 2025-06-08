@@ -92,7 +92,7 @@ BoxType
     hmhd,
     sthd,
     uuid    { usertype: [u8; 16] },
-    unknown { box_type: String }
+    // unknown { box_type: String }
 }
 
 impl

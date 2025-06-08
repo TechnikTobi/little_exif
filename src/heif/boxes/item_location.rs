@@ -40,9 +40,9 @@ ItemLocationBox
 pub(crate) enum
 ItemConstructionMethod
 {
-    FILE,
-    IDAT,
-    ITEM,
+    FILE = 0,
+    IDAT = 1,
+    ITEM = 2,
 }
 
 
@@ -211,17 +211,10 @@ ItemLocationEntry
             extents
         };
 
-        // println!("Item: {} Location: {:x}, Length: {:x}, Construction: {:?}", 
-        //     item_id, 
-        //     entry.extents.first().unwrap().extent_offset, 
-        //     entry.extents.first().unwrap().extent_length, 
-        //     entry.get_construction_method()
-        // );
-
         return Ok(entry);
     }
 
-    pub(super) fn
+    pub(crate) fn
     get_construction_method
     (
         &self

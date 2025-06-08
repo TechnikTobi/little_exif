@@ -5,10 +5,10 @@ use std::io::Read;
 use std::io::Seek;
 
 use crate::heif::box_type::BoxType;
+use crate::heif::boxes::item_location::ItemLocationEntry;
 use crate::heif::boxes::meta::MetaBox;
 use crate::heif::read_next_box;
 
-use super::box_header::BoxHeader;
 use super::boxes::GenericIsoBox;
 use super::boxes::item_info::ItemInfoBox;
 use super::boxes::item_location::ItemLocationBox;
@@ -109,6 +109,19 @@ HeifContainer
     }
 
     fn
+    get_exif_item_location_entry
+    (
+        &self,
+        exif_item_id: u16,
+    )
+    -> &ItemLocationEntry
+    {
+        return self.get_item_location_box().items.iter()
+            .find(|item| item.item_id == exif_item_id as u32)
+            .unwrap();
+    }
+
+    fn
     get_exif_data_pos_and_len
     (
         &self,
@@ -116,20 +129,31 @@ HeifContainer
     )
     -> (u64, u64)
     {
-        let exif_extents = &self.get_item_location_box().items.iter()
-            .find(|item| item.item_id == exif_item_id as u32)
-            .unwrap()
-            .extents;
+        let exif_item    = self.get_exif_item_location_entry(exif_item_id);
+        let exif_extents = &exif_item.extents;
 
         if exif_extents.len() != 1
         {
-            panic!("Expected exactly one EXIF extent info entry!");
+            panic!("Expected exactly one EXIF extent info entry! Please create a new ticket at https://github.com/TechnikTobi/little_exif with an example image file");
         }
 
-        return (
-            exif_extents.first().unwrap().extent_offset,
-            exif_extents.first().unwrap().extent_length
-        );
+        match exif_item.get_construction_method()
+        {
+            super::boxes::item_location::ItemConstructionMethod::FILE => {
+                return (
+                    exif_extents.first().unwrap().extent_offset,
+                    exif_extents.first().unwrap().extent_length
+                );
+            },
+
+            super::boxes::item_location::ItemConstructionMethod::IDAT => {
+                panic!("HEIF: item constr. method 'IDAT' currently not supported. Please create a new ticket at https://github.com/TechnikTobi/little_exif with an example image file");
+            },
+
+            super::boxes::item_location::ItemConstructionMethod::ITEM => {
+                panic!("HEIF: item constr. method 'ITEM' currently not supported. Please create a new ticket at https://github.com/TechnikTobi/little_exif with an example image file");
+            },
+        }
     }
 
     pub(super) fn
@@ -153,15 +177,5 @@ HeifContainer
 
         return Ok(exif_buffer);
     }
-
-    // pub(super) fn
-    // get_exif_box
-    // (
-    //     &self
-    // )
-    // -> IsoBox
-    // {
-    //     todo!()
-    // }
 
 }
