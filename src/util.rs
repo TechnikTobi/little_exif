@@ -1,5 +1,224 @@
-// Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
+
+use std::io::Read;
+use std::io::Seek;
+
+use crate::general_file_io::io_error;
+
+/// Reads in the next 1 bytes, starting at the current position of the cursor.
+/// The function call advances the cursor by 1 bytes.
+pub(crate) fn
+read_1_bytes
+<T: Seek + Read>
+(
+    cursor: &mut T
+)
+-> Result<[u8; 1], std::io::Error>
+{
+    // Read in the 1 bytes
+    let mut field = [0u8; 1];
+    let bytes_read = cursor.read(&mut field)?;
+
+    // Check that indeed 1 bytes were read
+    if bytes_read != 1
+    {
+        return io_error!(Other, "Could not read the next 1 bytes!");
+    }
+
+    return Ok(field);
+}
+
+/// Reads in the next 2 bytes, starting at the current position of the cursor.
+/// The function call advances the cursor by 2 bytes.
+pub(crate) fn
+read_2_bytes
+<T: Seek + Read>
+(
+    cursor: &mut T
+)
+-> Result<[u8; 2], std::io::Error>
+{
+    // Read in the 2 bytes
+    let mut field = [0u8; 2];
+    let bytes_read = cursor.read(&mut field)?;
+
+    // Check that indeed 2 bytes were read
+    if bytes_read != 2
+    {
+        return io_error!(Other, "Could not read the next 2 bytes!");
+    }
+
+    return Ok(field);
+}
+
+/// Reads in the next 3 bytes, starting at the current position of the cursor.
+/// The function call advances the cursor by 3 bytes.
+pub(crate) fn
+read_3_bytes
+<T: Seek + Read>
+(
+    cursor: &mut T
+)
+-> Result<[u8; 3], std::io::Error>
+{
+    // Read in the 3 bytes
+    let mut field = [0u8; 3];
+    let bytes_read = cursor.read(&mut field)?;
+
+    // Check that indeed 3 bytes were read
+    if bytes_read != 3
+    {
+        return io_error!(Other, "Could not read the next 3 bytes!");
+    }
+
+    return Ok(field);
+}
+
+/// Reads in the next 4 bytes, starting at the current position of the cursor.
+/// The function call advances the cursor by 4 bytes.
+pub(crate) fn
+read_4_bytes
+<T: Seek + Read>
+(
+    cursor: &mut T
+)
+-> Result<[u8; 4], std::io::Error>
+{
+    // Read in the 4 bytes
+    let mut field = [0u8; 4];
+    let bytes_read = cursor.read(&mut field)?;
+
+    // Check that indeed 4 bytes were read
+    if bytes_read != 4
+    {
+        return io_error!(Other, "Could not read the next 4 bytes!");
+    }
+
+    return Ok(field);
+}
+
+/// Reads in the next 8 bytes, starting at the current position of the cursor.
+/// The function call advances the cursor by 8 bytes.
+pub(crate) fn
+read_8_bytes
+<T: Seek + Read>
+(
+    cursor: &mut T
+)
+-> Result<[u8; 8], std::io::Error>
+{
+    // Read in the 8 bytes
+    let mut field = [0u8; 8];
+    let bytes_read = cursor.read(&mut field)?;
+
+    // Check that indeed 8 bytes were read
+    if bytes_read != 8
+    {
+        return io_error!(Other, "Could not read the next 8 bytes!");
+    }
+
+    return Ok(field);
+}
+
+/// Reads in the next 16 bytes, starting at the current position of the cursor.
+/// The function call advances the cursor by 16 bytes.
+pub(crate) fn
+read_16_bytes
+<T: Seek + Read>
+(
+    cursor: &mut T
+)
+-> Result<[u8; 16], std::io::Error>
+{
+    // Read in the 16 bytes
+    let mut field = [0u8; 16];
+    let bytes_read = cursor.read(&mut field)?;
+
+    // Check that indeed 16 bytes were read
+    if bytes_read != 16
+    {
+        return io_error!(Other, "Could not read the next 16 bytes!");
+    }
+
+    return Ok(field);
+}
+
+/// Reads in a u16 in big endian format at the current cursor position
+/// The function call advances the cursor by 2 bytes.
+pub(crate) fn
+read_be_u16
+<T: Seek + Read>
+(
+    cursor: &mut T
+)
+-> Result<u16, std::io::Error>
+{
+    let bytes = read_2_bytes(cursor)?;
+    return Ok(bytes[0] as u16 * 256 + bytes[1] as u16);
+}
+
+/// Reads in a u32 in big endian format at the current cursor position
+/// The function call advances the cursor by 4 bytes.
+pub(crate) fn
+read_be_u32
+<T: Seek + Read>
+(
+    cursor: &mut T
+)
+-> Result<u32, std::io::Error>
+{
+    let     bytes = read_4_bytes(cursor)?;
+    let mut value = 0u32;
+
+    for byte in bytes
+    {
+        value = value * 256 + byte as u32;
+    }
+
+    return Ok(value);
+}
+
+/// Reads in a u64 in big endian format at the current cursor position
+/// The function call advances the cursor by 8 bytes.
+pub(crate) fn
+read_be_u64
+<T: Seek + Read>
+(
+    cursor: &mut T
+)
+-> Result<u64, std::io::Error>
+{
+    let     bytes = read_8_bytes(cursor)?;
+    let mut value = 0u64;
+
+    for byte in bytes
+    {
+        value = value * 256 + byte as u64;
+    }
+
+    return Ok(value);
+}
+
+pub(crate) fn
+read_null_terminated_string
+<T: Seek + Read>
+(
+    cursor: &mut T
+)
+-> Result<String, std::io::Error>
+{
+    let mut string_buffer    = Vec::new();
+    let mut character_buffer = read_1_bytes(cursor)?;
+    while character_buffer[0] != 0x00
+    {
+        string_buffer.push(character_buffer[0]);
+        character_buffer = read_1_bytes(cursor)?;
+    }
+
+    return Ok(String::from_utf8(string_buffer).unwrap());
+}
+
 
 /// Inserts a slice into a vector at a given offset, shifting elements 
 /// starting at the offset towards the end.
