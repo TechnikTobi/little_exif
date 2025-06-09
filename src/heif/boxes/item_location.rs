@@ -11,7 +11,6 @@ use crate::util::read_be_u64;
 use crate::heif::box_header::BoxHeader;
 use crate::heif::boxes::GenericIsoBox;
 use crate::heif::boxes::ParsableIsoBox;
-use crate::heif::boxes::impl_generic_iso_box;
 
 #[allow(dead_code)]
 pub(crate) struct
@@ -305,6 +304,29 @@ ItemLocationBox
     }
 }
 
-impl_generic_iso_box!(
-    ItemLocationBox
-);
+
+
+impl
+GenericIsoBox
+for
+ItemLocationBox
+{
+    fn
+    serialize
+    (
+        &self
+    ) 
+    -> Vec<u8>
+    {
+        let mut serialized = self.header.serialize();
+
+        todo!();
+
+        return serialized;
+    }
+
+
+    fn as_any     (&    self) -> &    dyn std::any::Any {  self       }
+    fn as_any_mut (&mut self) -> &mut dyn std::any::Any {  self       }
+    fn get_header (&    self) -> &        BoxHeader     { &self.header}
+}

@@ -13,6 +13,7 @@ use crate::heif::boxes::meta::MetaBox;
 use crate::heif::read_next_box;
 
 use crate::metadata::Metadata;
+use crate::util::range_remove;
 use crate::util::read_be_u32;
 
 use super::boxes::GenericIsoBox;
@@ -282,19 +283,21 @@ HeifContainer
     <T: Seek + Read + Write>
     (
         &mut self,
-        cursor:   &mut T,
-        metadata: &Metadata
+        file_buffer: &mut Vec<u8>,
+        metadata:    &    Metadata
     )
     -> Result<(), std::io::Error>
     {
         // Find out where old exif is located, needed to determine which iloc
         // entries need to be updated
-        let id       = self.get_item_id_exif_data();
-        let (pos, _) = self.get_exif_data_pos_and_len(id);
+        let id                           = self.get_item_id_exif_data();
+        let (old_exif_pos, old_exif_len) = self.get_exif_data_pos_and_len(id);
+
+        let mut cursor = Cursor::new(file_buffer);
 
         // Construct new exif data area
         let (new_exif_area, delta) = self.construct_new_exif_data_area(
-            cursor, 
+            &mut cursor, 
             metadata
         )?;
 
@@ -303,18 +306,18 @@ HeifContainer
         {
             for extent in item.extents.iter_mut()
             {
-                if extent.extent_offset < pos
+                if extent.extent_offset < old_exif_pos
                 {
                     continue;
                 }
-                if extent.extent_offset == pos
+                if extent.extent_offset == old_exif_pos
                 {
                     // Special case where we have the extent of the exif area
                     // needs update in length, not offset
                     extent.extent_length = (extent.extent_length as i64 + delta) as u64;
                     continue;
                 }
-                if extent.extent_offset > pos
+                if extent.extent_offset > old_exif_pos
                 {
                     extent.extent_offset = (extent.extent_offset as i64 + delta) as u64;
                 }
@@ -323,13 +326,22 @@ HeifContainer
 
         // Now we write the boxes to the cursor, start by seek to the start
         // of the file
+        // Keep track of how many bytes were written so we know when to 
+        // replace old exif data with new
         cursor.seek(std::io::SeekFrom::Start(0))?;
 
+        let mut written_bytes = 0usize;
 
-        
         for iso_box in &self.boxes
         {
+            
 
+            // Remove old exif data
+            range_remove(
+                cursor.get_mut(), 
+                old_exif_pos as usize, 
+                (old_exif_pos + old_exif_len) as usize
+            );
         }
 
         return Ok(());
