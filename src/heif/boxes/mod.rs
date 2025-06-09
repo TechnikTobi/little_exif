@@ -21,8 +21,9 @@ use item_location::ItemLocationBox;
 pub trait 
 GenericIsoBox 
 {
-    fn as_any    (&self) -> &dyn std::any::Any;
-    fn get_header(&self) -> &BoxHeader;
+    fn as_any     (&    self) -> &    dyn std::any::Any;
+    fn as_any_mut (&mut self) -> &mut dyn std::any::Any;
+    fn get_header (&    self) -> &        BoxHeader;
 }
 
 macro_rules! impl_generic_iso_box 
@@ -32,6 +33,11 @@ macro_rules! impl_generic_iso_box
             impl GenericIsoBox for $type 
             {
                 fn as_any(&self) -> &dyn std::any::Any 
+                {
+                    self
+                }
+
+                fn as_any_mut(&mut self) -> &mut dyn std::any::Any 
                 {
                     self
                 }
