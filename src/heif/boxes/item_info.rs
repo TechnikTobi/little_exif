@@ -4,7 +4,7 @@
 use std::io::Read;
 use std::io::Seek;
 
-use log::debug;
+use crate::debug_println;
 
 use crate::endian::Endian;
 use crate::u8conversion::U8conversion;
@@ -82,7 +82,7 @@ ItemInfoEntryBox
         let mut additional_data = vec![0u8; data_left_to_read];
         cursor.read_exact(&mut additional_data)?;
 
-        debug!("ID: {}, Name: {}", item_id, item_name);
+        debug_println!("ID: {}, Name: {}", item_id, item_name);
 
         return Ok(ItemInfoEntryBox {
             header,

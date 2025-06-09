@@ -4,7 +4,7 @@
 use std::io::Read;
 use std::io::Seek;
 
-use log::debug;
+use crate::debug_println;
 
 use super::box_type::BoxType;
 use super::box_header::BoxHeader;
@@ -73,7 +73,7 @@ read_next_box
 {
     let header = BoxHeader::read_box_header(cursor)?;
 
-    debug!("{:?}", header);
+    debug_println!("{:?}", header);
 
     return read_box_based_on_header(cursor, header);
 }

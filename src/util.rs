@@ -290,6 +290,23 @@ where T: Copy
     vec.truncate(new_vec_len);
 }
 
+#[macro_export]
+macro_rules! debug_println 
+{
+    (
+        $($arg:tt)*
+    ) 
+    => 
+    (
+        #[cfg(debug_assertions)] 
+        {
+            print!("LITTLE EXIF DEBUG: ");
+            println!($($arg)*);
+        }
+    );
+}
+
+
 /*
 /// Inserts a slice into a vector at a given offset, shifting elements 
 /// starting at the offset towards the end.

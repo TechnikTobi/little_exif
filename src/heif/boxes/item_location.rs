@@ -4,6 +4,7 @@
 use std::io::Read;
 use std::io::Seek;
 
+use crate::debug_println;
 use crate::endian::Endian;
 use crate::u8conversion::U8conversion;
 use crate::u8conversion::to_u8_vec_macro;
@@ -50,6 +51,7 @@ ItemConstructionMethod
 
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub(crate) struct
 ItemLocationEntry
 {
@@ -76,6 +78,7 @@ ItemLocationEntry
 
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub(crate) struct
 ItemLocationEntryExtentEntry
 {
@@ -212,6 +215,8 @@ ItemLocationEntry
             extent_count, 
             extents
         };
+
+        debug_println!("{:?}", entry);
 
         return Ok(entry);
     }
