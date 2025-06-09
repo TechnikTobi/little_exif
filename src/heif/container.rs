@@ -7,6 +7,7 @@ use std::io::Seek;
 
 use crate::general_file_io::EXIF_HEADER;
 use crate::heif::box_type::BoxType;
+use crate::heif::boxes::item_location::ItemConstructionMethod;
 use crate::heif::boxes::item_location::ItemLocationEntry;
 use crate::heif::boxes::meta::MetaBox;
 use crate::heif::read_next_box;
@@ -303,29 +304,69 @@ HeifContainer
         // Update the location data in the iloc box
         for item in self.get_item_location_box_mut().items.iter_mut()
         {
-            
+            // First, check if any extent of this item has the same offset as
+            // the old exif data area. In that case, there must be only one
+            // extent - other cases can't be handled right now
+            if item.extents.iter()
+                .any(|extent| {
+                    item.base_offset + extent.extent_offset == old_exif_pos
+                })
+            {
+                if item.extents.len() != 1
+                {
+                    panic!("Expect to have exactly one extent info for EXIF!");
+                }
 
+                // In case of the EXIF extent information we need to update
+                // the length information, not the offset!
+                let new_ext_len = (
+                    item.extents.first().unwrap().extent_length as i64
+                    + delta
+                ) as u64;
+                item.extents.first_mut().unwrap().extent_length = new_ext_len;
 
+                continue;
+            }
+
+            if item.get_construction_method() == ItemConstructionMethod::IDAT
+            {
+                // In this case the offset information is relative to the
+                // position of an idat box -> not affected by change in length
+                // of another box
+                continue;
+            }
+
+            if item.get_construction_method() == ItemConstructionMethod::ITEM
+            {
+                // Offset is relative to another item's extent
+                // Also nothing to do here (for now...)
+                continue;
+            }
+
+            if item.base_offset > delta.abs() as u64
+            {
+                // Potentially modify the entire base offset 
+                // however, we can only do that if all complete offsets
+                // point to an area after the exif data area
+                // So we need to check that first:
+                if item.extents.iter()
+                    .all(|extent| {
+                        item.base_offset + extent.extent_offset >= old_exif_pos
+                    })
+                {
+                    item.base_offset = (item.base_offset as i64 + delta) as u64;
+                    continue;
+                }
+            }
+
+            // At this point we have no option left but to modify all 
+            // individual extent offsets
             for extent in item.extents.iter_mut()
             {
                 let complete_offset = item.base_offset + extent.extent_offset;
-                
-                if complete_offset < old_exif_pos
-                {
-                    continue;
-                }
-                if complete_offset == old_exif_pos
-                {
-                    // Special case where we have the extent of the exif area
-                    // needs update in length, not offset
-                    extent.extent_length = (extent.extent_length as i64 + delta) as u64;
-                    continue;
-                }
+
                 if complete_offset > old_exif_pos
                 {
-                    // TODO: What if the extent offset is "too small" (e.g. 0)
-                    // as the base_offset in the item is what we actually want
-                    // to adjust?
                     extent.extent_offset = (extent.extent_offset as i64 + delta) as u64;
                 }
             }
