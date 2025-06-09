@@ -14,6 +14,7 @@ mod container;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
+use std::io::Write;
 use std::path::Path;
 
 use crate::general_file_io::open_read_file;
@@ -74,13 +75,18 @@ file_write_metadata
     let mut file_buffer: Vec<u8> = Vec::new();
     file.read_to_end(&mut file_buffer)?;
 
-    // Encode the metadata
-    let encoded_metadata = metadata.encode()?;
+    let mut cursor    = Cursor::new(file_buffer);
+    let mut container = HeifContainer::construct_from_cursor_unboxed(&mut cursor)?;
 
-    // Determine delta in byte length
-    println!("{:?}", encoded_metadata);
-    
-    todo!();
+    container.generic_write_metadata(cursor.get_mut(), metadata)?;
+
+    // Seek back to start & write the file
+	file.seek(std::io::SeekFrom::Start(0))?;
+	file.write_all(&mut cursor.get_mut())?;
+
+    Ok(())
+
+    // todo!();
 
     /* 
     // Writes the metadata to the file_buffer vec

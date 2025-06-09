@@ -280,7 +280,7 @@ HeifContainer
 
     pub(super) fn
     generic_write_metadata
-    <T: Seek + Read + Write>
+    // <T: Seek + Read + Write>
     (
         &mut self,
         file_buffer: &mut Vec<u8>,
@@ -334,14 +334,24 @@ HeifContainer
 
         for iso_box in &self.boxes
         {
-            
+            let serialized = iso_box.serialize();
+            // written_bytes += serialized.len();
+            cursor.write_all(&serialized)?;
 
-            // Remove old exif data
-            range_remove(
-                cursor.get_mut(), 
-                old_exif_pos as usize, 
-                (old_exif_pos + old_exif_len) as usize
-            );
+            if 
+                written_bytes >= (old_exif_pos + old_exif_len) as usize
+                &&
+                written_bytes < usize::MAX
+            {
+                // Remove old exif data
+                range_remove(
+                    cursor.get_mut(), 
+                    old_exif_pos as usize, 
+                    (old_exif_pos + old_exif_len) as usize
+                );
+
+                written_bytes = usize::MAX;
+            }
         }
 
         return Ok(());

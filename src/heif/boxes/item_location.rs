@@ -328,10 +328,11 @@ ItemLocationBox
         //     ((temp >> 12) as u8, (temp >> 8 & 0x0f) as u8, (temp >> 4 & 0x0f) as u8);
 
         let temp = 0u16 
-            + (self.offset_size      as u16) << 12
-            + (self.length_size      as u16) <<  8
-            + (self.base_offset_size as u16) <<  4
-            + (self.index_size       as u16);
+            + ((self.offset_size      as u16) << 12)
+            + ((self.length_size      as u16) <<  8)
+            + ((self.base_offset_size as u16) <<  4)
+            + ((self.index_size       as u16))
+            ;
 
         serialized.extend(to_u8_vec_macro!(u16, &temp, &Endian::Big).iter());
 
