@@ -5,6 +5,7 @@ use std::io::Read;
 use std::io::Seek;
 
 use crate::endian::Endian;
+use crate::u8conversion::U8conversion;
 use crate::u8conversion::to_u8_vec_macro;
 use crate::util::read_be_u16;
 use crate::util::read_be_u32;
@@ -187,8 +188,8 @@ ItemInfoEntryBox
     {
         let mut serialized = self.header.serialize();
         
-        serialized.extend(to_u8_vec_macro!(u16, self.item_id,               Endian::Big).iter());
-        serialized.extend(to_u8_vec_macro!(u16, self.item_protection_index, Endian::Big).iter());
+        serialized.extend(to_u8_vec_macro!(u16, &self.item_id,               &Endian::Big).iter());
+        serialized.extend(to_u8_vec_macro!(u16, &self.item_protection_index, &Endian::Big).iter());
         serialized.extend(self.item_name.bytes());
         serialized.push(0x00); // null terminator for item name string
         serialized.extend(&self.additional_data);
@@ -217,11 +218,11 @@ ItemInfoBox
 
         if self.header.get_version() == 0
         {
-            serialized.extend(to_u8_vec_macro!(u16, self.item_count, Endian::Big).iter());
+            serialized.extend(to_u8_vec_macro!(u16, &(self.item_count as u16), &Endian::Big).iter());
         }
         else
         {
-            serialized.extend(to_u8_vec_macro!(u32, self.item_count, Endian::Big).iter());
+            serialized.extend(to_u8_vec_macro!(u32, &(self.item_count as u32), &Endian::Big).iter());
         }
         
         for item in &self.items
