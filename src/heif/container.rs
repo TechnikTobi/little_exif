@@ -13,6 +13,7 @@ use crate::heif::boxes::meta::MetaBox;
 use crate::heif::read_next_box;
 
 use crate::metadata::Metadata;
+use crate::util::insert_multiple_at;
 use crate::util::range_remove;
 use crate::util::read_be_u32;
 
@@ -261,6 +262,8 @@ HeifContainer
         let mut exif_buffer = vec![0u8; length as usize];
         cursor.read_exact(&mut exif_buffer)?;
 
+        println!("\n \n OLD BUFFER: {:?}\n\n", exif_buffer);
+
         // Decode the first 4 bytes, which tells us where to cut off the old 
         // data and replace with the new one
         let mut local_cursor            = Cursor::new(exif_buffer[0..4].to_vec());
@@ -270,7 +273,11 @@ HeifContainer
         let mut new_exif_buffer = exif_buffer[0..exif_tiff_header_offset as usize + 4].to_vec();
         new_exif_buffer.append(&mut metadata.encode()?);
 
+        println!("\n \n NEW BUFFER: {:?}\n\n", new_exif_buffer);
+
         let delta = new_exif_buffer.len() as i64 - length as i64;
+
+        println!("\n \n DELTA: {}\n\n", delta);
 
         return Ok((
             new_exif_buffer,
@@ -296,7 +303,7 @@ HeifContainer
         let mut cursor = Cursor::new(file_buffer);
 
         // Construct new exif data area
-        let (new_exif_area, delta) = self.construct_new_exif_data_area(
+        let (mut new_exif_area, delta) = self.construct_new_exif_data_area(
             &mut cursor, 
             metadata
         )?;
@@ -330,18 +337,37 @@ HeifContainer
         // replace old exif data with new
         cursor.seek(std::io::SeekFrom::Start(0))?;
 
-        let mut written_bytes = 0usize;
+        let mut written_bytes    = 0usize;
+        let mut new_exif_written = false;
+        let     end_of_old_exif  = (old_exif_pos + old_exif_len) as usize;
 
-        for iso_box in &self.boxes
+        for iso_box in &mut self.boxes
         {
-            let serialized = iso_box.serialize();
-            // written_bytes += serialized.len();
+            let mut serialized = iso_box.serialize();
+
+            // If this box encompasses the exif data area, update its size and
+            // serialize it again
+            // TODO: As this is not the cleanest approach (e.g. what if the
+            // exif area is not in this top level box but some nested box? 
+            // -> requires update of size fields of all boxes "downward") some
+            // other solution needs to be found for this
+            // In the meantime, this should work for the majority of HEIFs
+            if 
+                written_bytes + serialized.len() >= end_of_old_exif 
+                && 
+                !new_exif_written
+            {
+                let new_size = (iso_box.get_header().get_box_size() as i64 + delta) as usize;
+                iso_box.get_header_mut().set_box_size(new_size);
+                serialized = iso_box.serialize();
+            }
+
             cursor.write_all(&serialized)?;
 
             if 
-                written_bytes >= (old_exif_pos + old_exif_len) as usize
-                &&
-                written_bytes < usize::MAX
+                written_bytes + serialized.len() >= end_of_old_exif 
+                && 
+                !new_exif_written
             {
                 // Remove old exif data
                 range_remove(
@@ -350,8 +376,21 @@ HeifContainer
                     (old_exif_pos + old_exif_len) as usize
                 );
 
-                written_bytes = usize::MAX;
+                // Insert new exif data
+                insert_multiple_at(
+                    cursor.get_mut(),
+                    old_exif_pos as usize, 
+                    &mut new_exif_area
+                );
+
+                new_exif_written = true;
             }
+
+            written_bytes = (
+                written_bytes      as i64 
+                + serialized.len() as i64
+                + delta
+            ) as usize;
         }
 
         return Ok(());

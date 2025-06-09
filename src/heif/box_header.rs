@@ -116,6 +116,16 @@ BoxHeader
     }
 
     pub(super) fn
+    set_box_size
+    (
+        &mut self,
+        new_size: usize
+    )
+    {
+        self.box_size = new_size;
+    }
+
+    pub(super) fn
     get_version
     (
         &self

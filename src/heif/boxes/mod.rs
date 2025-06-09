@@ -21,10 +21,11 @@ use item_location::ItemLocationBox;
 pub trait 
 GenericIsoBox 
 {
-    fn as_any     (&    self) -> &    dyn std::any::Any;
-    fn as_any_mut (&mut self) -> &mut dyn std::any::Any;
-    fn get_header (&    self) -> &        BoxHeader;
-    fn serialize  (&    self) ->          Vec<u8>;
+    fn as_any         (&    self) -> &    dyn std::any::Any;
+    fn as_any_mut     (&mut self) -> &mut dyn std::any::Any;
+    fn get_header     (&    self) -> &        BoxHeader;
+    fn get_header_mut (&mut self) -> &mut     BoxHeader;
+    fn serialize      (&    self) ->          Vec<u8>;
 }
 
 pub trait
