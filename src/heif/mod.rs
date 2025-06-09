@@ -80,24 +80,11 @@ file_write_metadata
 
     container.generic_write_metadata(cursor.get_mut(), metadata)?;
 
-    // Seek back to start & write the file
-	file.seek(std::io::SeekFrom::Start(0))?;
-	file.write_all(&mut cursor.get_mut())?;
-
-    Ok(())
-
-    // todo!();
-
-    /* 
-    // Writes the metadata to the file_buffer vec
-    // The called function handles the removal of old metadata and the JPG
-    // specific encoding, so we pass only the generally encoded metadata here
-    write_metadata(&mut file_buffer, metadata)?;
-
-    // Seek back to start & write the file
-    file.seek(SeekFrom::Start(0))?;
-    file.write_all(&file_buffer)?;
+    // Seek back to start, write the file and adjust its length, possibly 
+    // truncating the file if new contents are shorter
+    file.seek(std::io::SeekFrom::Start(0))?;
+    file.write_all(&mut cursor.get_mut())?;
+    file.set_len(cursor.get_ref().len() as u64)?;
 
     return Ok(());
-    */
 }
