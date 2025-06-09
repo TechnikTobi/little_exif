@@ -4,7 +4,6 @@
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
-use std::io::Write;
 
 use crate::general_file_io::EXIF_HEADER;
 use crate::heif::box_type::BoxType;
@@ -287,7 +286,6 @@ HeifContainer
 
     pub(super) fn
     generic_write_metadata
-    // <T: Seek + Read + Write>
     (
         &mut self,
         file_buffer: &mut Vec<u8>,
@@ -331,11 +329,10 @@ HeifContainer
             }
         }
 
-        // Now we write the boxes to the cursor, start by seek to the start
-        // of the file
+        // Now we clear the vec and write the boxes to it
         // Keep track of how many bytes were written so we know when to 
         // replace old exif data with new
-        cursor.seek(std::io::SeekFrom::Start(0))?;
+        cursor.get_mut().clear();
 
         let mut written_bytes    = 0usize;
         let mut new_exif_written = false;
@@ -360,15 +357,10 @@ HeifContainer
                 let new_size = (iso_box.get_header().get_box_size() as i64 + delta) as usize;
                 iso_box.get_header_mut().set_box_size(new_size);
                 serialized = iso_box.serialize();
-            }
 
-            cursor.write_all(&serialized)?;
+                // Write the serialized box with the OLD exif data
+                cursor.get_mut().extend(&serialized);
 
-            if 
-                written_bytes + serialized.len() >= end_of_old_exif 
-                && 
-                !new_exif_written
-            {
                 // Remove old exif data
                 range_remove(
                     cursor.get_mut(), 
@@ -385,12 +377,13 @@ HeifContainer
 
                 new_exif_written = true;
             }
+            else
+            {
+                // Just extend with the serialized box contents
+                cursor.get_mut().extend(&serialized);
+            }
 
-            written_bytes = (
-                written_bytes      as i64 
-                + serialized.len() as i64
-                + delta
-            ) as usize;
+            written_bytes = written_bytes + serialized.len();
         }
 
         return Ok(());
