@@ -4,6 +4,9 @@
 use std::io::Read;
 use std::io::Seek;
 
+use crate::endian::Endian;
+use crate::u8conversion::U8conversion;
+use crate::u8conversion::to_u8_vec_macro;
 use crate::util::read_be_u16;
 use crate::util::read_be_u32;
 use crate::util::read_be_u64;
@@ -320,7 +323,82 @@ ItemLocationBox
     {
         let mut serialized = self.header.serialize();
 
-        todo!();
+        
+        // let (offset_size,        length_size,              base_offset_size) =
+        //     ((temp >> 12) as u8, (temp >> 8 & 0x0f) as u8, (temp >> 4 & 0x0f) as u8);
+
+        let temp = 0u16 
+            + (self.offset_size      as u16) << 12
+            + (self.length_size      as u16) <<  8
+            + (self.base_offset_size as u16) <<  4
+            + (self.index_size       as u16);
+
+        serialized.extend(to_u8_vec_macro!(u16, &temp, &Endian::Big).iter());
+
+        match self.header.get_version()
+        {
+            0 | 1 => serialized.extend(to_u8_vec_macro!(u16, &(self.item_count as u16), &Endian::Big).iter()),
+            2     => serialized.extend(to_u8_vec_macro!(u32, & self.item_count,         &Endian::Big).iter()),
+            _     => panic!("Invalid version for ItemLocationBox serialize!")
+        };
+
+        for item in &self.items
+        {
+            match self.header.get_version()
+            {
+                0 | 1 => serialized.extend(to_u8_vec_macro!(u16, &(item.item_id as u16), &Endian::Big).iter()),
+                2     => serialized.extend(to_u8_vec_macro!(u32, & item.item_id,         &Endian::Big).iter()),
+                _     => panic!("Invalid version for ItemLocationBox serialize!")
+            };
+
+            if (self.header.get_version() == 1) || (self.header.get_version() == 2)
+            {
+                serialized.extend(to_u8_vec_macro!(u16, &item.reserved_and_construction_method, &Endian::Big).iter());
+            }
+            
+            serialized.extend(to_u8_vec_macro!(u16, &item.data_reference_index, &Endian::Big).iter());
+            match self.base_offset_size
+            {
+                0 => (),
+                4 => serialized.extend(to_u8_vec_macro!(u32, &(item.base_offset as u32), &Endian::Big).iter()),
+                8 => serialized.extend(to_u8_vec_macro!(u64, & item.base_offset,         &Endian::Big).iter()),
+                _ => panic!("Invalid base_offset_size!")
+            };
+
+            serialized.extend(to_u8_vec_macro!(u16, &item.extent_count, &Endian::Big).iter());
+
+            for extent in &item.extents
+            {
+                if 
+                    (self.header.get_version() == 1 || self.header.get_version() == 2)
+                    &&
+                    self.index_size > 0
+                {
+                    match self.index_size
+                    {
+                        4 => serialized.extend(to_u8_vec_macro!(u32, &(extent.extent_index.unwrap() as u32), &Endian::Big).iter()),
+                        8 => serialized.extend(to_u8_vec_macro!(u64, & extent.extent_index.unwrap(),         &Endian::Big).iter()),
+                        _ => panic!("Invalid index_size!")
+                    }
+                }
+
+                match self.offset_size
+                {
+                    0 => (),
+                    4 => serialized.extend(to_u8_vec_macro!(u32, &(extent.extent_offset as u32), &Endian::Big).iter()),
+                    8 => serialized.extend(to_u8_vec_macro!(u64, & extent.extent_offset,         &Endian::Big).iter()),
+                    _ => panic!("Invalid offset_size!")
+                };
+
+                match self.length_size
+                {
+                    0 => (),
+                    4 => serialized.extend(to_u8_vec_macro!(u32, &(extent.extent_length as u32), &Endian::Big).iter()),
+                    8 => serialized.extend(to_u8_vec_macro!(u64, & extent.extent_length,         &Endian::Big).iter()),
+                    _ => panic!("Invalid length_size!")
+                };
+            }
+        }
 
         return serialized;
     }
