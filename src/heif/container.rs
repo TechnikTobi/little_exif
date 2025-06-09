@@ -1,6 +1,7 @@
 // Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
 use std::io::Write;
@@ -70,6 +71,23 @@ HeifContainer
     }
 
     fn
+    get_meta_box_mut
+    (
+        &mut self
+    )
+    -> &mut MetaBox
+    {
+        return match self.boxes.iter_mut()
+            .find(|b| b.get_header().get_box_type() == BoxType::meta)
+            .unwrap()
+            .as_any_mut()
+            .downcast_mut::<MetaBox>() {
+                Some(unboxed) => unboxed,
+                None          => panic!("Can't unbox ItemInfoBox!")
+            };
+    }
+
+    fn
     get_item_info_box
     (
         &self
@@ -108,6 +126,23 @@ HeifContainer
             .unwrap()
             .as_any()
             .downcast_ref::<ItemLocationBox>() {
+                Some(unboxed) => unboxed,
+                None          => panic!("Can't unbox ItemLocationBox!")
+            };
+    }
+
+    fn
+    get_item_location_box_mut
+    (
+        &mut self
+    )
+    -> &mut ItemLocationBox
+    {
+        return match self.get_meta_box_mut().other_boxes.iter_mut()
+            .find(|b| b.get_header().get_box_type() == BoxType::iloc)
+            .unwrap()
+            .as_any_mut()
+            .downcast_mut::<ItemLocationBox>() {
                 Some(unboxed) => unboxed,
                 None          => panic!("Can't unbox ItemLocationBox!")
             };
@@ -201,26 +236,92 @@ HeifContainer
         return Ok(full_exif_data);
     }
 
+    /// Constructs a new version of the exif data area of the HEIF file
+    /// the i64 tells us the delta in bytes. If negative, the new area is
+    /// shorter than the old one, positive if longer
+    fn
+    construct_new_exif_data_area
+    <T: Seek + Read>
+    (
+        &self,
+        cursor:   &mut T,
+        metadata: &Metadata
+    )
+    -> Result<(Vec<u8>, i64), std::io::Error>
+    {
+        // Locate old exif data
+        let exif_item_id    = self.get_item_id_exif_data();
+        let (start, length) = self.get_exif_data_pos_and_len(exif_item_id);
+
+        // Reset cursor to start of exif data
+        cursor.seek(std::io::SeekFrom::Start(start))?;
+
+        // Read in all of this area
+        let mut exif_buffer = vec![0u8; length as usize];
+        cursor.read_exact(&mut exif_buffer)?;
+
+        // Decode the first 4 bytes, which tells us where to cut off the old 
+        // data and replace with the new one
+        let mut local_cursor            = Cursor::new(exif_buffer[0..4].to_vec());
+        let     exif_tiff_header_offset = read_be_u32(&mut local_cursor)?;
+
+        // Cut off data, starting at the old TIFF header and replace with new
+        let mut new_exif_buffer = exif_buffer[0..exif_tiff_header_offset as usize + 4].to_vec();
+        new_exif_buffer.append(&mut metadata.encode()?);
+
+        let delta = new_exif_buffer.len() as i64 - length as i64;
+
+        return Ok((
+            new_exif_buffer,
+            delta 
+        ));
+    }
+
     pub(super) fn
     generic_write_metadata
-    <T: Seek + Write>
+    <T: Seek + Read + Write>
     (
+        &mut self,
         cursor:   &mut T,
         metadata: &Metadata
     )
     -> Result<(), std::io::Error>
     {
-        // Encode new metadata
-        let encoded_metadata = metadata.encode()?;
+        // Find out where old exif is located, needed to determine which iloc
+        // entries need to be updated
+        let id       = self.get_item_id_exif_data();
+        let (pos, _) = self.get_exif_data_pos_and_len(id);
 
-        // Determine delta in byte length
-        println!("{:?}", encoded_metadata);
+        // Construct new exif data area
+        let (new_exif_area, delta) = self.construct_new_exif_data_area(
+            cursor, 
+            metadata
+        )?;
+
+        // Update the location data in the iloc box
+        for item in self.get_item_location_box_mut().items.iter_mut()
+        {
+            for extent in item.extents.iter_mut()
+            {
+                if extent.extent_offset < pos
+                {
+                    continue;
+                }
+                if extent.extent_offset == pos
+                {
+                    // Special case where we have the extent of the exif area
+                    // needs update in length, not offset
+                    extent.extent_length = (extent.extent_length as i64 + delta) as u64;
+                    continue;
+                }
+                if extent.extent_offset > pos
+                {
+                    extent.extent_offset = (extent.extent_offset as i64 + delta) as u64;
+                }
+            }
+        }
+
         
-        todo!();
-
-        // Does *not* call generic_clear_metadata, as the entire tiff data gets
-        // overwritten anyways
-        cursor.write_all(&metadata.encode()?)?;
 
         return Ok(());
     }
