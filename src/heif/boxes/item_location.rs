@@ -39,7 +39,7 @@ ItemLocationBox
 
 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) enum
 ItemConstructionMethod
 {
