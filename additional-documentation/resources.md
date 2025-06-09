@@ -37,3 +37,4 @@ This section lists useful resources to be used during development.
 ## Related projects
 - [exifsd](https://github.com/vadixidav/exifsd)
 - [exif-rs](https://github.com/kamadak/exif-rs/blob/master/src/tag.rs) 
+- [exiv2](https://exiv2.org/book/)
