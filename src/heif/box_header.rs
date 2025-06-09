@@ -5,6 +5,7 @@ use std::io::Read;
 use std::io::Seek;
 
 use crate::endian::Endian;
+use crate::u8conversion::U8conversion;
 use crate::u8conversion::to_u8_vec_macro;
 use crate::util::read_16_bytes;
 use crate::util::read_1_bytes;
@@ -136,11 +137,11 @@ BoxHeader
         // Serialize box size - Part 1
         if self.largesize
         {
-            serialized.extend(to_u8_vec_macro!(u32, 1, Endian::Big).iter());
+            serialized.extend(to_u8_vec_macro!(u32, &1, &Endian::Big).iter());
         }
         else
         {
-            serialized.extend(to_u8_vec_macro!(u32, self.box_size, Endian::Big).iter());
+            serialized.extend(to_u8_vec_macro!(u32, &(self.box_size as u32), &Endian::Big).iter());
         }
         
         // Serialize box type - Part 1
@@ -159,7 +160,7 @@ BoxHeader
         // Serialize box size - Part 2
         if self.largesize
         {
-            serialized.extend(to_u8_vec_macro!(u64, self.box_size, Endian::Big).iter());
+            serialized.extend(to_u8_vec_macro!(u64, &(self.box_size as u64), &Endian::Big).iter());
         }
 
         // Serialize box type - Part 2
