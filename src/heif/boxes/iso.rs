@@ -4,7 +4,7 @@
 use std::io::Read;
 use std::io::Seek;
 
-use log::debug;
+use crate::debug_println;
 
 use crate::heif::box_header::BoxHeader;
 use crate::heif::boxes::GenericIsoBox;
@@ -31,7 +31,7 @@ IsoBox
     )
     -> Result<IsoBox, std::io::Error> 
     {
-        debug!("Constructing generic ISO box for type {:?}", header.get_box_type());
+        debug_println!("Constructing generic ISO box for type {:?}", header.get_box_type());
 
         // Check if this box is the last in the file
         // See also: ISO/IEC 14496-12:2015, § 4.2

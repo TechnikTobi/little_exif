@@ -185,7 +185,7 @@ HeifContainer
                 // Unwrap is ok here as we have previously established that 
                 // this first element must exist via if exif_extents.len() != 1
                 return (
-                    exif_extents.first().unwrap().extent_offset,
+                    exif_extents.first().unwrap().extent_offset + exif_item.base_offset,
                     exif_extents.first().unwrap().extent_length
                 );
             },
@@ -303,21 +303,29 @@ HeifContainer
         // Update the location data in the iloc box
         for item in self.get_item_location_box_mut().items.iter_mut()
         {
+            
+
+
             for extent in item.extents.iter_mut()
             {
-                if extent.extent_offset < old_exif_pos
+                let complete_offset = item.base_offset + extent.extent_offset;
+                
+                if complete_offset < old_exif_pos
                 {
                     continue;
                 }
-                if extent.extent_offset == old_exif_pos
+                if complete_offset == old_exif_pos
                 {
                     // Special case where we have the extent of the exif area
                     // needs update in length, not offset
                     extent.extent_length = (extent.extent_length as i64 + delta) as u64;
                     continue;
                 }
-                if extent.extent_offset > old_exif_pos
+                if complete_offset > old_exif_pos
                 {
+                    // TODO: What if the extent offset is "too small" (e.g. 0)
+                    // as the base_offset in the item is what we actually want
+                    // to adjust?
                     extent.extent_offset = (extent.extent_offset as i64 + delta) as u64;
                 }
             }

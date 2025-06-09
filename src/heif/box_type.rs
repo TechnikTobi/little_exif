@@ -92,7 +92,7 @@ BoxType
     hmhd,
     sthd,
     uuid    { usertype: [u8; 16] },
-    // unknown { box_type: String }
+    unknown { box_type: String }
 }
 
 impl
@@ -194,7 +194,7 @@ BoxType
             "hmhd" => BoxType::hmhd,
             "sthd" => BoxType::sthd,
             "uuid" => BoxType::uuid { usertype: [0u8; 16] },
-            _      => panic!("Unknown Box Type! {:?}", box_type_str),
+            _      => BoxType::unknown { box_type: String::from(box_type_str) }
         }
     }
 
@@ -292,7 +292,8 @@ BoxType
             BoxType::uriI => "uriI",
             BoxType::hmhd => "hmhd",
             BoxType::sthd => "sthd",
-            BoxType::uuid { usertype: _ } => "uuid"
+            BoxType::uuid { usertype: _ } => "uuid",
+            BoxType::unknown { box_type } => box_type
         }.as_bytes().to_vec()
     }
 

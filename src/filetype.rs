@@ -37,15 +37,18 @@ FileExtension
     {
         match input 
         {
-            "heif" => Ok(FileExtension::HEIF),
-            "heic" => Ok(FileExtension::HEIF),
-            "jpg"  => Ok(FileExtension::JPEG),
-            "jpeg" => Ok(FileExtension::JPEG),
-            "jxl"  => Ok(FileExtension::JXL),
-            "png"  => Ok(FileExtension::PNG { as_zTXt_chunk: true}),
-            "tif"  => Ok(FileExtension::TIFF),
-            "tiff" => Ok(FileExtension::TIFF),
-            "webp" => Ok(FileExtension::WEBP),
+            "heif" | "hif" | "heic" 
+                => Ok(FileExtension::HEIF),
+            "jpeg" | "jpg" 
+                => Ok(FileExtension::JPEG),
+            "jxl" 
+                => Ok(FileExtension::JXL),
+            "png" 
+                => Ok(FileExtension::PNG { as_zTXt_chunk: true}),
+            "tiff" | "tif" 
+                => Ok(FileExtension::TIFF),
+            "webp" 
+                => Ok(FileExtension::WEBP),
             _ => io_error!(Unsupported, format!("Unknown file type: {}", input)),
         }
     }
