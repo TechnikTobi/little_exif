@@ -321,7 +321,16 @@ HeifContainer
             }
         }
 
+        // Now we write the boxes to the cursor, start by seek to the start
+        // of the file
+        cursor.seek(std::io::SeekFrom::Start(0))?;
+
+
         
+        for iso_box in &self.boxes
+        {
+
+        }
 
         return Ok(());
     }
