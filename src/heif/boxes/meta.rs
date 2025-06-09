@@ -5,6 +5,9 @@ use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
 
+use crate::endian::Endian;
+use crate::u8conversion::U8conversion;
+use crate::u8conversion::to_u8_vec_macro;
 use crate::util::read_be_u32;
 
 use crate::heif::box_header::BoxHeader;
@@ -64,67 +67,17 @@ MetaBox
         while local_cursor.position() < remaining_bytes as u64
         {
             let sub_header = BoxHeader::read_box_header(&mut local_cursor)?;
-            // let sub_box    = IsoBox::construct_from_cursor_unboxed(&mut local_cursor, sub_header);
-
-            /*
-            let boxed_sub_box = IsoBox::construct_from_cursor(&mut local_cursor, sub_header)?;
-            let sub_box = match boxed_sub_box.as_any().downcast_ref::<IsoBox>() {
-                Some(iso_box) => iso_box,
-                None          => panic!("&a isn't a B!")
-            };
-            */
-            let boxed_sub_box = read_box_based_on_header(
+            let sub_box    = read_box_based_on_header(
                 &mut local_cursor, 
                 sub_header
-            )? as Box<dyn GenericIsoBox>;
+            )?;
 
-            println!("SUB BOX HEADER: {:?}", boxed_sub_box.get_header());
-
-            /*
-            let sub_box = match boxed_sub_box.get_header().get_box_type()
-            {
-                BoxType::meta => {
-                    match boxed_sub_box.as_any().downcast_ref::<MetaBox>() {
-                        Some(unboxed) => unboxed,
-                        None          => panic!("&a isn't a B!")
-                    }
-                },
-                BoxType::iinf => {
-                    match boxed_sub_box.as_any().downcast_ref::<ItemInfoBox>() {
-                        Some(unboxed) => unboxed,
-                        None          => panic!("&a isn't a B!")
-                    }
-                },
-                BoxType::iloc => {
-                    match boxed_sub_box.as_any().downcast_ref::<ItemLocationBox>() {
-                        Some(unboxed) => unboxed,
-                        None          => panic!("&a isn't a B!")
-                    }
-                },
-                _ => {
-                    match boxed_sub_box.as_any().downcast_ref::<IsoBox>() {
-                        Some(unboxed) => unboxed,
-                        None          => panic!("&a isn't a B!")
-                    }
-                }
-            };
-            */
-
-            // other_boxes.push(sub_box.clone());
-            other_boxes.push(boxed_sub_box);
+            other_boxes.push(sub_box);
         }
 
         return Ok(Box::new(MetaBox { 
             header:           header,
             handler_box:      handler_box,
-            // primary_item_box: None,
-            // data_info_box:    None,
-            // item_loc_box:     None,
-            // item_protect_box: None,
-            // item_info_box:    None,
-            // ipmp_control_box: None,
-            // item_ref_box:     None,
-            // item_data_box:    None,
             other_boxes:      other_boxes,
         }));
     }
@@ -194,6 +147,11 @@ MetaBox
     -> Vec<u8>
     {
         let mut serialized = self.header.serialize();
+        serialized.extend(self.handler_box.serialize());
+        for sub_box in &self.other_boxes
+        {
+            serialized.extend(sub_box.serialize());
+        }
 
         return serialized;
     }
@@ -218,9 +176,16 @@ HandlerBox
     {
         let mut serialized = self.header.serialize();
 
+        serialized.extend(to_u8_vec_macro!(u32, &self.pre_defined,  &Endian::Big).iter());
+        serialized.extend(to_u8_vec_macro!(u32, &self.handler_type, &Endian::Big).iter());
+        for value in &self.reserved
+        {
+            serialized.extend(to_u8_vec_macro!(u32, &value, &Endian::Big).iter());
+        }
+        serialized.extend(&self.name);
+
         return serialized;
     }
-
 
     fn as_any     (&    self) -> &    dyn std::any::Any {  self       }
     fn as_any_mut (&mut self) -> &mut dyn std::any::Any {  self       }
