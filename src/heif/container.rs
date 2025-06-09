@@ -261,8 +261,6 @@ HeifContainer
         let mut exif_buffer = vec![0u8; length as usize];
         cursor.read_exact(&mut exif_buffer)?;
 
-        println!("\n \n OLD BUFFER: {:?}\n\n", exif_buffer);
-
         // Decode the first 4 bytes, which tells us where to cut off the old 
         // data and replace with the new one
         let mut local_cursor            = Cursor::new(exif_buffer[0..4].to_vec());
@@ -272,11 +270,7 @@ HeifContainer
         let mut new_exif_buffer = exif_buffer[0..exif_tiff_header_offset as usize + 4].to_vec();
         new_exif_buffer.append(&mut metadata.encode()?);
 
-        println!("\n \n NEW BUFFER: {:?}\n\n", new_exif_buffer);
-
         let delta = new_exif_buffer.len() as i64 - length as i64;
-
-        println!("\n \n DELTA: {}\n\n", delta);
 
         return Ok((
             new_exif_buffer,
