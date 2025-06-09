@@ -10,7 +10,6 @@ use crate::util::read_be_u32;
 use crate::heif::box_header::BoxHeader;
 use crate::heif::boxes::GenericIsoBox;
 use crate::heif::boxes::ParsableIsoBox;
-use crate::heif::boxes::impl_generic_iso_box;
 
 use super::read_box_based_on_header;
 
@@ -182,7 +181,48 @@ HandlerBox
     }
 }
 
-impl_generic_iso_box!(
-    MetaBox,
-    HandlerBox
-);
+impl
+GenericIsoBox
+for
+MetaBox
+{
+    fn
+    serialize
+    (
+        &self
+    ) 
+    -> Vec<u8>
+    {
+        let mut serialized = self.header.serialize();
+
+        return serialized;
+    }
+
+
+    fn as_any     (&    self) -> &    dyn std::any::Any {  self       }
+    fn as_any_mut (&mut self) -> &mut dyn std::any::Any {  self       }
+    fn get_header (&    self) -> &        BoxHeader     { &self.header}
+}
+
+impl
+GenericIsoBox
+for
+HandlerBox
+{
+    fn
+    serialize
+    (
+        &self
+    ) 
+    -> Vec<u8>
+    {
+        let mut serialized = self.header.serialize();
+
+        return serialized;
+    }
+
+
+    fn as_any     (&    self) -> &    dyn std::any::Any {  self       }
+    fn as_any_mut (&mut self) -> &mut dyn std::any::Any {  self       }
+    fn get_header (&    self) -> &        BoxHeader     { &self.header}
+}

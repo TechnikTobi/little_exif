@@ -7,7 +7,6 @@ use std::io::Seek;
 use crate::heif::box_header::BoxHeader;
 use crate::heif::boxes::GenericIsoBox;
 use crate::heif::boxes::ParsableIsoBox;
-use crate::heif::boxes::impl_generic_iso_box;
 
 #[allow(dead_code)]
 #[derive(Clone)]
@@ -77,6 +76,24 @@ IsoBox
     }
 }
 
-impl_generic_iso_box!(
-    IsoBox
-);
+impl
+GenericIsoBox
+for
+IsoBox
+{
+    fn
+    serialize
+    (
+        &self
+    ) 
+    -> Vec<u8>
+    {
+        let mut serialized = self.header.serialize();
+        serialized.extend(&self.data);
+        return serialized;
+    }
+
+    fn as_any     (&    self) -> &    dyn std::any::Any {  self       }
+    fn as_any_mut (&mut self) -> &mut dyn std::any::Any {  self       }
+    fn get_header (&    self) -> &        BoxHeader     { &self.header}
+}

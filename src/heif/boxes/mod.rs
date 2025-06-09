@@ -24,34 +24,8 @@ GenericIsoBox
     fn as_any     (&    self) -> &    dyn std::any::Any;
     fn as_any_mut (&mut self) -> &mut dyn std::any::Any;
     fn get_header (&    self) -> &        BoxHeader;
+    fn serialize  (&    self) ->          Vec<u8>;
 }
-
-macro_rules! impl_generic_iso_box 
-{
-    ( $( $type:ty ),* ) => {
-        $(
-            impl GenericIsoBox for $type 
-            {
-                fn as_any(&self) -> &dyn std::any::Any 
-                {
-                    self
-                }
-
-                fn as_any_mut(&mut self) -> &mut dyn std::any::Any 
-                {
-                    self
-                }
-
-                fn get_header(&self) -> &BoxHeader 
-                {
-                    &self.header
-                }
-            }
-        )*
-    };
-}
-
-pub(super) use impl_generic_iso_box;
 
 pub trait
 ParsableIsoBox: GenericIsoBox

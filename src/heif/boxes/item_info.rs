@@ -4,6 +4,8 @@
 use std::io::Read;
 use std::io::Seek;
 
+use crate::endian::Endian;
+use crate::u8conversion::to_u8_vec_macro;
 use crate::util::read_be_u16;
 use crate::util::read_be_u32;
 use crate::util::read_null_terminated_string;
@@ -11,7 +13,6 @@ use crate::util::read_null_terminated_string;
 use crate::heif::box_header::BoxHeader;
 use crate::heif::boxes::GenericIsoBox;
 use crate::heif::boxes::ParsableIsoBox;
-use crate::heif::boxes::impl_generic_iso_box;
 
 // - infe
 // 00000015:   size of 0x15 bytes (including the 0x04 bytes of the size field itself) 
@@ -172,7 +173,67 @@ ItemInfoBox
     }
 }
 
-impl_generic_iso_box!(
-    ItemInfoEntryBox,
-    ItemInfoBox
-);
+impl
+GenericIsoBox
+for
+ItemInfoEntryBox
+{
+    fn
+    serialize
+    (
+        &self
+    ) 
+    -> Vec<u8>
+    {
+        let mut serialized = self.header.serialize();
+        
+        serialized.extend(to_u8_vec_macro!(u16, self.item_id,               Endian::Big).iter());
+        serialized.extend(to_u8_vec_macro!(u16, self.item_protection_index, Endian::Big).iter());
+        serialized.extend(self.item_name.bytes());
+        serialized.push(0x00); // null terminator for item name string
+        serialized.extend(&self.additional_data);
+
+        return serialized;
+    }
+
+    fn as_any     (&    self) -> &    dyn std::any::Any {  self       }
+    fn as_any_mut (&mut self) -> &mut dyn std::any::Any {  self       }
+    fn get_header (&    self) -> &        BoxHeader     { &self.header}
+}
+
+impl
+GenericIsoBox
+for
+ItemInfoBox
+{
+    fn
+    serialize
+    (
+        &self
+    ) 
+    -> Vec<u8>
+    {
+        let mut serialized = self.header.serialize();
+
+        if self.header.get_version() == 0
+        {
+            serialized.extend(to_u8_vec_macro!(u16, self.item_count, Endian::Big).iter());
+        }
+        else
+        {
+            serialized.extend(to_u8_vec_macro!(u32, self.item_count, Endian::Big).iter());
+        }
+        
+        for item in &self.items
+        {
+            serialized.extend(item.serialize());
+        }
+
+        return serialized;
+    }
+
+
+    fn as_any     (&    self) -> &    dyn std::any::Any {  self       }
+    fn as_any_mut (&mut self) -> &mut dyn std::any::Any {  self       }
+    fn get_header (&    self) -> &        BoxHeader     { &self.header}
+}

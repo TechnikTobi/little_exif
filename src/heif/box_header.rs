@@ -4,6 +4,8 @@
 use std::io::Read;
 use std::io::Seek;
 
+use crate::endian::Endian;
+use crate::u8conversion::to_u8_vec_macro;
 use crate::util::read_16_bytes;
 use crate::util::read_1_bytes;
 use crate::util::read_3_bytes;
@@ -18,6 +20,7 @@ pub struct
 BoxHeader
 {
     box_size:    usize,
+    largesize:   bool,
     box_type:    BoxType,
     header_size: usize,           // not sure if needed
     version:     Option<u8>,      // only if box type uses full headers
@@ -43,6 +46,7 @@ BoxHeader
 
         let mut header = Self {
             box_size:    box_size as usize,
+            largesize:   false,
             box_type:    box_type.clone(),
             header_size: 8,
             version:     None,
@@ -61,7 +65,8 @@ BoxHeader
         // Uses largesize box size
         if header.box_size == 1
         {
-            header.box_size = read_be_u64(cursor)? as usize;
+            header.box_size  = read_be_u64(cursor)? as usize;
+            header.largesize = true;
 
             // Adjust header size information
             header.header_size += 8;
@@ -117,5 +122,55 @@ BoxHeader
     -> u8
     {
         return self.version.unwrap();
+    }
+
+    pub(super) fn
+    serialize
+    (
+        &self
+    )
+    -> Vec<u8>
+    {
+        let mut serialized = Vec::new();
+
+        // Serialize box size - Part 1
+        if self.largesize
+        {
+            serialized.extend(to_u8_vec_macro!(u32, 1, Endian::Big).iter());
+        }
+        else
+        {
+            serialized.extend(to_u8_vec_macro!(u32, self.box_size, Endian::Big).iter());
+        }
+        
+        // Serialize box type - Part 1
+        serialized.extend(self.box_type.to_4_bytes());
+
+        // Serialize version and flags (if present)
+        if self.box_type.extends_fullbox()
+        {
+            serialized.push(self.version.unwrap());
+            for flag in self.flags.unwrap()
+            {
+                serialized.push(flag);
+            }
+        }
+
+        // Serialize box size - Part 2
+        if self.largesize
+        {
+            serialized.extend(to_u8_vec_macro!(u64, self.box_size, Endian::Big).iter());
+        }
+
+        // Serialize box type - Part 2
+        if let BoxType::uuid { usertype } = self.box_type
+        {
+            for byte in usertype
+            {
+                serialized.push(byte);
+            }
+        }
+
+        return serialized;
     }
 }
