@@ -155,6 +155,7 @@ ItemLocationEntryExtentEntry
         return Ok(Self{extent_index, extent_offset, extent_length});
     }
 
+    /*
     pub(crate) fn
     get_size
     (
@@ -177,6 +178,7 @@ ItemLocationEntryExtentEntry
 
         return size;
     }
+    */
 }
 
 impl
@@ -260,6 +262,7 @@ ItemLocationEntry
         };
     }
 
+    /*
     pub(crate) fn
     get_size
     (
@@ -310,6 +313,7 @@ ItemLocationEntry
 
         return size;
     }
+    */
 }
 
 impl

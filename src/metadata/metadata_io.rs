@@ -127,6 +127,8 @@ Metadata
 	{
 		match file_type
 		{
+			FileExtension::HEIF
+				=> heif::clear_metadata(file_buffer),
 			FileExtension::JPEG 
 				=>  jpg::clear_metadata(file_buffer),
 			FileExtension::JXL
@@ -342,6 +344,8 @@ Metadata
 	{
 		match file_type
 		{
+			FileExtension::HEIF
+				=> heif::write_metadata(file_buffer, &self),
 			FileExtension::JPEG 
 				=>  jpg::write_metadata(file_buffer, &self),
 			FileExtension::JXL 

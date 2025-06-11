@@ -62,6 +62,20 @@ file_read_metadata
 
 
 pub(crate) fn
+write_metadata
+(
+	file_buffer: &mut Vec<u8>,
+	metadata:    &Metadata
+)
+-> Result<(), std::io::Error> 
+{
+    let mut cursor    = Cursor::new(file_buffer);
+    let mut container = HeifContainer::construct_from_cursor_unboxed(&mut cursor)?;
+
+    return container.generic_write_metadata(cursor.get_mut(), metadata);
+}
+
+pub(crate) fn
 file_write_metadata
 (
     path:     &Path,
@@ -92,13 +106,26 @@ file_write_metadata
 
 
 pub(crate) fn
+clear_metadata
+(
+    file_buffer: &mut Vec<u8>
+)
+-> Result<(), std::io::Error>
+{
+    let mut cursor    = Cursor::new(file_buffer);
+    let mut container = HeifContainer::construct_from_cursor_unboxed(&mut cursor)?;
+
+    return container.generic_clear_metadata(cursor.get_mut());
+}
+
+pub(crate) fn
 file_clear_metadata
 (
     path: &Path
 )
 -> Result<(), std::io::Error>
 {
-        // Load the entire file into memory instead of performing multiple read, 
+    // Load the entire file into memory instead of performing multiple read, 
     // seek and write operations
     let mut file = open_write_file(path)?;
     let mut file_buffer: Vec<u8> = Vec::new();
