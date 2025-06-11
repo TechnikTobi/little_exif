@@ -62,13 +62,6 @@ HeifContainer
     )
     -> &MetaBox
     {
-        println!("\n");
-
-        for BOX in &self.boxes
-        {
-            println!("{:?}", BOX.get_header());
-        }
-
         return match self.boxes.iter()
             .find(|b| b.get_header().get_box_type() == BoxType::meta)
             .unwrap()
@@ -108,23 +101,6 @@ HeifContainer
             .unwrap()
             .as_any()
             .downcast_ref::<ItemInfoBox>() {
-                Some(unboxed) => unboxed,
-                None          => panic!("Can't unbox ItemInfoBox!")
-            };
-    }
-
-    fn
-    get_item_info_box_mut
-    (
-        &mut self
-    )
-    -> &mut ItemInfoBox
-    {
-        return match self.get_meta_box_mut().other_boxes.iter_mut()
-            .find(|b| b.get_header().get_box_type() == BoxType::iinf)
-            .unwrap()
-            .as_any_mut()
-            .downcast_mut::<ItemInfoBox>() {
                 Some(unboxed) => unboxed,
                 None          => panic!("Can't unbox ItemInfoBox!")
             };
@@ -464,196 +440,49 @@ HeifContainer
     )
     -> Result<(), std::io::Error>
     {
-        // Find out where exif is located, needed to determine which iloc 
-        // entries need to be updated
-        let id                   = self.get_item_id_exif_data();
-        let (exif_pos, exif_len) = self.get_exif_data_pos_and_len(id);
+        // Instead of truly clearing the metadata, just write an empty 
+        // exif data area
+        // Based on what the macOS shortcut is doing, only keeps the tags
+        // 0x0112: Orientation
+        // 0x011A: XResolution
+        // 0x011B: YResolution
+        // 0x0128: ResolutionUnit
 
-        // First, remove the items in the iloc and iinf boxes that correspond
-        // to the exif data area
-        // This requires to
-        // - remove the box
-        // - decrement the item count by 1
-        // - reduce the box size
-        
-        // iinf - Adjust box size
-        let len_iinf_exif_entry_box = self.get_item_info_box()
-            .get_exif_item()
-            .get_header()
-            .get_box_size();
-        let new_iinf_box_size = self.get_item_info_box()
-            .get_header()
-            .get_box_size() 
-            - len_iinf_exif_entry_box;
-        self.get_item_info_box_mut().get_header_mut().set_box_size(
-            new_iinf_box_size
-        );
-
-        // iinf - Remove exif item entry box
-        self.get_item_info_box_mut().items.retain(
-            |item| item.item_id != id
-        );
-
-        // iinf - Decrement item count
-        self.get_item_info_box_mut().item_count -= 1;
-
-        // iinf - Adjust IDs
-        for item in self.get_item_info_box_mut().items.iter_mut()
-        {
-            if item.item_id >= id
-            {
-                item.item_id -= 1;
-            }
-        }
-
-        // iloc - Adjust box size
-        let len_iloc_exif_entry_box = self.get_item_location_box()
-            .items
-            .iter()
-            .find(|item| item.item_id == id as u32)
-            .unwrap()
-            .get_size(self.get_item_location_box());
-        let new_iloc_box_size = self.get_item_location_box()
-            .get_header()
-            .get_box_size()
-            - len_iloc_exif_entry_box;
-        self.get_item_location_box_mut().get_header_mut().set_box_size(
-            new_iloc_box_size
-        );
-
-        // iloc - Remove exif item entry
-        self.get_item_location_box_mut().items.retain(
-            |item| item.item_id != id as u32
-        );
-
-        // iloc - Decrement item count
-        self.get_item_location_box_mut().item_count -= 1;
-
-        // iloc - Adjust IDs
-        for item in self.get_item_location_box_mut().items.iter_mut()
-        {
-            if item.item_id >= id as u32
-            {
-                item.item_id -= 1;
-            }
-        }
-
-        // ALSO: Adjust the length information of the Meta box!
-        let new_meta_box_size = self.get_meta_box().get_header().get_box_size()
-            - len_iinf_exif_entry_box
-            - len_iloc_exif_entry_box;
-        self.get_meta_box_mut().get_header_mut().set_box_size(new_meta_box_size);
-
-        // Next, update the location data in the iloc box
-        // For now, don't adjust the IDs
-        for item in self.get_item_location_box_mut().items.iter_mut()
-        {
-            if item.get_construction_method() == ItemConstructionMethod::IDAT
-            {
-                // In this case the offset information is relative to the
-                // position of an idat box -> not affected
-                continue;
-            }
-
-            if item.get_construction_method() == ItemConstructionMethod::ITEM
-            {
-                // Offset is relative to another item's extent
-                // Also nothing to do here (for now...)
-                continue;
-            }
-
-            if item.base_offset > exif_len as u64
-            {
-                // Potentially modify the entire base offset 
-                // however, we can only do that if all complete offsets
-                // point to an area after the exif data area
-                // So we need to check that first:
-                if item.extents.iter()
-                    .all(|extent| {
-                        item.base_offset + extent.extent_offset >= exif_pos
-                    })
-                {
-                    item.base_offset = item.base_offset - exif_len;
-                    continue;
-                }
-            }
-
-            // At this point we have no option left but to modify all 
-            // individual extent offsets
-            for extent in item.extents.iter_mut()
-            {
-                let complete_offset = item.base_offset + extent.extent_offset;
-
-                if complete_offset > exif_pos
-                {
-                    extent.extent_offset = extent.extent_offset - exif_len;
-                }
-            }
-        }
-
-        // Now we clear the vec and write the boxes to it
-        // Keep track of how many bytes were written so we know when to 
-        // replace old exif data with new
+        // Create cursor
         let mut cursor = Cursor::new(file_buffer);
-        cursor.get_mut().clear();
 
-        // Account in the written bytes for the missing bytes due to the
-        // removed boxes
-        // Assumes that these boxes are located prior to the exif area
-        let mut written_bytes = len_iinf_exif_entry_box + len_iloc_exif_entry_box;
-        let mut exif_removed  = false;
-        let     end_of_exif   = (exif_pos + exif_len) as usize;
+        // Read original metadata
+        let orig_metadata = Metadata::general_decoding_wrapper(
+            self.get_exif_data(&mut cursor)
+        )?;
 
-        for iso_box in &mut self.boxes
+        // Construct new metadata that only contains the above tags
+        let mut new_metadata = Metadata::new();
+
+        // 0x0112
+        if let Some(tag) = orig_metadata.get_tag_by_hex(0x0112, None).next()
         {
-            let mut serialized = iso_box.serialize();
-
-            // If this box encompasses the exif data area, update its size and
-            // serialize it again
-            // TODO: As this is not the cleanest approach (e.g. what if the
-            // exif area is not in this top level box but some nested box? 
-            // -> requires update of size fields of all boxes "downward") some
-            // other solution needs to be found for this
-            // In the meantime, this should work for the majority of HEIFs
-            if 
-                written_bytes + serialized.len() >= end_of_exif 
-                && 
-                !exif_removed
-            {
-                let new_size = iso_box.get_header().get_box_size() - exif_len as usize;
-                iso_box.get_header_mut().set_box_size(new_size);
-                serialized = iso_box.serialize();
-
-                // Write the serialized box with the OLD exif data
-                cursor.get_mut().extend(&serialized);
-
-                // In the exif start and end position, account for the 
-                // removed bytes in the iinf and iloc boxes
-                let true_exif_start = exif_pos as usize 
-                    - len_iinf_exif_entry_box 
-                    - len_iloc_exif_entry_box;
-                let true_exif_end   = true_exif_start + exif_len as usize;
-
-                // Remove old exif data
-                range_remove(
-                    cursor.get_mut(), 
-                    true_exif_start,
-                    true_exif_end
-                );
-
-                exif_removed = true;
-            }
-            else
-            {
-                // Just extend with the serialized box contents
-                cursor.get_mut().extend(&serialized);
-            }
-
-            written_bytes = written_bytes + serialized.len();
+            new_metadata.set_tag(tag.clone());
         }
 
-        return Ok(());
+        // 0x011A
+        if let Some(tag) = orig_metadata.get_tag_by_hex(0x011A, None).next()
+        {
+            new_metadata.set_tag(tag.clone());
+        }
+
+        // 0x011A
+        if let Some(tag) = orig_metadata.get_tag_by_hex(0x011B, None).next()
+        {
+            new_metadata.set_tag(tag.clone());
+        }
+
+        // 0x0128
+        if let Some(tag) = orig_metadata.get_tag_by_hex(0x0128, None).next()
+        {
+            new_metadata.set_tag(tag.clone());
+        }
+
+        return self.generic_write_metadata(cursor.get_mut(), &new_metadata);
     }
-
-
 }
