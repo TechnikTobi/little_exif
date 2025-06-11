@@ -298,11 +298,15 @@ macro_rules! debug_println
     ) 
     => 
     (
+        /*
         #[cfg(debug_assertions)] 
         {
             print!("LITTLE EXIF DEBUG: ");
             println!($($arg)*);
         }
+        */
+
+        ()
     );
 }
 
