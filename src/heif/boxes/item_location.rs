@@ -154,6 +154,29 @@ ItemLocationEntryExtentEntry
 
         return Ok(Self{extent_index, extent_offset, extent_length});
     }
+
+    pub(crate) fn
+    get_size
+    (
+        &self,
+        offset_size: u8,
+        length_size: u8,
+        index_size:  u8,
+    )
+    -> usize
+    {
+        let mut size = 0usize;
+
+        if self.extent_index.is_some()
+        {
+            size += index_size as usize;
+        }
+
+        size += offset_size as usize;
+        size += length_size as usize;
+
+        return size;
+    }
 }
 
 impl
@@ -235,6 +258,57 @@ ItemLocationEntry
             2 => ItemConstructionMethod::ITEM,
             _ => panic!("Unknown item construction method!")
         };
+    }
+
+    pub(crate) fn
+    get_size
+    (
+        &self,
+        parent: &ItemLocationBox
+    )
+    -> usize
+    {
+        let mut size = 0usize;
+
+        // item_id
+        if parent.get_header().get_version() == 2
+        {
+            size += 4;
+        }
+        else
+        {
+            size += 2;
+        }
+
+        // reserved_and_construction_method
+        if 
+            parent.get_header().get_version() == 1
+            ||
+            parent.get_header().get_version() == 2
+        {
+            size += 2;
+        }
+
+        // data_reference_index
+        size += 2;
+
+        // base_offset
+        size += parent.base_offset_size as usize;
+
+        // extent_count
+        size += 2;
+
+        // extents
+        for extent in &self.extents
+        {
+            size += extent.get_size(
+                parent.offset_size, 
+                parent.length_size, 
+                parent.index_size
+            );
+        }
+
+        return size;
     }
 }
 

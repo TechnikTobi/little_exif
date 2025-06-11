@@ -274,6 +274,8 @@ Metadata
 
 		match file_type
 		{
+			FileExtension::HEIF
+				=> heif::file_clear_metadata(&path),
 			FileExtension::JPEG 
 				=>  jpg::file_clear_metadata(&path),
 			FileExtension::JXL
