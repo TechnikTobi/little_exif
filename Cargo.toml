@@ -1,13 +1,13 @@
 [package]
 name = "little_exif"
 
-version = "0.6.8-beta.3"
+version = "0.6.8"
 edition = "2021"
 rust-version = "1.65"
 
 description = """
 The only pure Rust crate with true read *and* write support for EXIF data, 
-available for PNG, JP(E)G, JXL, TIFF, WebP images - and soon even more!
+available for PNG, JP(E)G, HEIF/HEIC/HIF, JXL, TIFF, WebP - and soon even more!
 """
 
 authors = ["Tobias Prisching"]

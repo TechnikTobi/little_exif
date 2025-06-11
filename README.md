@@ -11,8 +11,9 @@ A little library for reading and writing EXIF data in pure Rust.
 [license]: https://github.com/TechnikTobi/little_exif#license
 
 ## Supported Formats
-- JPEG
+- JPEG / JPG
 - JXL
+- HEIF / HEIC / HIF
 - PNG
 - TIFF
 - WebP (only lossless and extended)
