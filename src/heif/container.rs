@@ -448,6 +448,9 @@ HeifContainer
         // 0x011B: YResolution
         // 0x0128: ResolutionUnit
 
+        // Note: It is up for debate whether keeping this information is wanted
+        // or not/this should write a truly empty exif area
+
         // Create cursor
         let mut cursor = Cursor::new(file_buffer);
 
