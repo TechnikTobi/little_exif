@@ -33,11 +33,11 @@ use crate::heif::boxes::ParsableIsoBox;
 pub struct
 ItemInfoEntryBox
 {
-    header:                BoxHeader,
-    item_id:               u16,
-    item_protection_index: u16,
-    item_name:             String,
-    additional_data:       Vec<u8>,
+    pub(self)  header:                BoxHeader,
+    pub(crate) item_id:               u16,
+    pub(crate) item_protection_index: u16,
+    pub(crate) item_name:             String,
+    pub(crate) additional_data:       Vec<u8>,
 }
 
 // - iinf
@@ -51,9 +51,9 @@ ItemInfoEntryBox
 pub struct
 ItemInfoBox
 {
-    header:     BoxHeader,
-    item_count: usize,
-    items:      Vec<ItemInfoEntryBox>
+    pub(self)  header:     BoxHeader,
+    pub(crate) item_count: usize,
+    pub(crate) items:      Vec<ItemInfoEntryBox>
 }
 
 impl
@@ -119,16 +119,15 @@ impl
 ItemInfoBox
 {
     pub fn
-    get_exif_item_id
+    get_exif_item
     (
         &self
     )
-    -> u16
+    -> &ItemInfoEntryBox
     {
         return self.items.iter()
             .find(|item| item.item_name == "Exif")
-            .unwrap()
-            .item_id;
+            .unwrap();
     }
 }
 

@@ -88,3 +88,32 @@ file_write_metadata
 
     return Ok(());
 }
+
+
+
+pub(crate) fn
+file_clear_metadata
+(
+    path: &Path
+)
+-> Result<(), std::io::Error>
+{
+        // Load the entire file into memory instead of performing multiple read, 
+    // seek and write operations
+    let mut file = open_write_file(path)?;
+    let mut file_buffer: Vec<u8> = Vec::new();
+    file.read_to_end(&mut file_buffer)?;
+
+    let mut cursor    = Cursor::new(file_buffer);
+    let mut container = HeifContainer::construct_from_cursor_unboxed(&mut cursor)?;
+
+    container.generic_clear_metadata(cursor.get_mut())?;
+
+    // Seek back to start, write the file and adjust its length, possibly 
+    // truncating the file if new contents are shorter
+    file.seek(std::io::SeekFrom::Start(0))?;
+    file.write_all(&mut cursor.get_mut())?;
+    file.set_len(cursor.get_ref().len() as u64)?;
+
+    return Ok(());
+}
