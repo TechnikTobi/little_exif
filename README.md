@@ -55,6 +55,35 @@ metadata.set_tag(
 metadata.write_to_vec(&mut image_vector, file_type)?;
 ```
 
+## Logging
+
+This library uses the [`log`](https://crates.io/crates/log) crate for various levels of logging.
+
+### Setup
+
+To enable this logging, you will need to initialize logger, such as [`env_logger`](https://docs.rs/env_logger/latest/env_logger/):
+
+```bash
+cargo add env_logger
+```
+
+```rust
+fn main() {
+    env_logger::init();
+}
+```
+
+### Usage
+
+In `env_logger`, you can view `little_exif`'s debug-level logs, for example, by setting the `RUST_LOG` env var:
+```bash
+env RUST_LOG=debug cargo run
+```
+
+For other log levels, see [`env_logger`'s documentation](https://docs.rs/env_logger/latest/env_logger/).
+
+You do not need to use `env_logger` for logging, you may use any logger of your choice.
+
 ## FAQ
 
 ### I tried writing the ImageDescription tag on a JPEG file, but it does not show up. Why?
