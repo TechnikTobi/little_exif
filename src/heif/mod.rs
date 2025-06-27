@@ -103,16 +103,15 @@ file_write_metadata
     return Ok(());
 }
 
+/// Encodes the given metadata into a vector of bytes that can be used as
+/// an exif box in an HEIF file.
+pub(crate) fn as_u8_vec(general_encoded_metadata: &Vec<u8>) -> Vec<u8> {
+    let mut data_buffer: Vec<u8> = Vec::new();
+    data_buffer.extend(EXIF_HEADER.iter());
+    data_buffer.extend(general_encoded_metadata.iter());
+    return data_buffer;
+}
 
-
-pub(crate) fn
-clear_metadata
-(
-    file_buffer: &mut Vec<u8>
-)
--> Result<(), std::io::Error>
-{
-    let mut cursor    = Cursor::new(file_buffer);
     let mut container = HeifContainer::construct_from_cursor_unboxed(&mut cursor)?;
 
     return container.generic_clear_metadata(cursor.get_mut());
