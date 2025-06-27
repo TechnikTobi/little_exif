@@ -323,10 +323,10 @@ Metadata
 				=>  png::as_u8_vec(&general_encoded_metadata, as_zTXt_chunk),
 			FileExtension::JPEG 
 				=>  jpg::as_u8_vec(&general_encoded_metadata),
-			FileExtension::WEBP 
-				=> webp::as_u8_vec(&general_encoded_metadata),
-			_
-				=> Vec::new(),
+            FileExtension::HEIF => heif::as_u8_vec(&general_encoded_metadata),
+            _ => {
+                unimplemented!()
+            }
 		})
 	}
 
