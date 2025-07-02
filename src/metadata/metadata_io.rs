@@ -324,9 +324,12 @@ Metadata
 			FileExtension::JPEG 
 				=>  jpg::as_u8_vec(&general_encoded_metadata),
 			FileExtension::WEBP 
-				=> webp::as_u8_vec(&general_encoded_metadata),
-			_
-				=> Vec::new(),
+ 				=> webp::as_u8_vec(&general_encoded_metadata),
+            FileExtension::HEIF 
+				=> heif::as_u8_vec(&general_encoded_metadata),
+            _ => {
+                unimplemented!()
+            }
 		})
 	}
 
