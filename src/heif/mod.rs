@@ -20,6 +20,7 @@ use std::path::Path;
 use crate::general_file_io::open_read_file;
 use crate::general_file_io::open_write_file;
 
+use crate::general_file_io::EXIF_HEADER;
 use crate::metadata::Metadata;
 
 use crate::heif::boxes::read_next_box;
@@ -105,13 +106,27 @@ file_write_metadata
 
 /// Encodes the given metadata into a vector of bytes that can be used as
 /// an exif box in an HEIF file.
-pub(crate) fn as_u8_vec(general_encoded_metadata: &Vec<u8>) -> Vec<u8> {
+pub(crate) fn 
+as_u8_vec
+(
+    general_encoded_metadata: &Vec<u8>
+) 
+-> Vec<u8> 
+{
     let mut data_buffer: Vec<u8> = Vec::new();
     data_buffer.extend(EXIF_HEADER.iter());
     data_buffer.extend(general_encoded_metadata.iter());
     return data_buffer;
 }
 
+pub(crate) fn
+clear_metadata
+(
+    file_buffer: &mut Vec<u8>
+)
+-> Result<(), std::io::Error>
+{
+    let mut cursor    = Cursor::new(file_buffer);
     let mut container = HeifContainer::construct_from_cursor_unboxed(&mut cursor)?;
 
     return container.generic_clear_metadata(cursor.get_mut());
