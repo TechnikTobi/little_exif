@@ -114,8 +114,16 @@ as_u8_vec
 -> Vec<u8> 
 {
     let mut data_buffer: Vec<u8> = Vec::new();
+
+    // Length of the EXIF HEADER
+    data_buffer.extend(vec![0u8, 0u8, 0u8, 6u8]);
+
+    // Actual EXIF HEADER
     data_buffer.extend(EXIF_HEADER.iter());
+
+    // And the exif data itself
     data_buffer.extend(general_encoded_metadata.iter());
+
     return data_buffer;
 }
 
