@@ -101,16 +101,17 @@ Metadata
 			}
 			else
 			{
-				error!("{}", decoding_result.err().unwrap());
+				let decode_error = decoding_result.err().unwrap();
+				error!("Error during decoding (1): {}", decode_error);
+				return Err(decode_error);
 			}
 		}
 		else
 		{
-			error!("Error during decoding: {:?}", raw_pre_decode_general.err().unwrap());
+			let decode_error = raw_pre_decode_general.err().unwrap();
+			error!("Error during decoding (2): {:?}", decode_error);
+			return Err(decode_error);
 		}
-
-		warn!("Can't read metadata - Create new & empty struct");
-		return Ok(Metadata::new());
 	}
 
 
@@ -326,7 +327,8 @@ Metadata
 				}
 				else
 				{
-					return Err(decode_result.err().unwrap());
+					let error = decode_result.err().unwrap();
+					return Err(error);
 				}
 			}
 			else
