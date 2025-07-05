@@ -94,6 +94,20 @@ decode_tag_with_format_exceptions
 				}
 			},
 
+			// See issue #63
+			(ExifTagFormat::UNDEF, ExifTagFormat::STRING) => {
+				if 
+					raw_tag.as_u16()    == 0x001b            && // GPSProcessingMethod	
+					raw_tag.get_group() == ExifTagGroup::GPS
+				{
+					return Ok(raw_tag.set_value_to_undef(raw_data.to_vec()).unwrap());
+				}
+				else
+				{
+					return io_error!(Other, format!("Unknown tag for combination UNDEF vs STRING while decoding: {:?}", raw_tag));
+				}
+			}
+
 			_ => {
 				return io_error!(Other, format!("Illegal format for known tag! Tag: {:?} Expected: {:?} Got: {:?}", raw_tag, raw_tag.format(), format));
 			},
