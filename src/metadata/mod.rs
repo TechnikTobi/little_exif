@@ -14,7 +14,6 @@ use std::io::Seek;
 use std::io::Write;
 
 use log::error;
-use log::warn;
 
 use crate::endian::*;
 use crate::general_file_io::io_error;
