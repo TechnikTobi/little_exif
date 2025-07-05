@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut aviffy = Aviffy::new();
     aviffy.set_bit_depth(8);
     aviffy.set_full_color_range(true);
-    // aviffy.set_exif(metadata_to_exif()?);
+    aviffy.set_exif(metadata_to_exif()?);
     // aviffy.set_exif(vec![
     //     0x49,
     //     0x49,
