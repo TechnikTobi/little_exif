@@ -1,4 +1,4 @@
-// Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::fs::File;
@@ -32,6 +32,8 @@ pub(crate) const FTYP_BOX: [u8; 20] = [
 ];
 
 pub(crate) const ISO_BMFF_EXIF_MINOR_VERSION: [u8; 4] = [0x00, 0x00, 0x00, 0x06];
+
+pub(crate) const BROB_BOX: [u8; 4] = [0x62, 0x72, 0x6f, 0x62];
 
 #[non_exhaustive]
 struct IsoBmffBoxType;
@@ -145,11 +147,12 @@ clear_metadata
 		// Next, read the box type
 		let type_buffer = file_buffer[position+4..position+8].to_vec();
 
-		if type_buffer.iter()
-			.zip(EXIF.iter())
-			.filter(|&(read, constant)| read == constant)
-			.count()
-			.eq(&EXIF.len())
+		if box_contains_exif(
+			&mut Cursor::new(
+				file_buffer[position+8..position+12].to_vec()
+			), 
+			[type_buffer[0], type_buffer[1], type_buffer[2], type_buffer[3]]
+		)?
 		{
 			range_remove(file_buffer, position, position+length);
 		}
@@ -184,11 +187,7 @@ file_clear_metadata
 
 		let length = from_u8_vec_macro!(u32, &length_buffer.to_vec(), &Endian::Big) as usize;
 
-		if type_buffer.iter()
-			.zip(EXIF.iter())
-			.filter(|&(read, constant)| read == constant)
-			.count()
-			.eq(&EXIF.len())
+		if box_contains_exif(&mut file, type_buffer)?
 		{
 			// Seek past the EXIF box ...
 			file.seek(SeekFrom::Current((length-8) as i64))?;
@@ -216,6 +215,51 @@ file_clear_metadata
 			file.seek(SeekFrom::Current((length-8) as i64))?;
 		}
 	}
+}
+
+
+fn
+check_brob_type_for_exif
+<T: Seek + Read>
+(
+	cursor: &mut T
+)
+-> Result<bool, std::io::Error>
+{
+	// Check if the next for 4 bytes say 'Exif'
+	let mut brob_type = [0u8; 4];
+	cursor.read_exact(&mut brob_type)?;
+
+	// Seek back to position prior to brob type
+	cursor.seek_relative(-4)?;
+
+	return Ok(brob_type == EXIF);
+}
+
+
+
+fn
+box_contains_exif
+<T: Seek + Read>
+(
+	cursor:      &mut T,
+	type_buffer:  [u8; 4],
+)
+-> Result<bool, std::io::Error>
+{
+	if type_buffer == EXIF
+	{
+		return Ok(true);
+	}
+	if type_buffer == BROB_BOX
+	{
+		if check_brob_type_for_exif(cursor)?
+		{
+			return Ok(true);
+		}
+	}
+
+	return Ok(false);
 }
 
 
@@ -256,16 +300,11 @@ read_metadata
 				return Ok(exif_buffer);
 			},
 
-			[0x62, 0x72, 0x6f, 0x62] => { // "brob" -> Brotli encoded data
+			BROB_BOX => { // -> Brotli encoded data
 
 				let position = cursor.position() as usize;
 
-				// Check if the next for 4 bytes say 'Exif'
-
-				let mut brob_type = [0u8; 4];
-				cursor.read_exact(&mut brob_type)?;
-
-				if brob_type == EXIF
+				if check_brob_type_for_exif(&mut cursor)?
 				{
 					let compressed_exif_buffer = file_buffer[
 						position + 4 ..
@@ -441,6 +480,10 @@ write_metadata
 		*file_buffer = new_file_buffer;
 	}
 
+	// Remove old metadata
+	clear_metadata(file_buffer)?;
+	
+	// Insert new metadata
 	let mut encoded_metadata = encode_metadata_jxl(&metadata.encode()?);
 	let     insert_position  = find_insert_position(file_buffer)?;
 	insert_multiple_at(file_buffer, insert_position, &mut encoded_metadata);
@@ -463,7 +506,7 @@ file_write_metadata
 	perform_file_action!(file.read_to_end(&mut file_buffer));
 
 	// Writes the metadata to the file_buffer vec
-	// The called function handles the removal of old metadata and the JPG
+	// The called function handles the removal of old metadata and the JXL
 	// specific encoding, so we pass only the generally encoded metadata here
 	write_metadata(&mut file_buffer, metadata)?;
 
