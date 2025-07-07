@@ -33,6 +33,7 @@ paste = "1.0.15"
 miniz_oxide = "0.8.8"
 log = "0.4"
 quick-xml = "0.37.5"
+brotli = "8.0.1"
 
 [[test]]
 name = "tests"
