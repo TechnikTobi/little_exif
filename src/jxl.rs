@@ -255,6 +255,44 @@ read_metadata
 				let exif_buffer = file_buffer[position+4..position + length as usize].to_vec();
 				return Ok(exif_buffer);
 			},
+
+			[0x62, 0x72, 0x6f, 0x62] => { // "brob" -> Brotli encoded data
+
+				let position = cursor.position() as usize;
+
+				// Check if the next for 4 bytes say 'Exif'
+
+				let mut brob_type = [0u8; 4];
+				cursor.read_exact(&mut brob_type)?;
+
+				if brob_type == EXIF
+				{
+					let compressed_exif_buffer = file_buffer[
+						position + 4 ..
+						position + length as usize
+					].to_vec();
+
+					let mut decompressed_exif_buffer = Vec::new();
+
+					match brotli::BrotliDecompress(
+						&mut Cursor::new(compressed_exif_buffer), 
+						&mut decompressed_exif_buffer
+					) 
+					{
+						Ok(_)  => (),
+						Err(e) => return Err(e)
+					};
+
+					// Ignore the next 4 bytes (I guess for the same reason 
+					// as above - some sort of minor version?)
+					return Ok(decompressed_exif_buffer[4..].to_vec());
+				}
+				else 
+				{
+					cursor.seek(SeekFrom::Start(position as u64 + length as u64))?;
+				}
+			}
+
 			_ => {
 				// Not an EXIF box so skip it
 				cursor.seek(SeekFrom::Current(length as i64))?;
