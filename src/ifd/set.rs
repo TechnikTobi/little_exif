@@ -38,7 +38,7 @@ ImageFileDirectory
 	remove_tag
 	(
 		&mut self,
-		input_tag: ExifTag
+		input_tag: &ExifTag
 	)
 	{
 		self.tags.retain(|tag| tag.as_u16() != input_tag.as_u16());

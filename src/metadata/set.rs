@@ -25,4 +25,37 @@ Metadata
 	{
 		self.get_ifd_mut(input_tag.get_group(), 0).set_tag(input_tag);
 	}
+
+	/// Removes a tag from the metadata struct, based on its hex value and 
+	/// associated group. If, for whatever reason, this tag appears in multiple 
+	/// IFDs, all instances will be removed, assuming the groups match. 
+	/// The count of calls on `remove_tag` gets returned. If this is zero,
+	/// no removals were performed. 
+	pub fn
+	remove_tag
+	(
+		&mut self,
+		remove_me: ExifTag
+	)
+	-> usize
+	{
+		let mut removed_count = 0;
+
+		// Traverse all IFD numbers
+		for ifd_number in 0..self.get_max_generic_ifd_number()
+		{
+			// Does this IFD exist?
+			if self.get_ifd(remove_me.get_group(), ifd_number).is_some()
+			{
+				// If so, get it as mutable and call remove_tag on it
+				self.get_ifd_mut(
+					remove_me.get_group(), ifd_number
+				).remove_tag(&remove_me);
+
+				removed_count += 1;
+			}
+		}
+
+		return removed_count;
+	}
 }
