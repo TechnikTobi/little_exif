@@ -41,8 +41,8 @@ Metadata
 	{
 		let mut removed_count = 0;
 
-		// Traverse all IFD numbers
-		for ifd_number in 0..self.get_max_generic_ifd_number()
+		// Traverse all IFD numbers up to the max. known one
+		for ifd_number in 0..=self.get_max_generic_ifd_number()
 		{
 			// Does this IFD exist?
 			if self.get_ifd(remove_me.get_group(), ifd_number).is_some()
