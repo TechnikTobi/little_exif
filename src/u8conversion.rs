@@ -110,30 +110,23 @@ impl U8conversion<String> for String
 	)
 	-> String
 	{
-		if u8_vec.len() % 1 != 0 
-		{
-			panic!("from_u8_vec (String): Mangled EXIF data encountered!")
-		}
-
 		if let Ok(utf8_decode_result) = String::from_utf8(u8_vec.to_owned())
 		{
 			// Drop the last character if it is a null character
-			return utf8_decode_result.strip_suffix('\0').unwrap().to_string();
+			return utf8_decode_result.strip_suffix('\0').unwrap_or(&utf8_decode_result).to_string();
 		}
-		else
+
+		let mut result = String::new();
+
+		for byte in u8_vec
 		{
-			let mut result = String::new();
-
-			for byte in u8_vec
+			if *byte > 0
 			{
-				if *byte > 0
-				{
-					result.push(*byte as char);
-				}
+				result.push(*byte as char);
 			}
-
-			return result;
 		}
+
+		return result;
 	}
 }
 
