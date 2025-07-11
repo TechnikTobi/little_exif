@@ -158,8 +158,10 @@ get_dimension_info_from_vp8_chunk
 	let width_info = from_u8_vec_macro!(u16, &header_width_bytes, &Endian::Little);
 	let height_info = from_u8_vec_macro!(u16, &header_height_bytes, &Endian::Little);
 	
-	let width  = width_info & ((1 << 14) - 1);
-	let height = height_info & ((1 << 14) - 1);
+	// zero out the top 2 bits of each of the dimensions (scaling factor bits)
+	let bitmask_14 = (1 << 14) - 1;
+	let width  = width_info & bitmask_14;
+	let height = height_info & bitmask_14;
 	
 	return Ok((width as u32 -1, height as u32 -1));
 }
