@@ -134,3 +134,32 @@ as_u8_vec
 {
 	encode_metadata_webp(general_encoded_metadata)
 }
+
+fn
+get_dimension_info_from_vp8_chunk
+(
+	payload: &Vec<u8>
+)
+-> Result<(u32, u32), std::io::Error>
+{
+	// Get the bytes containing the VP8 frame header info
+	// See:
+	// VP8 Chunk: https://developers.google.com/speed/webp/docs/riff_container#simple_file_format_lossy
+	// VP8 Data Format https://datatracker.ietf.org/doc/html/rfc6386#section-9.1
+	// Parsing function function vp8_parse_frame_header: https://datatracker.ietf.org/doc/html/rfc6386#section-20.4
+
+	let header_magic = payload[3..=5].to_vec();
+	if header_magic.len() != 3 || !matches!(header_magic.as_slice(), &[0x9d, 0x01, 0x2a]) {
+		return io_error!(Other, "Invalid VP8 Frame Header Magic");
+	}
+	let header_width_bytes = payload[6..=7].to_vec();
+	let header_height_bytes = payload[8..=9].to_vec();
+	
+	let width_info = from_u8_vec_macro!(u16, &header_width_bytes, &Endian::Little);
+	let height_info = from_u8_vec_macro!(u16, &header_height_bytes, &Endian::Little);
+	
+	let width  = width_info & ((1 << 14) - 1);
+	let height = height_info & ((1 << 14) - 1);
+	
+	return Ok((width as u32 -1, height as u32 -1));
+}
