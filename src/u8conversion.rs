@@ -112,8 +112,8 @@ impl U8conversion<String> for String
 	{
 		if let Ok(utf8_decode_result) = String::from_utf8(u8_vec.to_owned())
 		{
-			// Drop the last character if it is a null character
-			return utf8_decode_result.strip_suffix('\0').unwrap_or(&utf8_decode_result).to_string();
+			// Drop null characters at the end
+			return utf8_decode_result.trim_end_matches('\0').to_string();
 		}
 
 		let mut result = String::new();
