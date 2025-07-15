@@ -64,7 +64,7 @@ Metadata
 		generic_ifd_nr: u32,
 	)
 	{
-		if let Some(_) = self.get_ifd(ifd_type, generic_ifd_nr)
+		if self.get_ifd(ifd_type, generic_ifd_nr).is_some()
 		{
 			return;
 		}
@@ -101,14 +101,14 @@ Metadata
 			else
 			{
 				let decode_error = decoding_result.err().unwrap();
-				error!("Error during decoding (1): {}", decode_error);
+				error!("Error during decoding (1): {decode_error}");
 				return Err(decode_error);
 			}
 		}
 		else
 		{
 			let decode_error = raw_pre_decode_general.err().unwrap();
-			error!("Error during decoding (2): {:?}", decode_error);
+			error!("Error during decoding (2): {decode_error:?}");
 			return Err(decode_error);
 		}
 	}
@@ -187,10 +187,10 @@ Metadata
 
 			assert!(filter_result.len() <= 1);
 
-			if filter_result.len() == 0 { continue; }
+			if filter_result.is_empty() { continue; }
 
 			if let Ok((next_link_section, link_vec)) = filter_result.last().unwrap().encode_ifd(
-				&self, 
+				self, 
 				&mut ifds_with_offset_info_only, 
 				&mut encode_vec, 
 				&mut current_offset
@@ -304,35 +304,28 @@ Metadata
 		// Decode all the IFDs
 		let mut ifds = Vec::new();
 		let mut generic_ifd_nr = 0;
-		loop
+		while let Some(ifd_offset) = ifd_offset_option
 		{
-			if let Some(ifd_offset) = ifd_offset_option
+			data_cursor.set_position(data_start_position);
+			data_cursor.seek(std::io::SeekFrom::Current(ifd_offset as i64))?;
+
+			let decode_result = ImageFileDirectory::decode_ifd(
+				data_cursor,
+				data_start_position,
+				&endian,
+				&ExifTagGroup::GENERIC,
+				generic_ifd_nr,
+				&mut ifds
+			);
+
+			if let Ok(new_ifd_offset_option) = decode_result
 			{
-				data_cursor.set_position(data_start_position);
-				data_cursor.seek(std::io::SeekFrom::Current(ifd_offset as i64))?;
-
-				let decode_result = ImageFileDirectory::decode_ifd(
-					data_cursor,
-					data_start_position,
-					&endian,
-					&ExifTagGroup::GENERIC,
-					generic_ifd_nr,
-					&mut ifds
-				);
-
-				if let Ok(new_ifd_offset_option) = decode_result
-				{
-					ifd_offset_option = new_ifd_offset_option;
-				}
-				else
-				{
-					let error = decode_result.err().unwrap();
-					return Err(error);
-				}
+				ifd_offset_option = new_ifd_offset_option;
 			}
 			else
 			{
-				break;
+				let error = decode_result.err().unwrap();
+				return Err(error);
 			}
 
 			generic_ifd_nr += 1;

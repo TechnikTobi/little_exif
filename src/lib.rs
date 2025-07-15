@@ -1,6 +1,8 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+#![allow(clippy::needless_return)] 
+
 //! # little_exif
 //! A small crate for reading and writing (some) EXIF data, written entirely in Rust. Currently supports
 //! - .png 

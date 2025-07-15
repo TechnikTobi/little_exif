@@ -92,17 +92,17 @@ Metadata
 		let raw_pre_decode_general = match file_type
 		{
 			FileExtension::HEIF
-				=> heif::file_read_metadata(&path),
+				=> heif::file_read_metadata(path),
 			FileExtension::JPEG 
-				=>  jpg::file_read_metadata(&path),
+				=>  jpg::file_read_metadata(path),
 			FileExtension::JXL
-				=>  jxl::file_read_metadata(&path),
+				=>  jxl::file_read_metadata(path),
 			FileExtension::PNG { as_zTXt_chunk: _ } 
-				=>  png::file_read_metadata(&path),
+				=>  png::file_read_metadata(path),
 			FileExtension::TIFF
-				=> tiff::file::read_metadata(&path),
+				=> tiff::file::read_metadata(path),
 			FileExtension::WEBP 
-				=> webp::file::read_metadata(&path),
+				=> webp::file::read_metadata(path),
 			_
 				=> return io_error!(
 					Other, 
@@ -277,17 +277,17 @@ Metadata
 		match file_type
 		{
 			FileExtension::HEIF
-				=> heif::file_clear_metadata(&path),
+				=> heif::file_clear_metadata(path),
 			FileExtension::JPEG 
-				=>  jpg::file_clear_metadata(&path),
+				=>  jpg::file_clear_metadata(path),
 			FileExtension::JXL
-				=>  jxl::file_clear_metadata(&path),
+				=>  jxl::file_clear_metadata(path),
 			FileExtension::PNG { as_zTXt_chunk: _ }
-				=>  png::file_clear_metadata(&path),
+				=>  png::file_clear_metadata(path),
 			FileExtension::TIFF
-				=> tiff::file::clear_metadata(&path),
+				=> tiff::file::clear_metadata(path),
 			FileExtension::WEBP 
-				=> webp::file::clear_metadata(&path),
+				=> webp::file::clear_metadata(path),
 			_
 				=> return io_error!(
 					Other, 
@@ -348,17 +348,17 @@ Metadata
 		match file_type
 		{
 			FileExtension::HEIF
-				=> heif::write_metadata(file_buffer, &self),
+				=> heif::write_metadata(file_buffer, self),
 			FileExtension::JPEG 
-				=>  jpg::write_metadata(file_buffer, &self),
+				=>  jpg::write_metadata(file_buffer, self),
 			FileExtension::JXL 
-				=>  jxl::write_metadata(file_buffer, &self),
+				=>  jxl::write_metadata(file_buffer, self),
 			FileExtension::PNG { as_zTXt_chunk: _ }
-				=>  png::write_metadata(file_buffer, &self),
+				=>  png::write_metadata(file_buffer, self),
 			FileExtension::TIFF
-				=> tiff::vec::write_metadata(file_buffer, &self),
+				=> tiff::vec::write_metadata(file_buffer, self),
 			FileExtension::WEBP
-				=> webp::vec::write_metadata(file_buffer, &self),
+				=> webp::vec::write_metadata(file_buffer, self),
 			_
 				=> return io_error!(
 					Other, 
@@ -389,17 +389,17 @@ Metadata
 		match file_type
 		{
 			FileExtension::HEIF
-				=> heif::file_write_metadata(&path, &self),
+				=> heif::file_write_metadata(path, self),
 			FileExtension::JPEG 
-				=>  jpg::file_write_metadata(&path, &self),
+				=>  jpg::file_write_metadata(path, self),
 			FileExtension::JXL 
-				=>  jxl::file_write_metadata(&path, &self),
+				=>  jxl::file_write_metadata(path, self),
 			FileExtension::PNG { as_zTXt_chunk: _ }
-				=>  png::file_write_metadata(&path, &self),
+				=>  png::file_write_metadata(path, self),
 			FileExtension::TIFF
-				=> tiff::file::write_metadata(&path, &self),
+				=> tiff::file::write_metadata(path, self),
 			FileExtension::WEBP 
-				=> webp::file::write_metadata(&path, &self),
+				=> webp::file::write_metadata(path, self),
 			_
 				=> return io_error!(
 					Other, 
