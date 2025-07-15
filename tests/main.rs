@@ -28,16 +28,16 @@ new_from_path()
 fn
 new_from_path_no_data_jxl()
 {
-	let data = Metadata::new_from_path(Path::new("tests/no_exif.jxl")).unwrap();
-	assert_eq!(data.into_iter().count(), 0);
+	let data = Metadata::new_from_path(Path::new("tests/no_exif.jxl"));
+	assert!(data.is_err());
 }
 
 #[test]
 fn
 new_from_path_no_data_jpg()
 {
-	let data = Metadata::new_from_path(Path::new("tests/no_exif.jpeg")).unwrap();
-	assert_eq!(data.into_iter().count(), 0);
+	let data = Metadata::new_from_path(Path::new("tests/no_exif.jpeg"));
+	assert!(data.is_err());
 }
 
 #[test]
@@ -49,7 +49,7 @@ new_from_path_panic_not_existent()
 }
 
 #[test]
-#[should_panic(expected = "Can't get extension from given path!")]
+#[should_panic(expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: \"Can't get file extension!\" }")]
 fn
 new_from_path_panic_no_extension()
 {
@@ -57,7 +57,7 @@ new_from_path_panic_no_extension()
 }
 
 #[test]
-#[should_panic(expected = "Unsupported file type!")]
+#[should_panic(expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Unsupported, error: \"Unsupported file type: txt - Unknown file type: txt\" }")]
 fn
 new_from_path_panic_not_supported()
 {
