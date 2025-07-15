@@ -142,7 +142,7 @@ impl Metadata
 	{
 		GetTagIterator 
 		{
-			metadata:          &self,
+			metadata:          self,
 			current_ifd_index: 0,
 			current_tag_index: 0,
 			tag_hex_value:     hex,

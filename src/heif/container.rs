@@ -221,7 +221,7 @@ HeifContainer
         // of the TIFF header and seek to that
         let exif_tiff_header_offset = read_be_u32(cursor)? as usize;
 
-        cursor.seek_relative(exif_tiff_header_offset as i64)?;
+        cursor.seek(std::io::SeekFrom::Current(exif_tiff_header_offset as i64))?;
 
         // Read in the remaining bytes
         let mut exif_buffer = vec![0u8; 

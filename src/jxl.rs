@@ -116,7 +116,8 @@ file_check_signature
 	let mut file = open_write_file(path)?;
 
 	let mut signature_buffer = [0u8; 12];
-	file.read(&mut signature_buffer)?;
+	let bytes_read = file.read(&mut signature_buffer)?;
+	assert_eq!(bytes_read, 12);
 	check_signature(&signature_buffer.to_vec())?;
 
 	return Ok(file);
@@ -231,7 +232,8 @@ check_brob_type_for_exif
 	cursor.read_exact(&mut brob_type)?;
 
 	// Seek back to position prior to brob type
-	cursor.seek_relative(-4)?;
+
+	cursor.seek(SeekFrom::Current(-4))?;
 
 	return Ok(brob_type == EXIF);
 }
@@ -251,12 +253,9 @@ box_contains_exif
 	{
 		return Ok(true);
 	}
-	if type_buffer == BROB_BOX
+	if type_buffer == BROB_BOX && check_brob_type_for_exif(cursor)?
 	{
-		if check_brob_type_for_exif(cursor)?
-		{
-			return Ok(true);
-		}
+		return Ok(true);
 	}
 
 	return Ok(false);

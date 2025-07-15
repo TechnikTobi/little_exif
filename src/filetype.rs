@@ -76,7 +76,7 @@ get_file_type
         {
             io::Error::new(
                 ErrorKind::Unsupported,
-                format!("Unsupported file type: {} - {}", file_type_str, e),
+                format!("Unsupported file type: {file_type_str} - {e}"),
             )
         }
     )

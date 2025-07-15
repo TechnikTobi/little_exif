@@ -442,9 +442,9 @@ clear_metadata
 				{
 					// Don't fully remove the chunk, only remove EXIF from XMP
 					// To do that, reposition the cursor to the start of the 
-					// entire
-					cursor.seek_relative((chunk.length() as i64).neg())?;
-					cursor.seek_relative(-8)?;
+					// entire chunk
+					cursor.seek(SeekFrom::Current((chunk.length() as i64).neg()))?;
+					cursor.seek(SeekFrom::Current(-8))?;
 					clear_exif_from_xmp_metadata(&mut cursor, &chunk_data)?;
 					continue;
 				}
@@ -453,7 +453,7 @@ clear_metadata
 				// ignore it, skip its CRC and continue with next chunk
 				if !has_raw_profile_type_exif
 				{
-					cursor.seek_relative(4)?;
+					cursor.seek(SeekFrom::Current(4))?;
 					continue;
 				}
 			},
@@ -492,7 +492,7 @@ remove_chunk_at
 
 	// Seek to the end of the chunk, with the 8 additional bytes due to the 
 	// name and CRC fields
-	cursor.seek_relative(chunk_length as i64 + 8)?;
+	cursor.seek(SeekFrom::Current(chunk_length as i64 + 8))?;
 	let chunk_end_position = cursor.position() as usize;
 
 	range_remove(
@@ -520,7 +520,7 @@ clear_exif_from_xmp_metadata
 	// Read the chunk name and seek back
 	let _          = read_chunk_length(cursor)?;
 	let chunk_name = read_chunk_name(cursor)?;
-	cursor.seek_relative(-8)?;
+	cursor.seek(SeekFrom::Current(-8))?;
 
 	// Clear the EXIF from the XMP data
 	let clean_xmp_data = remove_exif_from_xmp(
