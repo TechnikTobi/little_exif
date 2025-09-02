@@ -28,3 +28,6 @@ debug/*/rsrc/copy.jpg
 debug/issue_52/rsrc/test1.png
 debug/issue_52/rsrc/test2.png
 debug/issue_52/rsrc/test3.png
+debug/issue_71/test.png
+debug/issue_71/test.heic
+debug/issue_71/test.avif

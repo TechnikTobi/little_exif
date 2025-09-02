@@ -123,11 +123,10 @@ ItemInfoBox
     (
         &self
     )
-    -> &ItemInfoEntryBox
+    -> Option<&ItemInfoEntryBox>
     {
         return self.items.iter()
             .find(|item| item.item_name == "Exif")
-            .unwrap();
     }
 }
 
