@@ -5,6 +5,7 @@ use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
 
+use crate::general_file_io::io_error;
 use crate::general_file_io::EXIF_HEADER;
 use crate::heif::box_type::BoxType;
 use crate::heif::boxes::item_location::ItemConstructionMethod;
@@ -111,9 +112,14 @@ HeifContainer
     (
         &self
     )
-    -> u16
+    -> Result<u16, std::io::Error>
     {
-        return self.get_item_info_box().get_exif_item().item_id;
+        if let Some(item) = self.get_item_info_box().get_exif_item()
+        {
+            return Ok(item.item_id);
+        }
+
+        return io_error!(Other, "No EXIF item found!");
     }
 
     fn
@@ -211,7 +217,7 @@ HeifContainer
     -> Result<Vec<u8>, std::io::Error>
     {
         // Locate exif data
-        let exif_item_id    = self.get_item_id_exif_data();
+        let exif_item_id    = self.get_item_id_exif_data()?;
         let (start, length) = self.get_exif_data_pos_and_len(exif_item_id);
 
         // Reset cursor to start of exif data
@@ -252,7 +258,7 @@ HeifContainer
     -> Result<(Vec<u8>, i64), std::io::Error>
     {
         // Locate old exif data
-        let exif_item_id    = self.get_item_id_exif_data();
+        let exif_item_id    = self.get_item_id_exif_data()?;
         let (start, length) = self.get_exif_data_pos_and_len(exif_item_id);
 
         // Reset cursor to start of exif data
@@ -290,7 +296,7 @@ HeifContainer
     {
         // Find out where old exif is located, needed to determine which iloc
         // entries need to be updated
-        let id                           = self.get_item_id_exif_data();
+        let id                           = self.get_item_id_exif_data()?;
         let (old_exif_pos, old_exif_len) = self.get_exif_data_pos_and_len(id);
 
         let mut cursor = Cursor::new(file_buffer);
