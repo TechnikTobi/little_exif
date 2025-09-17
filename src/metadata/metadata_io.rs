@@ -1,12 +1,16 @@
 // Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+use std::io::Cursor;
 use std::path::Path;
+
+use log::warn;
 
 use crate::filetype::get_file_type;
 use crate::filetype::FileExtension;
 use crate::general_file_io::io_error;
 
+use crate::general_file_io::open_read_file;
 use crate::heif;
 use crate::jpg;
 use crate::jxl;
@@ -40,8 +44,26 @@ Metadata
     )
     -> Result<Metadata, std::io::Error>
     {
+        // First, try to determine the file type automatically
+        let mut cursor = Cursor::new(file_buffer);
+        let auto_detected_file_type = FileExtension::auto_detect(&mut cursor);
 
-        
+        if let Some(detected_type) = auto_detected_file_type
+        {
+            if file_type != detected_type
+            {
+                warn!(
+                    "The supplied file type information ({:?}) and detected ({:?}) do NOT match!",
+                    file_type,
+                    detected_type
+                );
+            }
+        }
+        else
+        {
+            warn!("Could not automatically detect file type!");
+        }
+
         let raw_pre_decode_general = match file_type
         {
             FileExtension::HEIF
@@ -87,7 +109,53 @@ Metadata
     )
     -> Result<Metadata, std::io::Error>
     {
-        let file_type = get_file_type(path)?;
+        // First, try to get the type based on the file extension
+        let extension_based_file_type_result = get_file_type(path);
+
+        let mut extension_based_file_type = match extension_based_file_type_result 
+        {
+            Ok(result) => Some(result),
+            Err(error) => match error.kind() 
+            {
+                std::io::ErrorKind::Unsupported => return Err(error),
+                _ => None
+            },
+        };
+
+        // Next, try to use auto detect
+        let mut file = open_read_file(path)?;
+        let content_based_file_type = FileExtension::auto_detect(&mut file);
+
+        if extension_based_file_type.is_none()
+        {
+            if content_based_file_type.is_none()
+            {
+                return io_error!(
+                    Other,
+                    "Could not determine file type when reading file!"
+                );
+            }
+
+            extension_based_file_type = content_based_file_type;
+        }
+
+        if content_based_file_type.is_some()
+        {
+            if 
+                extension_based_file_type.unwrap() 
+                != 
+                content_based_file_type.unwrap()
+            {
+                warn!("File extension and file content yield different file type, content takes precedence");
+                extension_based_file_type = content_based_file_type;
+            }
+        }
+        else
+        {
+            warn!("Could not determine file type based on content, fall back on file extension");
+        }
+
+        let file_type = extension_based_file_type.unwrap();
 
         // Call the file specific decoders as a starting point for obtaining
         // the raw EXIF data that gets further processed
