@@ -468,25 +468,25 @@ HeifContainer
         // Construct new metadata that only contains the above tags
         let mut new_metadata = Metadata::new();
 
-        // 0x0112
+        // 0x0112: Orientation
         if let Some(tag) = orig_metadata.get_tag_by_hex(0x0112, None).next()
         {
             new_metadata.set_tag(tag.clone());
         }
 
-        // 0x011A
+        // 0x011A: XResolution
         if let Some(tag) = orig_metadata.get_tag_by_hex(0x011A, None).next()
         {
             new_metadata.set_tag(tag.clone());
         }
 
-        // 0x011A
+        // 0x011A: YResolution
         if let Some(tag) = orig_metadata.get_tag_by_hex(0x011B, None).next()
         {
             new_metadata.set_tag(tag.clone());
         }
 
-        // 0x0128
+        // 0x0128: ResolutionUnit
         if let Some(tag) = orig_metadata.get_tag_by_hex(0x0128, None).next()
         {
             new_metadata.set_tag(tag.clone());
