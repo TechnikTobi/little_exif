@@ -10,6 +10,7 @@
 		"chnl",
 		"CIPA",
 		"codestream",
+		"Colour",
 		"Colur",
 		"Conv",
 		"cslg",
@@ -110,6 +111,7 @@
 		"trun",
 		"tsel",
 		"usertype",
-		"vmhd"
+		"vmhd",
+		"Voigtländer"
 	]
 }
