@@ -15,6 +15,10 @@ in a different type of box and needs to be decompressed.
 See commits:
 - f6531e357b95709e0e01a89d4d2ccee68fc0c058: Working on issue #64
 - 37decccedd3410e1b5a456b44ee3349f4a370355: Bugfix for issue #64
+
+Later on I realized I only fixed support for vec-based operations but not
+file-based, fixed in this commit:
+- 209e4f42489d8f37f5bff7360e489b34905e493e
 */
 
 use std::path::Path;
