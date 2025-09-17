@@ -263,7 +263,6 @@ box_contains_exif
 
 
 
-/// Read 
 pub(crate) fn
 read_metadata
 (
@@ -275,6 +274,34 @@ read_metadata
 
 	let mut cursor = Cursor::new(file_buffer);
 
+	return generic_read_metadata(&mut cursor);
+}
+
+pub(crate) fn
+file_read_metadata
+(
+	path: &Path
+)
+-> Result<Vec<u8>, std::io::Error>
+{
+	let mut file = open_read_file(path)?;
+
+	// Read first 12 bytes and check that we have a ISO BMFF file
+	let mut first_12_bytes = [0u8; 12];
+	file.read(&mut first_12_bytes).unwrap();
+	check_signature(&first_12_bytes.to_vec())?;
+
+	return generic_read_metadata(&mut file);
+}
+
+fn
+generic_read_metadata
+<T: Seek + Read>
+(
+    cursor: &mut T
+)
+-> Result<Vec<u8>, std::io::Error>
+{
 	loop
 	{
 		// Get the first 4 bytes at the current cursor position to determine
@@ -291,25 +318,31 @@ read_metadata
 		match type_buffer
 		{
 			EXIF => {
+				// Skip the next 4 bytes (which contain the minor version???)
+				cursor.seek(SeekFrom::Current(4))?;
 
-				let position = cursor.position() as usize;
+				// `length-4` because of the previous relative seek operation
+				let mut exif_buffer = vec![0u8; (length-4) as usize];
+				cursor.read_exact(&mut exif_buffer)?;
 
-				// Ignore the next 4 bytes (because that's the minor version???)
-				let exif_buffer = file_buffer[position+4..position + length as usize].to_vec();
 				return Ok(exif_buffer);
 			},
 
 			BROB_BOX => { // -> Brotli encoded data
 
-				let position = cursor.position() as usize;
+				let position = cursor.stream_position()? as usize;
 
-				if check_brob_type_for_exif(&mut cursor)?
+				if check_brob_type_for_exif(cursor)?
 				{
-					let compressed_exif_buffer = file_buffer[
-						position + 4 ..
-						position + length as usize
-					].to_vec();
+					// Skip the next 4 bytes (which contain the minor version???)
+					cursor.seek(SeekFrom::Current(4))?;
 
+					let mut compressed_exif_buffer = vec![
+						0u8; 
+						(length-4) as usize
+					];
+					cursor.read_exact(&mut compressed_exif_buffer)?;
+					
 					let mut decompressed_exif_buffer = Vec::new();
 
 					match brotli::BrotliDecompress(
@@ -334,55 +367,6 @@ read_metadata
 			_ => {
 				// Not an EXIF box so skip it
 				cursor.seek(SeekFrom::Current(length as i64))?;
-			}
-		}
-	}
-}
-
-pub(crate) fn
-file_read_metadata
-(
-	path: &Path
-)
--> Result<Vec<u8>, std::io::Error>
-{
-	let mut file = open_read_file(path)?;
-
-	// Read first 12 bytes and check that we have a ISO BMFF file
-	let mut first_12_bytes = [0u8; 12];
-	file.read(&mut first_12_bytes).unwrap();
-	check_signature(&first_12_bytes.to_vec())?;
-
-	loop
-	{
-		// Get the first 4 bytes at the current cursor position to determine
-		// the length of the current box (and account for the 8 bytes of length
-		// and box type)
-		let mut length_buffer = [0u8; 4];
-		file.read_exact(&mut length_buffer)?;
-		let length = from_u8_vec_macro!(u32, &length_buffer.to_vec(), &Endian::Big) - 8;
-
-		// Next, read the box type
-		let mut type_buffer = [0u8; 4];
-		file.read_exact(&mut type_buffer)?;
-
-		match type_buffer
-		{
-			EXIF => {
-
-				// Skip the next 4 bytes (which contain the minor version???)
-				file.seek(SeekFrom::Current(4))?;
-
-				// `length-4` because of the previous relative seek operation
-				let mut exif_buffer = vec![0u8; (length-4) as usize];
-				file.read_exact(&mut exif_buffer)?;
-
-				return Ok(exif_buffer);
-			},
-
-			_ => {
-				// Not an EXIF box so skip it
-				file.seek(SeekFrom::Current(length as i64))?;
 			}
 		}
 	}
