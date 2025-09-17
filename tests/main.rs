@@ -49,7 +49,7 @@ new_from_path_panic_not_existent()
 }
 
 #[test]
-#[should_panic(expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: \"Can't get file extension!\" }")]
+#[should_panic(expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: \"Could not determine file type when reading file!\" }")]
 fn
 new_from_path_panic_no_extension()
 {
