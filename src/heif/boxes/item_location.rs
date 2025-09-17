@@ -4,7 +4,6 @@
 use std::io::Read;
 use std::io::Seek;
 
-use crate::debug_println;
 use crate::endian::Endian;
 use crate::u8conversion::U8conversion;
 use crate::u8conversion::to_u8_vec_macro;
@@ -241,7 +240,7 @@ ItemLocationEntry
             extents
         };
 
-        debug_println!("{:?}", entry);
+        log::debug!("{:?}", entry);
 
         return Ok(entry);
     }
