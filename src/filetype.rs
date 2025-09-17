@@ -118,7 +118,7 @@ FileExtension
     ) 
     -> Result<FileExtension, Self::Err> 
     {
-        match input 
+        match input.to_lowercase().as_str()
         {
             "heif" | "hif" | "heic" 
                 => Ok(FileExtension::HEIF),
