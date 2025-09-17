@@ -218,5 +218,10 @@ guess_image_type
         return Some(FileExtension::WEBP);
     }
 
+    if data.len() >= 8 && &data[4..8] == b"JXL "
+    {
+        return Some(FileExtension::JXL);
+    }
+
     None
 }
