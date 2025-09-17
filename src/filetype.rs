@@ -3,22 +3,105 @@
 
 use std::io;
 use std::io::ErrorKind;
+use std::io::Read;
+use std::io::Seek;
 use std::path::Path;
 use std::str::FromStr;
 
 use crate::general_file_io::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-#[allow(non_snake_case)]
+#[allow(non_snake_case, non_camel_case_types)]
 pub enum
 FileExtension
 {
     PNG  {as_zTXt_chunk: bool},
     JPEG,
     JXL,
+    NAKED_JXL,  // A JXL codestream without any data
     TIFF,
     WEBP,
     HEIF,
+}
+
+impl
+FileExtension
+{
+    pub(crate) fn
+    auto_detect
+    <T: Seek + Read>
+    (
+        cursor: &mut T
+    )
+    -> Option<Self>
+    {
+        // Read first few bytes (32 bytes because I don't know any better)
+        let mut buffer = [0; 32];
+        let n = cursor.read(&mut buffer);
+
+        if n.is_err()
+        {
+            return None;
+        }
+
+        if n.unwrap() < 4
+        {
+            return None;
+        }
+
+        match buffer {
+            // PNG
+            [0x89, 0x50, 0x4E, 0x47, ..] => {
+                return Some(FileExtension::PNG { as_zTXt_chunk: true });
+            }
+
+            // JP(E)G
+            [0xFF, 0xD8, ..] => {
+                return Some(FileExtension::JPEG);
+            }
+
+            // TIFF, little endian
+            [0x49, 0x49, 0x2A, 0x00, ..] => {
+                return Some(FileExtension::TIFF);
+            }
+
+            // TIFF, big endian
+            [0x4D, 0x4D, 0x00, 0x2A, ..] => {
+                return Some(FileExtension::TIFF);
+            }
+
+            // WebP
+            [0x52, 0x49, 0x46, 0x46, _, _, _, _, 0x57, 0x45, 0x42, 0x50, ..] =>
+            {
+                return Some(FileExtension::WEBP);
+            }
+
+            // A "naked" JXL codestream that can't hold metadata
+            // See: https://www.loc.gov/preservation/digital/formats/fdd/fdd000538.shtml
+            [0xFF, 0x0A, ..] => {
+                return Some(FileExtension::NAKED_JXL);
+            }
+
+            // JXL (in ISO_BMFF container)
+            // In this case, the JXL file starts with the JXL signature box
+            [0x00, 0x00, 0x00, 0x0C, 0x4A, 0x58, 0x4C, 0x20, 0x0D, 0x0A, 0x87, 0x0A, ..] =>
+            {
+                return Some(FileExtension::JXL);
+            }
+
+            // HEIC/HEIF
+            [_, _, _, _, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63, ..] => {
+                return Some(FileExtension::HEIF)
+            }
+
+            // TODO: Other HEIF formats, e.g. ftypmif1, see also:
+            // https://www.loc.gov/preservation/digital/formats/fdd/fdd000526.shtml
+
+            _ => { 
+                return None;
+            }
+        };
+    }
 }
 
 impl 
