@@ -23,7 +23,7 @@ use crate::ifd::ImageFileDirectory;
 use crate::u8conversion::from_u8_vec_macro;
 use crate::u8conversion::U8conversion;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct
 Metadata
 {
