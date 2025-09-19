@@ -56,6 +56,20 @@ metadata.set_tag(
 metadata.write_to_vec(&mut image_vector, file_type)?;
 ```
 
+## Testing
+
+To run the tests from a specific file, use e.g.
+
+```bash
+cargo test --test issue_000002
+```
+
+To run a single test from that file use
+
+```bash
+cargo test --test issue_000002 read_and_write_exif_data_1
+```
+
 ## FAQ
 
 ### I tried writing the ImageDescription tag on a JPEG file, but it does not show up. Why?
