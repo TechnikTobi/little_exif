@@ -20,8 +20,11 @@ categories = ["multimedia::images"]
 exclude = [
     ".DS_Store",
     "**/.DS_Store",
+    "Cargo.lock",
+    ".vscode/*",
     ".gitignore",
     "additional-documentation/*",
+    "examples/*",
     "tests/*",
     "debug/*",
     ".cargo_vcs_info.json",
