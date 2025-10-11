@@ -29,8 +29,8 @@ use little_exif::exif_tag::ExifTag;
 fn
 string_tag_round_trip()
 {
-    let path_orig = Path::new("../tests_resources/issue_000065/20160513-A0012+001.tiff");
-    let path_copy = Path::new("../tests_resources/issue_000065/20160513-A0012+001_copy.tiff");
+    let path_orig = Path::new("resources/issue_000065/20160513-A0012+001.tiff");
+    let path_copy = Path::new("resources/issue_000065/20160513-A0012+001_copy.tiff");
 
     // Remove file from previous run and replace it with fresh copy
     if let Err(error) = remove_file(&path_copy)

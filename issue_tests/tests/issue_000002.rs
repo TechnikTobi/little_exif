@@ -17,7 +17,7 @@ use little_exif::filetype;
 fn
 read_exif_data_1()
 {
-    let path = Path::new("../tests_resources/issue_000002/0010_A0420427.JPG");
+    let path = Path::new("resources/issue_000002/0010_A0420427.JPG");
 
     let mut tag_counter = 0;
 
@@ -34,7 +34,7 @@ read_exif_data_1()
 fn
 read_exif_data_2()
 {
-    let file_path = Path::new("../tests_resources/issue_000002/0010_A0420427.JPG");
+    let file_path = Path::new("resources/issue_000002/0010_A0420427.JPG");
 
     let extension = file_path.extension().unwrap();
     let extension = extension.to_str().unwrap();
@@ -58,8 +58,8 @@ fn
 read_and_write_exif_data_1()
 -> Result<(), std::io::Error>
 {
-    let path_orig = Path::new("../tests_resources/issue_000002/0010_A0420427.JPG");
-    let path_copy = Path::new("../tests_resources/issue_000002/0010_A0420427_copy.JPG");
+    let path_orig = Path::new("resources/issue_000002/0010_A0420427.JPG");
+    let path_copy = Path::new("resources/issue_000002/0010_A0420427_copy.JPG");
 
     // Remove file from previous run and replace it with fresh copy
     if let Err(error) = remove_file(&path_copy)
