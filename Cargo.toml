@@ -41,3 +41,7 @@ brotli = "8.0.1"
 [[test]]
 name = "tests"
 path = "tests/main.rs"
+
+[workspace]
+members = [".", "issue_tests"]
+resolver = "3"
