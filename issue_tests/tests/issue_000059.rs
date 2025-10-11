@@ -25,12 +25,32 @@ extern crate little_exif;
 use little_exif::exif_tag::ExifTag;
 use little_exif::metadata::Metadata;
 
+// use little_exif_0_6_3::*;
+
+// #[test]
+// fn read_exif_data_prior_to_bugfix() 
+// {
+//     let path_orig = Path::new("tests_resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25.png");
+//     let path_copy = Path::new("tests_resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25_copy1.png");
+
+//     // Remove file from previous run and replace it with fresh copy
+//     if let Err(error) = remove_file(&path_copy)
+//     {
+//         println!("{}", error);
+//     }
+//     copy(&path_orig, &path_copy).unwrap();
+
+//     let mut metadata = little_exif_0_6_3::metadata::Metadata::new();
+//     metadata.set_tag(little_exif_0_6_3::exif_tag::ExifTag::ImageDescription("ABC!".to_string()));
+//     metadata.write_to_file(&path_copy).unwrap();
+// }
+
 #[test]
 fn
 read_exif_data_1()
 {
-    let path_orig = Path::new("tests/resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25.png");
-    let path_copy = Path::new("tests/resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25_copy.png");
+    let path_orig = Path::new("../tests_resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25.png");
+    let path_copy = Path::new("../tests_resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25_copy2.png");
 
     // Remove file from previous run and replace it with fresh copy
     if let Err(error) = remove_file(&path_copy)
