@@ -27,8 +27,8 @@ use little_exif::filetype::FileExtension;
 fn
 replace_exif_tag_values()
 {
-    let path_orig = Path::new("../tests_resources/issue_000063/image.jpeg");
-    let path_copy = Path::new("../tests_resources/issue_000063/image_copy.jpeg");
+    let path_orig = Path::new("resources/issue_000063/image.jpeg");
+    let path_copy = Path::new("resources/issue_000063/image_copy.jpeg");
 
     let content     = std::fs::read(path_orig).unwrap();
     let new_content = remove_private_exif(&content).unwrap();
