@@ -28,6 +28,7 @@ exclude = [
     "tests/*",
     "issue_tests/*",
     "debug/*",
+    "vendor/*",
     ".cargo_vcs_info.json",
 ]
 
