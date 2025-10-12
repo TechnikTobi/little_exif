@@ -4,9 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [dev-dependencies]
-little_exif        = { path = ".." }
-little_exif_0_3_1  = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.3.1"  }
-little_exif_0_5_1  = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.5.1"  }
+little_exif  = { path = ".." }
+
+little_exif_0_3_1 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.3.1"  }
+
+little_exif_0_5_1 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.5.1"  }
+
+little_exif_0_6_0_beta_3 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.0-beta.3"  }
+little_exif_0_6_0_beta_4 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.0-beta.4"  }
+
 little_exif_0_6_0  = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.0"  }
 little_exif_0_6_2  = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.2"  }
 little_exif_0_6_3  = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.3"  }
