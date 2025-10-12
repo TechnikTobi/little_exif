@@ -18,6 +18,7 @@ use std::fs::copy;
 use std::fs::read;
 
 extern crate little_exif_0_6_3;
+extern crate little_exif_0_6_5;
 extern crate little_exif;
 
 #[test]
@@ -50,6 +51,32 @@ issue_000055_clear_exif_data_old_version_fails()
 #[test]
 fn
 issue_000055_clear_exif_data_fixed()
+{
+    let png_path = Path::new("resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c.png");
+    let cpy_path = Path::new("resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c_copy2.png");
+
+    if let Err(error) = remove_file(cpy_path)
+    {
+        println!("Could not delete file: {}", error);
+    }
+    copy(png_path, cpy_path).unwrap();
+
+    let mut image_data = read(png_path).unwrap();
+
+    little_exif_0_6_5::metadata::Metadata::clear_metadata(
+        &mut image_data, 
+        little_exif_0_6_5::filetype::FileExtension::PNG { as_zTXt_chunk: false }
+    ).unwrap();
+
+    std::fs::write(
+        cpy_path.as_os_str(),
+        image_data
+    ).unwrap();
+}
+
+#[test]
+fn
+issue_000055_clear_exif_data_current()
 {
     let png_path = Path::new("resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c.png");
     let cpy_path = Path::new("resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c_copy2.png");

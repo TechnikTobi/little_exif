@@ -19,12 +19,13 @@ Related commits:
 use std::path::Path;
 
 extern crate little_exif_0_6_3;
+extern crate little_exif_0_6_4;
 extern crate little_exif;
 
 #[test]
 #[should_panic (expected = "Out of bounds access")]
 fn
-issue_000054_read_exif_data_old_version_fails()
+read_exif_data_fails()
 {
     let path = Path::new("resources/issue_000054/437532191-50f650a1-788c-44a4-a535-526d10d297ec.png");
 
@@ -41,7 +42,24 @@ issue_000054_read_exif_data_old_version_fails()
 
 #[test]
 fn
-issue_000054_read_exif_data_fixed()
+read_exif_data_fixed()
+{
+    let path = Path::new("resources/issue_000054/437532191-50f650a1-788c-44a4-a535-526d10d297ec.png");
+
+    let mut tag_counter = 0;
+
+    for tag in &little_exif_0_6_4::metadata::Metadata::new_from_path(path).unwrap()
+    {
+        tag_counter += 1;
+        println!("{:?}", tag);
+    }
+
+    assert_eq!(tag_counter, 15);
+}
+
+#[test]
+fn
+read_exif_data_current()
 {
     let path = Path::new("resources/issue_000054/437532191-50f650a1-788c-44a4-a535-526d10d297ec.png");
 
