@@ -26,6 +26,7 @@ exclude = [
     "additional-documentation/*",
     "examples/*",
     "tests/*",
+    "issue_tests/*",
     "debug/*",
     ".cargo_vcs_info.json",
 ]
