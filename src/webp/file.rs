@@ -8,8 +8,6 @@ use std::io::Seek;
 use std::io::SeekFrom;
 use std::path::Path;
 
-use log::debug;
-
 use crate::endian::*;
 use crate::metadata::Metadata;
 use crate::u8conversion::*;
@@ -395,8 +393,8 @@ convert_to_extended_format
 	// Find out what simple type of WebP file we are dealing with
 	let (width, height) = match first_chunk.descriptor().header().as_str()
 	{
-		"VP8" 
-			=> {debug!("VP8 !"); todo!()},
+		"VP8 " 
+			=> get_dimension_info_from_vp8_chunk(first_chunk.payload()),
 		"VP8L"
 			=> get_dimension_info_from_vp8l_chunk(first_chunk.payload()),
 		_ 
@@ -554,6 +552,8 @@ clear_metadata
 			"No EXIF chunk according to VP8X flags!"
 				=> return Ok(()),
 			"Expected first chunk of WebP file to be of type 'VP8X' but instead got VP8L!"
+				=> return Ok(()),
+			"Expected first chunk of WebP file to be of type 'VP8X' but instead got VP8 !"
 				=> return Ok(()),
 			_
 				=> return Err(exif_check_result.err().unwrap())

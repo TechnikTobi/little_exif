@@ -472,7 +472,6 @@ write_to_file_png()
 	Ok(())
 }
 
-#[ignore]
 #[test]
 fn 
 write_to_file_webp_simple_lossy() 
@@ -513,7 +512,6 @@ write_to_file_webp_simple_lossless()
 		
 	// Write metadata to file
 	metadata.write_to_file(Path::new("tests/sample2_simple_lossless_copy.webp"))?;
-
 	Ok(())
 }
 
