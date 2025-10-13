@@ -2,7 +2,7 @@
 
 A little library for reading and writing EXIF data in pure Rust.
 
-[![Build & Test](https://github.com/TechnikTobi/little_exif/actions/workflows/rust.yml/badge.svg) ](https://github.com/TechnikTobi/little_exif/actions/workflows/rust.yml)
+[![Build & Test](https://github.com/TechnikTobi/little_exif/actions/workflows/rust.yml/badge.svg)](https://github.com/TechnikTobi/little_exif/actions/workflows/rust.yml)&nbsp;
 [![version-badge][]][version]&nbsp;
 [![license-badge][]][license]&nbsp;
 
