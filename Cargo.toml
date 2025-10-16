@@ -1,7 +1,7 @@
 [package]
 name = "little_exif"
 
-version = "0.6.15"
+version = "0.6.16-beta.1"
 edition = "2021"
 rust-version = "1.65"
 
@@ -18,18 +18,19 @@ keywords = ["metadata", "exif", "photo", "image"]
 categories = ["multimedia::images"]
 
 exclude = [
+    ".cargo_vcs_info.json",
     ".DS_Store",
     "**/.DS_Store",
-    "Cargo.lock",
-    ".vscode/*",
     ".gitignore",
+    ".vscode/*",
     "additional-documentation/*",
-    "examples/*",
-    "tests/*",
-    "issue_tests/*",
+    "Cargo.lock",
     "debug/*",
+    "examples/*",
+    "issue_tests/*",
+    "target/*",
+    "tests/*",
     "vendor/*",
-    ".cargo_vcs_info.json",
 ]
 
 [dependencies]
