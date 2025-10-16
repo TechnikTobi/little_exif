@@ -5,15 +5,14 @@
 
 /*
 Original problem:
-Could not decode SubIFD GPS:
- Illegal format for known tag! Tag: GPSAltitudeRef("") Expected: STRING Got: INT8U
+moreover with some files, I get
+Error during decoding: Error { kind: UnexpectedEof, message: "failed to fill whole buffer" }
 */
 
 /*
 Solved:
-Change type of GPSAltitudeRef tag
-Related commits:
-- 10fbf8c845568d0ebe03c68f13a8bd2c0eb1da36
+There was a typo, see related commit:
+- 8965456229fb6e366dd24d5f67d730ee6a7cc086
 */
 
 use std::path::Path;
