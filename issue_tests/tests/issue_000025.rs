@@ -22,8 +22,8 @@ use std::path::Path;
 use std::fs::remove_file;
 use std::fs::copy;
 
-extern crate little_exif_0_6_3;
-extern crate little_exif_0_6_5;
+extern crate little_exif_0_5_1;
+extern crate little_exif_0_6_0_beta_1;
 extern crate little_exif;
 
 #[test]
