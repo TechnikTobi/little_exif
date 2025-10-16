@@ -2,6 +2,7 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use crate::endian::Endian;
+use crate::rational::iR64;
 use crate::u8conversion::*;
 
 use super::ExifTag;
@@ -22,6 +23,7 @@ macro_rules! build_set_function {
 			/// This helps with handling tags that come in a different format
 			/// than expected and, one converted, setting the data in the
 			/// format that little_exif expects it to be.
+			#[allow(non_snake_case)]
 			pub(crate) fn
 			$(
 				$function_name
@@ -52,6 +54,7 @@ macro_rules! build_set_function {
 	}
 }
 
-build_set_function![(set_value_to_int16u_vec, Vec<u16>, INT16U)];
-build_set_function![(set_value_to_int32u_vec, Vec<u32>, INT32U)];
-build_set_function![(set_value_to_undef,      Vec<u8>,  UNDEF)];
+build_set_function![(set_value_to_int16u_vec, Vec<u16>,  INT16U)];
+build_set_function![(set_value_to_int32u_vec, Vec<u32>,  INT32U)];
+build_set_function![(set_value_to_iR64_vec,   Vec<iR64>, RATIONAL64S)];
+build_set_function![(set_value_to_undef,      Vec<u8>,   UNDEF)];
