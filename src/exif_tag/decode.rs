@@ -2,6 +2,8 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use crate::endian::Endian;
+use crate::exif_tag_format::RATIONAL64U;
+use crate::rational::*;
 use crate::general_file_io::io_error;
 use crate::ifd::ExifTagGroup;
 
@@ -12,7 +14,7 @@ use super::INT8U;
 use super::INT16U;
 use super::INT32U;
 
-
+#[allow(non_snake_case)]
 pub(crate) fn
 decode_tag_with_format_exceptions
 (
@@ -93,6 +95,16 @@ decode_tag_with_format_exceptions
 					return io_error!(Other, format!("Unknown tag for combination INT8U vs STRING while decoding: {:?}", raw_tag));
 				}
 			},
+
+			// See issue #21
+			(ExifTagFormat::RATIONAL64S, ExifTagFormat::RATIONAL64U) => {
+				let uR64_data = <RATIONAL64U as U8conversion<RATIONAL64U>>::from_u8_vec(raw_data, endian);
+				let iR64_data = uR64_data
+					.into_iter().map(|x| x.into()).collect::<Vec<f64>>()
+					.into_iter().map(|x| x.into()).collect::<Vec<iR64>>();
+
+				return Ok(raw_tag.set_value_to_iR64_vec(iR64_data).unwrap());
+			}
 
 			// See issue #63
 			(ExifTagFormat::UNDEF, ExifTagFormat::STRING) => {
