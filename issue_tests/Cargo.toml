@@ -6,6 +6,7 @@ edition = "2021"
 [dev-dependencies]
 little_exif  = { path = ".." }
 
+little_exif_0_3_0 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.3.0" }
 little_exif_0_3_1 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.3.1" }
 little_exif_0_3_2 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.3.2" }
 little_exif_0_3_3 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.3.3" }
