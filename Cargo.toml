@@ -7,7 +7,8 @@ rust-version = "1.65"
 
 description = """
 The only pure Rust crate with true read *and* write support for EXIF data, 
-available for PNG, JP(E)G, HEIF/HEIC/HIF, JXL, TIFF, WebP - and soon even more!
+available for PNG, JP(E)G, HEIF/HEIC/HIF/AVIF, JXL, TIFF, WebP - and soon
+even more!
 """
 
 authors = ["Tobias Prisching"]
