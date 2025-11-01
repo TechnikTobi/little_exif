@@ -30,6 +30,7 @@ use crate::heif::boxes::ParsableIsoBox;
 // examples did *not* have any of this
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct
 ItemInfoEntryBox
 {
@@ -91,6 +92,15 @@ ItemInfoEntryBox
             item_name,
             additional_data,
         });
+    }
+
+    pub(crate) fn
+    new_exif_info_entry_box(
+        item_id: u16
+    )
+    -> Self
+    {
+        Self { header: BoxHeader::new_exif_info_entry_box_header(), item_id, item_protection_index:0, item_name: "Exif".into(), additional_data: vec![] }
     }
 }
 

@@ -184,4 +184,18 @@ BoxHeader
 
         return serialized;
     }
+
+    pub(crate) fn
+    new_exif_info_entry_box_header()
+    -> BoxHeader
+    {
+        Self {
+            box_size: 21,
+            largesize: false,
+            box_type: BoxType::infe,
+            header_size: 12,
+            version: Some(2),
+            flags: Some([0, 0, 1]),
+        }
+    }
 }
