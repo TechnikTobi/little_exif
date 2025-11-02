@@ -174,6 +174,38 @@ read_from_file_tiff()
 	Ok(())
 }
 
+#[test]
+fn
+read_from_file_avif()
+-> Result<(), std::io::Error>
+{
+	let raw_metadata = Metadata::new_from_path(Path::new("tests/read_sample.avif"));
+	if raw_metadata.is_err()
+	{
+		panic!();
+	}
+
+	let metadata = raw_metadata.unwrap();
+
+	if let Some(desc_tag) = metadata.get_tag(&ExifTag::ImageDescription(String::new())).next()
+	{
+		if let ExifTag::ImageDescription(string) = desc_tag
+		{
+			assert_eq!(string, &String::from("test"));
+		}
+		else
+		{
+			panic!();
+		}
+	}
+	else
+	{
+		panic!("Could not read description tag!")
+	}
+
+	Ok(())
+}
+
 
 fn
 read_from_vec_generic
@@ -387,6 +419,24 @@ file_clear_metadata_png()
 }
 
 #[test]
+fn
+file_clear_metadata_avif()
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/read_sample_copy_no_metadata.avif")
+	{
+		println!("{}", error);
+	}
+	copy("tests/read_sample.avif", "tests/read_sample_copy_no_metadata.avif")?;
+
+	// Clear metadata
+	Metadata::file_clear_metadata(Path::new("tests/read_sample_copy_no_metadata.avif"))?;
+
+	Ok(())
+}
+
+#[test]
 fn 
 write_to_file_jpg() 
 -> Result<(), std::io::Error>
@@ -556,6 +606,49 @@ write_to_file_tiff_basic()
 
 	// Write metadata to file
 	metadata.write_to_file(Path::new("tests/read_sample_copy.tif"))?;
+
+	Ok(())
+}
+
+#[test]
+fn
+write_to_file_avif_existing()
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/read_sample_copy.avif")
+	{
+		println!("{}", error);
+	}
+	copy("tests/read_sample.avif", "tests/read_sample_copy.avif")?;
+
+	// Read original file
+	let metadata = Metadata::new_from_path(Path::new("tests/read_sample.avif"))?;
+
+	// Write metadata to file
+	metadata.write_to_file(Path::new("tests/read_sample_copy.avif"))?;
+
+	Ok(())
+}
+
+#[test]
+fn
+write_to_file_avif_empty()
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/write_sample_copy.avif")
+	{
+		println!("{}", error);
+	}
+	copy("tests/write_sample.avif", "tests/write_sample_copy.avif")?;
+
+	// Create a new set of metadata
+	let mut metadata = Metadata::new();
+    metadata.set_tag(ExifTag::ImageDescription("test".to_string()));
+
+	// Write metadata to file
+	metadata.write_to_file(Path::new("tests/write_sample_copy.avif"))?;
 
 	Ok(())
 }
