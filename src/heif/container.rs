@@ -273,7 +273,7 @@ HeifContainer
     (
         &self,
         cursor:   &mut T,
-        metadata: &Metadata
+        metadata: &Metadata,
     )
     -> Result<(Vec<u8>, i64), std::io::Error>
     {
@@ -298,13 +298,19 @@ HeifContainer
             // Cut off data, starting at the old TIFF header and replace with new
             new_exif_buffer = exif_buffer[0..exif_tiff_header_offset as usize + 4].to_vec();
 
-            new_exif_buffer.append(&mut metadata.encode()?);
+            if !metadata.get_ifds().is_empty()
+            {
+                new_exif_buffer.append(&mut metadata.encode()?);
+            }
             delta = new_exif_buffer.len() as i64 - length as i64;
         } else {
             // Create a new exif header, starting with an empty TIFF header.
             new_exif_buffer = 0_u32.to_be_bytes().to_vec();
 
-            new_exif_buffer.append(&mut metadata.encode()?);
+            if !metadata.get_ifds().is_empty()
+            {
+                new_exif_buffer.append(&mut metadata.encode()?);
+            }
             delta = new_exif_buffer.len() as i64;
         }
 
@@ -623,13 +629,6 @@ HeifContainer
         if let Some(tag) = orig_metadata.get_tag_by_hex(0x0128, None).next()
         {
             new_metadata.set_tag(tag.clone());
-        }
-
-        if new_metadata.get_ifds().is_empty()
-        {
-            // Insert a dummy orientation value so this metadata object is valid.
-            // This is unoptimal, but greatly simplifies the encoding logic.
-            new_metadata.set_tag(crate::exif_tag::ExifTag::Orientation(vec![1]));
         }
 
         return self.generic_write_metadata(cursor.get_mut(), &new_metadata);
