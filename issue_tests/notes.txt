@@ -1,0 +1,72 @@
+#001: ?
+#002: tested
+#003: tested
+#004: not tested, pull request
+#005: ?
+#006: tested
+#007: ?
+#008: not tested, pull request
+#009: ?
+#010: ?
+#011: ?
+#012: tested
+#013: ?
+#014: ?
+#015: tested
+#016: not tested, nothing to test, feature request
+#017: not tested, ignored, rsrc file too large
+#018: tested
+#019: tested
+#020: tested
+#021: tested
+#022: not tested, pull request
+#023: not tested, pull request
+#024: ?
+#025: tested
+#026: ?
+#027: not tested, nothing to test
+#028: tested
+#029: not tested, nothing to test
+#030: not tested, pull request
+#031: tested
+#032: not tested, ignored
+#033: not tested, pull request
+#034: not tested, ignored
+#035: not tested, nothing to test
+#036: tested
+#037: ?
+#038: tested
+#039: ?
+#040: not tested, pull request
+#041: not tested, pull request
+#042: not tested, nothing to test, feature request
+#043: tested
+#044: not tested, pull request
+#045: not tested, pull request
+#046: not tested, pull request
+#047: not tested, pull request
+#048: not tested, pull request
+#049: tested
+#050: not tested, pull request
+#051: ?
+#052: tested
+#053: not tested, ignored, not a fail by little_exif
+#054: tested
+#055: tested
+#056: not tested, pull request
+#057: not tested, pull request
+#058: ?
+#059: tested
+#060: not tested, pull request
+#061: not tested, pull request
+#062: not tested, pull request
+#063: tested
+#064: tested
+#065: tested
+#066: tested
+#067: not tested, pull request
+#068: not tested, pull request
+#069: not tested, pull request
+#070: ?
+#071: not tested, pull request
+#072: not tested, pull request
