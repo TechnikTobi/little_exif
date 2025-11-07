@@ -612,7 +612,7 @@ write_to_file_tiff_basic()
 
 #[test]
 fn
-write_to_file_avif_existing()
+write_to_file_avif_exif_box_already_existing()
 -> Result<(), std::io::Error>
 {
 	// Remove file from previous run and replace it with fresh copy
@@ -633,7 +633,7 @@ write_to_file_avif_existing()
 
 #[test]
 fn
-write_to_file_avif_empty()
+write_to_file_avif_no_exif_box_yet()
 -> Result<(), std::io::Error>
 {
 	// Remove file from previous run and replace it with fresh copy

@@ -64,7 +64,9 @@ IsoBox
     )
     {
         self.data.append(new_data);
-        self.header.set_box_size(self.data.len() + self.header.get_header_size());
+        self.header.set_box_size(
+            self.header.get_header_size() + self.data.len()
+        );
     }
 }
 
