@@ -49,6 +49,7 @@ ItemInfoEntryBox
 // 0000001569: start of first info entry
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct
 ItemInfoBox
 {
@@ -94,14 +95,25 @@ ItemInfoEntryBox
         });
     }
 
+    /// Creates a new, empty box for storing exif data that gets inserted into
+    /// a file that previously did not have this box but requires one now.
     pub(crate) fn
-    new_exif_info_entry_box(
+    new_exif_info_entry_box
+    (
         item_id: u16
     )
     -> Self
     {
-        Self { header: BoxHeader::new_exif_info_entry_box_header(), item_id, item_protection_index:0, item_name: "Exif".into(), additional_data: vec![] }
+        Self 
+        { 
+            header:                BoxHeader::new_exif_info_entry_box_header(), 
+            item_id:               item_id, 
+            item_protection_index: 0, 
+            item_name:             "Exif".into(), 
+            additional_data:       vec![] 
+        }
     }
+
 }
 
 impl
