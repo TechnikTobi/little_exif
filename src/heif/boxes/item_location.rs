@@ -154,31 +154,6 @@ ItemLocationEntryExtentEntry
 
         return Ok(Self{extent_index, extent_offset, extent_length});
     }
-
-    /*
-    pub(crate) fn
-    get_size
-    (
-        &self,
-        offset_size: u8,
-        length_size: u8,
-        index_size:  u8,
-    )
-    -> usize
-    {
-        let mut size = 0usize;
-
-        if self.extent_index.is_some()
-        {
-            size += index_size as usize;
-        }
-
-        size += offset_size as usize;
-        size += length_size as usize;
-
-        return size;
-    }
-    */
 }
 
 impl
@@ -329,8 +304,12 @@ ItemLocationBox
     -> Result<Self, std::io::Error>
     {
         let temp = read_be_u16(cursor)?;
-        let (offset_size,        length_size,              base_offset_size) =
-            ((temp >> 12) as u8, (temp >> 8 & 0x0f) as u8, (temp >> 4 & 0x0f) as u8);
+        let (offset_size, length_size, base_offset_size) =
+            (
+                (temp >> 12 & 0x0f) as u8, 
+                (temp >> 8  & 0x0f) as u8, 
+                (temp >> 4  & 0x0f) as u8
+            );
         let index_size = match header.get_version()
         {
             1 | 2 => temp as u8 & 0x0f,
@@ -366,6 +345,65 @@ ItemLocationBox
             item_count,
             items
         });
+    }
+
+    pub(crate) fn
+    get_item_location_entry
+    (
+        &self,
+        item_id: u16
+    )
+    -> &ItemLocationEntry
+    {
+        return self.items.iter()
+            .find(|item| item.item_id == item_id as u32)
+            .unwrap();
+    }
+
+    // Returns the ID of the new entry
+    pub(crate) fn
+    create_new_item_location_entry
+    (
+        &mut self,
+        data_length: u64
+    )
+    -> &mut ItemLocationEntry
+    {
+        // Determine largest iloc ID so far
+        let old_largest_id = self.items
+            .iter()
+            .map(|x| x.item_id)
+            .max()
+            .unwrap_or(0);
+
+        self.items.push(ItemLocationEntry 
+            {
+                item_id:                          old_largest_id + 1, 
+                reserved_and_construction_method: 0, 
+                data_reference_index:             0, 
+                base_offset:                      0,
+                extent_count:                     1, 
+                extents:                          vec![
+                    ItemLocationEntryExtentEntry 
+                    {
+                        extent_index:  None,
+                        extent_offset: 0,
+                        extent_length: data_length,
+                    }
+                ]
+            }
+        );
+
+        self.item_count += 1;
+
+        // Due to the addition of a new item, the size in the header needs to 
+        // be adjusted as well
+        // TODO: make this more efficient by only computing how much memory is
+        // needed, not by actually serializing (and thus, allocating memory)
+        let new_box_size = self.serialize().len();
+        self.header.set_box_size(new_box_size);
+
+        return self.items.last_mut().unwrap();
     }
 }
 
@@ -406,7 +444,6 @@ ItemLocationBox
     {
         let mut serialized = self.header.serialize();
 
-        
         // let (offset_size,        length_size,              base_offset_size) =
         //     ((temp >> 12) as u8, (temp >> 8 & 0x0f) as u8, (temp >> 4 & 0x0f) as u8);
 
