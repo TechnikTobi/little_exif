@@ -11,6 +11,7 @@
 		"CIPA",
 		"codestream",
 		"Colour",
+		"colr",
 		"Colur",
 		"Conv",
 		"cslg",
@@ -51,6 +52,7 @@
 		"ipro",
 		"iprp",
 		"iref",
+		"ispe",
 		"jxlc",
 		"largesize",
 		"Latitudeyyy",
@@ -112,6 +114,7 @@
 		"tsel",
 		"usertype",
 		"vmhd",
-		"Voigtländer"
+		"Voigtländer",
+		"xpacket"
 	]
 }
