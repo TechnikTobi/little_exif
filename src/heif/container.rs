@@ -9,7 +9,7 @@ use crate::general_file_io::io_error;
 use crate::general_file_io::EXIF_HEADER;
 use crate::heif::box_type::BoxType;
 use crate::heif::boxes::item_location::ItemConstructionMethod;
-use crate::heif::boxes::item_location::ItemLocationEntry;
+use crate::heif::boxes::item_reference::ItemReferenceBox;
 use crate::heif::boxes::meta::MetaBox;
 use crate::heif::read_next_box;
 
@@ -27,6 +27,49 @@ HeifContainer
 {
     boxes: Vec<Box<dyn GenericIsoBox>>
 }
+
+// General structure of ISO container
+// 
+// ┏━━━━━━┓
+// ┃ ftyp ┃
+// ┣━━━━━━┫    
+// ┃ meta ┃ ─> ┏━━━━━━┓
+// ┗━━━━━━┛    ┃ hdlr ┃
+//             ┣━━━━━━┫
+//             ┃ pitm ┃
+//             ┣━━━━━━┫
+//             ┃ iinf ┃ ─> ┏━━━━━━┳━━━━━━━━━┓
+//             ┗━━━━━━┛    ┃ infe ┃ ID|Exif ┃
+//                         ┣━━━━━━╋━━━━━━━━━┫
+//                         ┃ infe ┃ ID|XMP  ┃
+//                         ┗━━━━━━┻━━━━━━━━━┛
+// 
+//             ┏━━━━━━┳━━━┳━━━━━━━━━━━━━━━┓┉┉┉┏━━━━━━━━━━━━━┓
+//             ┃ iloc ┃ n ┃ ID|from|lenID ┃   ┃ ID|from|len ┃
+//             ┗━━━━━━┻━━━┻━━━━━━━━━━━━━━━┛┉┉┉┗━━━━━━━━━━━━━┛
+//          ┌────────────────────┘
+//          │  ┏━━━━━━┓
+//          │  ┃ iref ┃
+//          │  ┣━━━━━━┫
+//          │  ┃ idat ┃
+//          │  ┣━━━━━━┫
+//          │  ┃ iprp ┃ ─> ┏━━━━━━┓
+//          │  ┗━━━━━━┛    ┃ ipco ┃ ─> ┏━━━━━━┓
+//          │              ┗━━━━━━┛    ┃ ispe ┃
+//          │                          ┣━━━━━━╋━━━━━━━━━━━━━┓
+//          │                          ┃ colr ┃ ICC profile ┃
+//          │              ┏━━━━━━┓    ┗━━━━━━┻━━━━━━━━━━━━━┛
+//          │              ┃ ipma ┃
+//          │              ┗━━━━━━┛
+//          └─>┏━━━━━━━━━━━━━━━━━━━━━━━┓
+//             ┃ II*\0 ...             ┃
+//             ┣━━━━━━━━━━━━━━━┳━━━━━━━┛
+//             ┃ <?xpacket ... ┃
+//             ┗━━━━━━━━━━━━━━━┛
+//
+// ┏━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┓
+// ┃ mdat ┃ length64 ┃ data ... ┃
+// ┗━━━━━━┻━━━━━━━━━━┻━━━━━━━━━━┛
 
 impl
 HeifContainer
@@ -90,22 +133,7 @@ HeifContainer
             };
     }
 
-    fn
-    get_item_info_box
-    (
-        &self
-    )
-    -> &ItemInfoBox
-    {
-        return match self.get_meta_box().other_boxes.iter()
-            .find(|b| b.get_header().get_box_type() == BoxType::iinf)
-            .unwrap()
-            .as_any()
-            .downcast_ref::<ItemInfoBox>() {
-                Some(unboxed) => unboxed,
-                None          => panic!("Can't unbox ItemInfoBox!")
-            };
-    }
+    
 
     fn
     get_item_id_exif_data
@@ -114,59 +142,12 @@ HeifContainer
     )
     -> Result<u16, std::io::Error>
     {
-        if let Some(item) = self.get_item_info_box().get_exif_item()
+        if let Some(item) = self.get_meta_box().get_item_info_box().get_exif_item()
         {
             return Ok(item.item_id);
         }
 
         return io_error!(Other, "No EXIF item found!");
-    }
-
-    fn
-    get_item_location_box
-    (
-        &self
-    )
-    -> &ItemLocationBox
-    {
-        return match self.get_meta_box().other_boxes.iter()
-            .find(|b| b.get_header().get_box_type() == BoxType::iloc)
-            .unwrap()
-            .as_any()
-            .downcast_ref::<ItemLocationBox>() {
-                Some(unboxed) => unboxed,
-                None          => panic!("Can't unbox ItemLocationBox!")
-            };
-    }
-
-    fn
-    get_item_location_box_mut
-    (
-        &mut self
-    )
-    -> &mut ItemLocationBox
-    {
-        return match self.get_meta_box_mut().other_boxes.iter_mut()
-            .find(|b| b.get_header().get_box_type() == BoxType::iloc)
-            .unwrap()
-            .as_any_mut()
-            .downcast_mut::<ItemLocationBox>() {
-                Some(unboxed) => unboxed,
-                None          => panic!("Can't unbox ItemLocationBox!")
-            };
-    }
-
-    fn
-    get_exif_item_location_entry
-    (
-        &self,
-        exif_item_id: u16,
-    )
-    -> &ItemLocationEntry
-    {
-        return self.get_item_location_box().items.iter()
-            .find(|item| item.item_id == exif_item_id as u32)
-            .unwrap();
     }
 
     fn
@@ -177,7 +158,10 @@ HeifContainer
     )
     -> (u64, u64)
     {
-        let exif_item    = self.get_exif_item_location_entry(exif_item_id);
+        let exif_item = self
+            .get_meta_box()
+            .get_item_location_box()
+            .get_item_location_entry(exif_item_id);
         let exif_extents = &exif_item.extents;
 
         if exif_extents.len() != 1
@@ -247,36 +231,60 @@ HeifContainer
     /// Constructs a new version of the exif data area of the HEIF file
     /// the i64 tells us the delta in bytes. If negative, the new area is
     /// shorter than the old one, positive if longer
+    #[allow(unused_assignments)]
     fn
     construct_new_exif_data_area
     <T: Seek + Read>
     (
         &self,
         cursor:   &mut T,
-        metadata: &Metadata
+        metadata: &Metadata,
     )
     -> Result<(Vec<u8>, i64), std::io::Error>
     {
-        // Locate old exif data
-        let exif_item_id    = self.get_item_id_exif_data()?;
+        // The buffer containing the new metadata that gets returned
+        let mut new_exif_buffer;
+
+        // Try to locate the old exif data. 
+        let exif_item_id = self.get_item_id_exif_data()?;
+
+        // Determine the start and length of the previous exif data area
         let (start, length) = self.get_exif_data_pos_and_len(exif_item_id);
+        
+        // If the length is zero, we assume that this is a previously newly 
+        // created exif data area, which requires special handling.
+        // If the length is non-zero, there has been exif data before:
+        if length > 0
+        {
+            // Reset cursor to start of exif data
+            cursor.seek(std::io::SeekFrom::Start(start))?;
 
-        // Reset cursor to start of exif data
-        cursor.seek(std::io::SeekFrom::Start(start))?;
+            // Read in all of this area
+            let mut exif_buffer = vec![0u8; length as usize];
+            cursor.read_exact(&mut exif_buffer)?;
 
-        // Read in all of this area
-        let mut exif_buffer = vec![0u8; length as usize];
-        cursor.read_exact(&mut exif_buffer)?;
+            // Decode the first 4 bytes, which tells us where to cut off the old 
+            // data and replace with the new one
+            let mut local_cursor            = Cursor::new(exif_buffer[0..4].to_vec());
+            let     exif_tiff_header_offset = read_be_u32(&mut local_cursor)?;
 
-        // Decode the first 4 bytes, which tells us where to cut off the old 
-        // data and replace with the new one
-        let mut local_cursor            = Cursor::new(exif_buffer[0..4].to_vec());
-        let     exif_tiff_header_offset = read_be_u32(&mut local_cursor)?;
+            // Cut off data, starting at the old TIFF header and replace with new
+            new_exif_buffer = exif_buffer[0..exif_tiff_header_offset as usize + 4].to_vec();
+        }
+        else
+        {
+            // Create a new exif header, starting with an empty TIFF header.
+            // new_exif_buffer = 0_u32.to_be_bytes().to_vec();
+            new_exif_buffer = [0x00, 0x00, 0x00, 0x06].to_vec();
+            new_exif_buffer.extend(EXIF_HEADER.to_vec());
+        }
 
-        // Cut off data, starting at the old TIFF header and replace with new
-        let mut new_exif_buffer = exif_buffer[0..exif_tiff_header_offset as usize + 4].to_vec();
-        new_exif_buffer.append(&mut metadata.encode()?);
-
+        // Append the encoded metadata to the old/newly created TIFF header and
+        // compute the delta in length
+        if !metadata.get_ifds().is_empty()
+        {
+            new_exif_buffer.append(&mut metadata.encode()?);
+        }
         let delta = new_exif_buffer.len() as i64 - length as i64;
 
         return Ok((
@@ -284,6 +292,33 @@ HeifContainer
             delta 
         ));
     }
+
+
+    fn
+    get_start_address_for_new_exif_area
+    (
+        &self
+    )
+    -> u64
+    {
+        // Assumes that the new exif area that gets created should start at the
+        // end of the mdat area
+
+        let mut byte_count = 0;
+
+        for b in &self.boxes
+        {
+            byte_count += b.get_header().get_box_size();
+
+            if b.get_header().get_box_type() == BoxType::mdat
+            {
+                return byte_count as u64;
+            }
+        }
+
+        return u64::MAX;
+    }
+
 
     pub(super) fn
     generic_write_metadata
@@ -296,9 +331,98 @@ HeifContainer
     {
         // Find out where old exif is located, needed to determine which iloc
         // entries need to be updated
-        let id                           = self.get_item_id_exif_data()?;
-        let (old_exif_pos, old_exif_len) = self.get_exif_data_pos_and_len(id);
+        let mut id = self.get_item_id_exif_data();
 
+        // Check that the ID is okay - if not, there is no exif area yet and
+        // we need to create one!
+        if id.is_err()
+        {
+            // Where to put the new exif area
+            let new_exif_start = self.get_start_address_for_new_exif_area();
+
+            // Acquire the item location, the item information and the item 
+            // reference boxes that are inside the meta box. For some reason, 
+            // this is not trivial - using e.g. get_item_location_box_mut() 
+            // does not work due to (according to the borrow checker) multiple 
+            // mutable usages of self
+            let mut iloc_opt = None;
+            let mut iinf_opt = None;
+            let mut iref_opt = None;
+
+            // TODO: Fix the iref stuff with the cdsc box so that macOS preview
+            // can actually find the EXIF data
+
+            for other_box in self.get_meta_box_mut().other_boxes.iter_mut()
+            {
+                if other_box.get_header().get_box_type() == BoxType::iloc
+                {
+                    iloc_opt = other_box
+                        .as_any_mut()
+                        .downcast_mut::<ItemLocationBox>();
+                }
+                else if other_box.get_header().get_box_type() == BoxType::iinf
+                {
+                    iinf_opt = other_box
+                        .as_any_mut()
+                        .downcast_mut::<ItemInfoBox>();
+                }
+                else if other_box.get_header().get_box_type() == BoxType::iref
+                {
+                    iref_opt = other_box
+                        .as_any_mut()
+                        .downcast_mut::<ItemReferenceBox>();
+                }
+            }
+
+            assert!(iloc_opt.is_some());
+            assert!(iinf_opt.is_some());
+            assert!(iref_opt.is_some());
+
+            let iloc = iloc_opt.unwrap();
+            let iinf = iinf_opt.unwrap();
+            let iref = iref_opt.unwrap();
+
+            // Note that the given `new_exif_start` value is based on old
+            // length values (which change due to adding a new item to both the
+            // iloc and iinf boxes) - but this does not matter as this will 
+            // be updated anyway later by `add_to_extents`
+            // This way, we don't need any exception during the update procedure
+            let (new_iloc_id, iloc_size_delta) = iloc.create_new_item_location_entry(
+                new_exif_start,
+                0
+            );
+            let               iinf_size_delta  = iinf.create_new_item_info_entry(
+                new_iloc_id, 
+                "Exif"
+            );
+            let               iref_size_delta  = iref.create_new_single_item_reference_box(
+                "cdsc".to_string(), // TODO: Check if this is always this type?
+                new_iloc_id, 
+                vec![1]             // TODO: Check if this is always item #1?
+            );
+
+            // Fix the extents in the iloc box
+            iloc.add_to_extents(
+                (iloc_size_delta + iinf_size_delta + iref_size_delta) as i64
+            );
+
+            // Fix up the size of the meta box as well
+            let new_box_size = self.get_meta_box().serialize().len();
+            self.get_meta_box_mut().get_header_mut().set_box_size(new_box_size);
+
+            // No change to the mdat data at this point as we set up the
+            // iloc item so that the exif area currently has a length of zero
+
+            // Now we have a valid exif area with an iloc ID!
+            id = Ok(new_iloc_id as u16);
+        }
+
+        // Get position and length of current exif area
+        let (old_exif_pos, old_exif_len) = id.as_ref()
+            .map(|id| self.get_exif_data_pos_and_len(*id))
+            .unwrap_or((0, 0));
+
+        // Get cursor for file
         let mut cursor = Cursor::new(file_buffer);
 
         // Construct new exif data area
@@ -307,8 +431,7 @@ HeifContainer
             metadata
         )?;
 
-        // Update the location data in the iloc box
-        for item in self.get_item_location_box_mut().items.iter_mut()
+        for item in self.get_meta_box_mut().get_item_location_box_mut().items.iter_mut()
         {
             // First, check if any extent of this item has the same offset as
             // the old exif data area. In that case, there must be only one
@@ -349,7 +472,15 @@ HeifContainer
                 continue;
             }
 
-            if item.base_offset > delta.abs() as u64
+            if item.data_reference_index != 0
+            {
+                // A value other than 0 implies that this extent refers to
+                // another file, not this one, so we can also skip this
+                // See ISO/IEC 14496-12:2015 § 8.11.3.1, p. 78
+                continue;
+            }
+
+            if item.base_offset > delta.unsigned_abs()
             {
                 // Potentially modify the entire base offset 
                 // however, we can only do that if all complete offsets
@@ -437,6 +568,8 @@ HeifContainer
 
         return Ok(());
     }
+
+
 
     pub(super) fn 
     generic_clear_metadata

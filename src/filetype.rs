@@ -120,7 +120,7 @@ FileExtension
     {
         match input.to_lowercase().as_str()
         {
-            "heif" | "hif" | "heic" 
+            "heif" | "hif" | "heic" | "avif"
                 => Ok(FileExtension::HEIF),
             "jpeg" | "jpg" 
                 => Ok(FileExtension::JPEG),
