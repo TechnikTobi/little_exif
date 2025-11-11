@@ -337,6 +337,13 @@ HeifContainer
         // we need to create one!
         if id.is_err()
         {
+            // What we need to do at this point is
+            // - Create a new item location entry that points to the EXIF data
+            // - Create an item information entry that tells us that the iloc 
+            //   entry points to EXIF data
+            // - Create an item reference entry that links the EXIF data to the
+            //   image/iloc ID #1 -> is this always #1?
+
             // Where to put the new exif area
             let new_exif_start = self.get_start_address_for_new_exif_area();
 
@@ -348,9 +355,6 @@ HeifContainer
             let mut iloc_opt = None;
             let mut iinf_opt = None;
             let mut iref_opt = None;
-
-            // TODO: Fix the iref stuff with the cdsc box so that macOS preview
-            // can actually find the EXIF data
 
             for other_box in self.get_meta_box_mut().other_boxes.iter_mut()
             {
