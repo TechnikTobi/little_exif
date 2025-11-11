@@ -154,31 +154,6 @@ ItemLocationEntryExtentEntry
 
         return Ok(Self{extent_index, extent_offset, extent_length});
     }
-
-    /*
-    pub(crate) fn
-    get_size
-    (
-        &self,
-        offset_size: u8,
-        length_size: u8,
-        index_size:  u8,
-    )
-    -> usize
-    {
-        let mut size = 0usize;
-
-        if self.extent_index.is_some()
-        {
-            size += index_size as usize;
-        }
-
-        size += offset_size as usize;
-        size += length_size as usize;
-
-        return size;
-    }
-    */
 }
 
 impl
@@ -329,8 +304,12 @@ ItemLocationBox
     -> Result<Self, std::io::Error>
     {
         let temp = read_be_u16(cursor)?;
-        let (offset_size,        length_size,              base_offset_size) =
-            ((temp >> 12) as u8, (temp >> 8 & 0x0f) as u8, (temp >> 4 & 0x0f) as u8);
+        let (offset_size, length_size, base_offset_size) =
+            (
+                (temp >> 12 & 0x0f) as u8, 
+                (temp >> 8  & 0x0f) as u8, 
+                (temp >> 4  & 0x0f) as u8
+            );
         let index_size = match header.get_version()
         {
             1 | 2 => temp as u8 & 0x0f,
@@ -366,6 +345,113 @@ ItemLocationBox
             item_count,
             items
         });
+    }
+
+    pub(crate) fn
+    get_item_location_entry
+    (
+        &self,
+        item_id: u16
+    )
+    -> &ItemLocationEntry
+    {
+        return self.items.iter()
+            .find(|item| item.item_id == item_id as u32)
+            .unwrap();
+    }
+
+    // Returns the ID of the new entry and by how many bytes this box got longer
+    pub(crate) fn
+    create_new_item_location_entry
+    (
+        &mut self,
+        data_start:  u64,
+        data_length: u64
+    )
+    -> (u32, usize)
+    {
+        // Determine largest iloc ID so far
+        let old_largest_id = self.items
+            .iter()
+            .map(|x| x.item_id)
+            .max()
+            .unwrap_or(0);
+
+        self.items.push(ItemLocationEntry 
+            {
+                item_id:                          old_largest_id + 1, 
+                reserved_and_construction_method: 0, 
+                data_reference_index:             0, 
+                base_offset:                      0,
+                extent_count:                     1, 
+                extents:                          vec![
+                    ItemLocationEntryExtentEntry 
+                    {
+                        extent_index:  Some(0),
+                        extent_offset: data_start,
+                        extent_length: data_length,
+                    }
+                ]
+            }
+        );
+
+        self.item_count += 1;
+
+        // Due to the addition of a new item, the size in the header needs to 
+        // be adjusted as well
+        // TODO: make this more efficient by only computing how much memory is
+        // needed, not by actually serializing (and thus, allocating memory)
+        let old_box_size = self.header.get_box_size();
+        let new_box_size = self.serialize().len();
+        self.header.set_box_size(new_box_size);
+
+        return (
+            self.items.last_mut().unwrap().item_id,
+            new_box_size - old_box_size
+        );
+    }
+
+    pub(crate) fn
+    add_to_extents
+    (
+        &mut self,
+        value: i64
+    )
+    {
+        for item in self.items.iter_mut()
+        {
+            if item.get_construction_method() == ItemConstructionMethod::IDAT
+            {
+                // In this case the offset information is relative to the
+                // position of an idat box -> not affected by change in length
+                // of another box
+                continue;
+            }
+
+            if item.get_construction_method() == ItemConstructionMethod::ITEM
+            {
+                // Offset is relative to another item's extent
+                // Also nothing to do here (for now...)
+                continue;
+            }
+
+            if item.data_reference_index != 0
+            {
+                // A value other than 0 implies that this extent refers to
+                // another file, not this one, so we can also skip this
+                // See ISO/IEC 14496-12:2015 § 8.11.3.1, p. 78
+                continue;
+            }
+
+            // For now, just add the value to the extent offsets. 
+            // This may be problematic in case the offset points to a location
+            // before the iloc or iinf boxes, so changing their length won't
+            // affect that offset value
+            for extent in item.extents.iter_mut()
+            {
+                extent.extent_offset = (extent.extent_offset as i64 + value) as u64;
+            }
+        }
     }
 }
 
@@ -406,7 +492,6 @@ ItemLocationBox
     {
         let mut serialized = self.header.serialize();
 
-        
         // let (offset_size,        length_size,              base_offset_size) =
         //     ((temp >> 12) as u8, (temp >> 8 & 0x0f) as u8, (temp >> 4 & 0x0f) as u8);
 

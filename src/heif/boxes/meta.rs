@@ -10,9 +10,14 @@ use crate::u8conversion::U8conversion;
 use crate::u8conversion::to_u8_vec_macro;
 use crate::util::read_be_u32;
 
+use crate::heif::box_type::BoxType;
 use crate::heif::box_header::BoxHeader;
 use crate::heif::boxes::GenericIsoBox;
 use crate::heif::boxes::ParsableIsoBox;
+
+use crate::heif::boxes::item_info::ItemInfoBox;
+use crate::heif::boxes::item_location::ItemLocationBox;
+
 
 use super::read_box_based_on_header;
 
@@ -31,6 +36,61 @@ MetaBox
     // item_ref_box:     Option<IsoBox>, // iref
     // item_data_box:    Option<IsoBox>, // idat
     pub(crate) other_boxes:      Vec<Box<dyn GenericIsoBox>>,
+}
+
+impl
+MetaBox
+{
+    pub(crate) fn
+    get_item_info_box
+    (
+        &self
+    )
+    -> &ItemInfoBox
+    {
+        return match self.other_boxes.iter()
+            .find(|b| b.get_header().get_box_type() == BoxType::iinf)
+            .unwrap()
+            .as_any()
+            .downcast_ref::<ItemInfoBox>() {
+                Some(unboxed) => unboxed,
+                None          => panic!("Can't unbox ItemInfoBox!")
+            };
+    }
+
+    pub(crate) fn
+    get_item_location_box
+    (
+        &self
+    )
+    -> &ItemLocationBox
+    {
+        return match self.other_boxes.iter()
+            .find(|b| b.get_header().get_box_type() == BoxType::iloc)
+            .unwrap()
+            .as_any()
+            .downcast_ref::<ItemLocationBox>() {
+                Some(unboxed) => unboxed,
+                None          => panic!("Can't unbox ItemLocationBox!")
+            };
+    }
+
+    pub(crate) fn
+    get_item_location_box_mut
+    (
+        &mut self
+    )
+    -> &mut ItemLocationBox
+    {
+        return match self.other_boxes.iter_mut()
+            .find(|b| b.get_header().get_box_type() == BoxType::iloc)
+            .unwrap()
+            .as_any_mut()
+            .downcast_mut::<ItemLocationBox>() {
+                Some(unboxed) => unboxed,
+                None          => panic!("Can't unbox ItemLocationBox!")
+            };
+    }
 }
 
 impl

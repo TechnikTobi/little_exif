@@ -31,6 +31,44 @@ BoxHeader
 impl
 BoxHeader
 {
+    /// Creates a new, empty box header for an exif info entry box
+    /// To be used to create a new, empty box for storing exif data that gets 
+    /// inserted into a file that previously did not have this box but requires
+    /// one now to store metadata. 
+    /// See [create_new_item_info_entry](super::boxes::item_info::ItemInfoBox::create_new_item_info_entry)
+    pub(crate) fn
+    new_exif_info_entry_box_header
+    ()
+    -> Self
+    {
+        // Default values based around an empty box
+        Self 
+        {
+            box_size:    21,
+            largesize:   false,
+            box_type:    BoxType::infe,
+            header_size: 12,
+            version:     Some(2),
+            flags:       Some([0, 0, 1]),
+        }
+    }
+
+    pub(crate) fn
+    new_simple_box_header
+    ()
+    -> Self
+    {
+        Self
+        {
+            box_size:    8,
+            largesize:   false,
+            box_type:    BoxType::unknown { box_type: "tobi".to_owned() },
+            header_size: 8,
+            version:     None,
+            flags:       None,
+        }
+    }
+
     pub(super) fn
     read_box_header
     <T: Seek + Read>
@@ -126,6 +164,18 @@ BoxHeader
     }
 
     pub(super) fn
+    set_box_type_via_string
+    (
+        &mut self,
+        new_type: String
+    )
+    {
+        self.box_type = BoxType::from_4_bytes(
+            new_type.as_bytes().try_into().unwrap()
+        );
+    }
+
+    pub(super) fn
     get_version
     (
         &self
@@ -184,4 +234,5 @@ BoxHeader
 
         return serialized;
     }
+
 }

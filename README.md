@@ -14,7 +14,7 @@ A little library for reading and writing EXIF data in pure Rust.
 ## Supported Formats
 - JPEG / JPG
 - JXL
-- HEIF / HEIC / HIF
+- HEIF / HEIC / HIF / AVIF
 - PNG
 - TIFF
 - WebP (only lossless and extended)

@@ -1,17 +1,19 @@
-// Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 #![allow(clippy::needless_return)] 
 
-//! # little_exif
 //! A small crate for reading and writing (some) EXIF data, written entirely in Rust. Currently supports
-//! - .png 
-//! - .jp(e)g 
-//! - .jxl
-//! - .webp
-//! files and a few dozen tags in IFD0 and ExifIFD. 
+//! - JPEG / JPG
+//! - JXL
+//! - HEIF / HEIC / HIF / AVIF
+//! - PNG
+//! - TIFF
+//! - WebP (only lossless and extended)
 //! 
-//! Interaction is done via the [`Metadata`](metadata/struct.Metadata.html) struct and the [`ExifTag`](exif_tag/enum.ExifTag.html) enum.
+//! files and a few dozen tags in IFD0 and ExifIFD. 
+//! Interaction is done via the [`Metadata`](metadata/struct.Metadata.html) 
+//! struct and the [`ExifTag`](exif_tag/enum.ExifTag.html) enum.
 //!
 //! # Usage
 //! ## Write EXIF data

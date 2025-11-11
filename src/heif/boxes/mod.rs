@@ -5,6 +5,7 @@ use std::io::Read;
 use std::io::Seek;
 
 use crate::debug_println;
+use crate::heif::boxes::item_reference::ItemReferenceBox;
 
 use super::box_type::BoxType;
 use super::box_header::BoxHeader;
@@ -13,6 +14,7 @@ pub(super) mod iso;
 pub(super) mod meta;
 pub(super) mod item_info;
 pub(super) mod item_location;
+pub(super) mod item_reference;
 
 use iso::IsoBox;
 use meta::MetaBox;
@@ -56,9 +58,10 @@ read_box_based_on_header
 {
     return match header.get_box_type()
     {
-        BoxType::meta => MetaBox::        construct_from_cursor(cursor, header),
-        BoxType::iinf => ItemInfoBox::    construct_from_cursor(cursor, header),
-        BoxType::iloc => ItemLocationBox::construct_from_cursor(cursor, header),
+        BoxType::meta => MetaBox::         construct_from_cursor(cursor, header),
+        BoxType::iinf => ItemInfoBox::     construct_from_cursor(cursor, header),
+        BoxType::iloc => ItemLocationBox:: construct_from_cursor(cursor, header),
+        BoxType::iref => ItemReferenceBox::construct_from_cursor(cursor, header),
         _             => IsoBox::         construct_from_cursor(cursor, header)
     };
 }
