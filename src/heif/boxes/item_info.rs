@@ -95,25 +95,6 @@ ItemInfoEntryBox
         });
     }
 
-    /// Creates a new, empty box for storing exif data that gets inserted into
-    /// a file that previously did not have this box but requires one now.
-    pub(crate) fn
-    new_exif_info_entry_box
-    (
-        item_id: u16
-    )
-    -> Self
-    {
-        Self 
-        { 
-            header:                BoxHeader::new_exif_info_entry_box_header(), 
-            item_id:               item_id, 
-            item_protection_index: 0, 
-            item_name:             "Exif".into(), 
-            additional_data:       vec![] 
-        }
-    }
-
 }
 
 impl
@@ -149,6 +130,40 @@ ItemInfoBox
     {
         return self.items.iter()
             .find(|item| item.item_name == "Exif")
+    }
+
+    /// Creates a new item in this item information box and returns by how many
+    /// bytes this box got longer
+    pub(crate) fn
+    create_new_item_info_entry
+    (
+        &mut self,
+        iloc_id: u32,
+        name:    &str,
+    )
+    -> usize
+    {
+        self.items.push(ItemInfoEntryBox 
+            { 
+                header:                BoxHeader::new_exif_info_entry_box_header(), 
+                item_id:               iloc_id as u16, 
+                item_protection_index: 0, 
+                item_name:             name.to_string(), 
+                additional_data:       Vec::new()
+            }
+        );
+
+        self.item_count += 1;
+
+        // Due to the addition of a new item, the size in the header needs to 
+        // be adjusted as well
+        // TODO: make this more efficient by only computing how much memory is
+        // needed, not by actually serializing (and thus, allocating memory)
+        let old_box_size = self.header.get_box_size();
+        let new_box_size = self.serialize().len();
+        self.header.set_box_size(new_box_size);
+
+        return new_box_size - old_box_size;
     }
 }
 

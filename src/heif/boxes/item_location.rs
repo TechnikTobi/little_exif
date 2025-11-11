@@ -360,14 +360,15 @@ ItemLocationBox
             .unwrap();
     }
 
-    // Returns the ID of the new entry
+    // Returns the ID of the new entry and by how many bytes this box got longer
     pub(crate) fn
     create_new_item_location_entry
     (
         &mut self,
+        data_start:  u64,
         data_length: u64
     )
-    -> &mut ItemLocationEntry
+    -> (u32, usize)
     {
         // Determine largest iloc ID so far
         let old_largest_id = self.items
@@ -386,8 +387,8 @@ ItemLocationBox
                 extents:                          vec![
                     ItemLocationEntryExtentEntry 
                     {
-                        extent_index:  None,
-                        extent_offset: 0,
+                        extent_index:  Some(0),
+                        extent_offset: data_start,
                         extent_length: data_length,
                     }
                 ]
@@ -400,10 +401,57 @@ ItemLocationBox
         // be adjusted as well
         // TODO: make this more efficient by only computing how much memory is
         // needed, not by actually serializing (and thus, allocating memory)
+        let old_box_size = self.header.get_box_size();
         let new_box_size = self.serialize().len();
         self.header.set_box_size(new_box_size);
 
-        return self.items.last_mut().unwrap();
+        return (
+            self.items.last_mut().unwrap().item_id,
+            new_box_size - old_box_size
+        );
+    }
+
+    pub(crate) fn
+    add_to_extents
+    (
+        &mut self,
+        value: i64
+    )
+    {
+        for item in self.items.iter_mut()
+        {
+            if item.get_construction_method() == ItemConstructionMethod::IDAT
+            {
+                // In this case the offset information is relative to the
+                // position of an idat box -> not affected by change in length
+                // of another box
+                continue;
+            }
+
+            if item.get_construction_method() == ItemConstructionMethod::ITEM
+            {
+                // Offset is relative to another item's extent
+                // Also nothing to do here (for now...)
+                continue;
+            }
+
+            if item.data_reference_index != 0
+            {
+                // A value other than 0 implies that this extent refers to
+                // another file, not this one, so we can also skip this
+                // See ISO/IEC 14496-12:2015 § 8.11.3.1, p. 78
+                continue;
+            }
+
+            // For now, just add the value to the extent offsets. 
+            // This may be problematic in case the offset points to a location
+            // before the iloc or iinf boxes, so changing their length won't
+            // affect that offset value
+            for extent in item.extents.iter_mut()
+            {
+                extent.extent_offset = (extent.extent_offset as i64 + value) as u64;
+            }
+        }
     }
 }
 
