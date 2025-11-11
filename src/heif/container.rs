@@ -9,6 +9,7 @@ use crate::general_file_io::io_error;
 use crate::general_file_io::EXIF_HEADER;
 use crate::heif::box_type::BoxType;
 use crate::heif::boxes::item_location::ItemConstructionMethod;
+use crate::heif::boxes::item_reference::ItemReferenceBox;
 use crate::heif::boxes::meta::MetaBox;
 use crate::heif::read_next_box;
 
@@ -244,14 +245,17 @@ HeifContainer
         // The buffer containing the new metadata that gets returned
         let mut new_exif_buffer;
 
-        // Try to locate the old exif data. If this returns an error we were 
-        // not able to find it and assume that there previously was none, so 
-        // we will need to create a new one. 
-        let (start, length);
-        if let Ok(exif_item_id) = self.get_item_id_exif_data() 
-        {
-            (start, length) = self.get_exif_data_pos_and_len(exif_item_id);
+        // Try to locate the old exif data. 
+        let exif_item_id = self.get_item_id_exif_data()?;
 
+        // Determine the start and length of the previous exif data area
+        let (start, length) = self.get_exif_data_pos_and_len(exif_item_id);
+        
+        // If the length is zero, we assume that this is a previously newly 
+        // created exif data area, which requires special handling.
+        // If the length is non-zero, there has been exif data before:
+        if length > 0
+        {
             // Reset cursor to start of exif data
             cursor.seek(std::io::SeekFrom::Start(start))?;
 
@@ -266,12 +270,9 @@ HeifContainer
 
             // Cut off data, starting at the old TIFF header and replace with new
             new_exif_buffer = exif_buffer[0..exif_tiff_header_offset as usize + 4].to_vec();
-
-        } 
-        else 
+        }
+        else
         {
-            (start, length) = (0, 0);
-
             // Create a new exif header, starting with an empty TIFF header.
             // new_exif_buffer = 0_u32.to_be_bytes().to_vec();
             new_exif_buffer = [0x00, 0x00, 0x00, 0x06].to_vec();
@@ -367,15 +368,19 @@ HeifContainer
                 }
                 else if other_box.get_header().get_box_type() == BoxType::iref
                 {
-                    iref_opt = Some(other_box);
+                    iref_opt = other_box
+                        .as_any_mut()
+                        .downcast_mut::<ItemReferenceBox>();
                 }
             }
 
             assert!(iloc_opt.is_some());
             assert!(iinf_opt.is_some());
+            assert!(iref_opt.is_some());
 
             let iloc = iloc_opt.unwrap();
             let iinf = iinf_opt.unwrap();
+            let iref = iref_opt.unwrap();
 
             // Note that the given `new_exif_start` value is based on old
             // length values (which change due to adding a new item to both the
@@ -390,9 +395,16 @@ HeifContainer
                 new_iloc_id, 
                 "Exif"
             );
+            let               iref_size_delta  = iref.create_new_single_item_reference_box(
+                "cdsc".to_string(), // TODO: Check if this is always this type?
+                new_iloc_id, 
+                vec![1]             // TODO: Check if this is always item #1?
+            );
 
             // Fix the extents in the iloc box
-            iloc.add_to_extents((iloc_size_delta + iinf_size_delta) as i64);
+            iloc.add_to_extents(
+                (iloc_size_delta + iinf_size_delta + iref_size_delta) as i64
+            );
 
             // Fix up the size of the meta box as well
             let new_box_size = self.get_meta_box().serialize().len();

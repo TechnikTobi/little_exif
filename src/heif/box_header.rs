@@ -53,6 +53,22 @@ BoxHeader
         }
     }
 
+    pub(crate) fn
+    new_simple_box_header
+    ()
+    -> Self
+    {
+        Self
+        {
+            box_size:    8,
+            largesize:   false,
+            box_type:    BoxType::unknown { box_type: "tobi".to_owned() },
+            header_size: 8,
+            version:     None,
+            flags:       None,
+        }
+    }
+
     pub(super) fn
     read_box_header
     <T: Seek + Read>
@@ -145,6 +161,18 @@ BoxHeader
     )
     {
         self.box_size = new_size;
+    }
+
+    pub(super) fn
+    set_box_type_via_string
+    (
+        &mut self,
+        new_type: String
+    )
+    {
+        self.box_type = BoxType::from_4_bytes(
+            new_type.as_bytes().try_into().unwrap()
+        );
     }
 
     pub(super) fn

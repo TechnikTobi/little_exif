@@ -133,6 +133,49 @@ ItemReferenceBox
 
         return Ok(ItemReferenceBox { header, references });
     }
+
+    #[allow(non_snake_case)]
+    pub(crate) fn
+    create_new_single_item_reference_box
+    (
+        &mut self,
+        reference_type: String,
+        from_item_ID:   u32,
+        to_item_ID:     Vec<u32>
+    )
+    -> usize
+    {
+        // Determine is_large and the box size
+        let is_large = self.header.get_version() >= 1;
+        let ID_size  = if is_large { 4 } else { 2 };
+        let box_size = 0
+            + 8                          // header
+            + ID_size                    // from_item_id
+            + 2                          // reference_count
+            + to_item_ID.len() * ID_size // to_item_id
+            ; 
+
+        let mut new_reference_header = BoxHeader::new_simple_box_header();
+        new_reference_header.set_box_type_via_string(reference_type);
+        new_reference_header.set_box_size(box_size);
+
+        let singe_item_reference_box = SingleItemTypeReferenceBox
+        {
+            header:          new_reference_header,
+            is_large,
+            from_item_ID,
+            reference_count: to_item_ID.len() as u16,
+            to_item_ID,
+        };
+
+        self.references.push(singe_item_reference_box);
+
+        let old_iref_box_size = self.header.get_box_size();
+        let new_iref_box_size = old_iref_box_size + box_size;
+        self.header.set_box_size(new_iref_box_size);
+
+        return box_size;
+    }
 }
 
 impl
