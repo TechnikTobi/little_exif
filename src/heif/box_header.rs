@@ -35,7 +35,7 @@ BoxHeader
     /// To be used to create a new, empty box for storing exif data that gets 
     /// inserted into a file that previously did not have this box but requires
     /// one now to store metadata. 
-    /// See [new_exif_info_entry_box](super::boxes::item_info::ItemInfoEntryBox::new_exif_info_entry_box)
+    /// See [create_new_item_info_entry](super::boxes::item_info::ItemInfoBox::create_new_item_info_entry)
     pub(crate) fn
     new_exif_info_entry_box_header
     ()
