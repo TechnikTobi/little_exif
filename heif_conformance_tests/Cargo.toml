@@ -1,0 +1,8 @@
+[package]
+name = "little_exif_heif_conformance_tests"
+version = "0.1.0"
+edition = "2021"
+
+[dev-dependencies]
+little_exif  = { path = ".." }
+test-case    = "3"
