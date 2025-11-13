@@ -347,6 +347,10 @@ HeifContainer
             // Where to put the new exif area
             let new_exif_start = self.get_start_address_for_new_exif_area();
 
+            // If there is no iref box yet, create one so we can find one
+            self.get_meta_box_mut()
+                .create_new_item_reference_box_if_none_exists_yet();
+
             // Acquire the item location, the item information and the item 
             // reference boxes that are inside the meta box. For some reason, 
             // this is not trivial - using e.g. get_item_location_box_mut() 

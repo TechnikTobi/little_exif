@@ -36,11 +36,11 @@ construct_cpy_path_string
 #[test_case("C006.heic")]
 #[test_case("C007.heic")]
 #[test_case("C008.heic")]
-// #[test_case("C009.heic")] currently fails
-//#[test_case("C010.heic")] currently fails
-//#[test_case("C011.heic")] currently fails
+#[test_case("C009.heic")]
+#[test_case("C010.heic")]
+#[test_case("C011.heic")]
 #[test_case("C012.heic")]
-// #[test_case("C013.heic")] currently fails
+#[test_case("C013.heic")]
 #[test_case("C014.heic")]
 #[test_case("C015.heic")]
 #[test_case("C016.heic")]
@@ -69,7 +69,7 @@ construct_cpy_path_string
 #[test_case("C039.heic")]
 #[test_case("C040.heic")]
 // #[test_case("C041.heic")] currently fails
-// #[test_case("C042.heic")] currently fails
+#[test_case("C042.heic")]
 #[test_case("C043.heic")]
 #[test_case("C044.heic")]
 #[test_case("C045.heic")]

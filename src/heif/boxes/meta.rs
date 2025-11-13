@@ -17,7 +17,7 @@ use crate::heif::boxes::ParsableIsoBox;
 
 use crate::heif::boxes::item_info::ItemInfoBox;
 use crate::heif::boxes::item_location::ItemLocationBox;
-
+use crate::heif::boxes::item_reference::ItemReferenceBox;
 
 use super::read_box_based_on_header;
 
@@ -90,6 +90,42 @@ MetaBox
                 Some(unboxed) => unboxed,
                 None          => panic!("Can't unbox ItemLocationBox!")
             };
+    }
+
+    pub(crate) fn
+    get_item_reference_box
+    (
+        &self
+    )
+    -> Option<&ItemReferenceBox>
+    {
+        if let Some(found_box) = self.other_boxes.iter()
+            .find(|b| b.get_header().get_box_type() == BoxType::iref)
+        {
+            return found_box.as_any().downcast_ref::<ItemReferenceBox>();
+        }
+        return None;
+    }
+
+    pub(crate) fn
+    create_new_item_reference_box_if_none_exists_yet
+    (
+        &mut self
+    )
+    {
+        if self.get_item_reference_box().is_some()
+        {
+            return;
+        }
+
+        let new_iref_box = ItemReferenceBox::new();
+
+        let index = self.other_boxes
+            .iter()
+            .position(|x| x.get_header().get_box_type() == BoxType::iinf)
+            .unwrap();
+        
+        self.other_boxes.insert(index, Box::new(new_iref_box));
     }
 }
 
