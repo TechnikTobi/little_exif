@@ -384,9 +384,11 @@ HeifContainer
 
             assert!(iloc_opt.is_some());
             assert!(iinf_opt.is_some());
+            assert!(iref_opt.is_some());
 
             let iloc = iloc_opt.unwrap();
             let iinf = iinf_opt.unwrap();
+            let iref = iref_opt.unwrap();
 
             // Note that the given `new_exif_start` value is based on old
             // length values (which change due to adding a new item to both the
@@ -401,18 +403,11 @@ HeifContainer
                 new_iloc_id, 
                 "Exif"
             );
-            let               iref_size_delta  = if let Some(iref) = iref_opt
-            {
-                iref.create_new_single_item_reference_box(
-                    "cdsc".to_string(), // TODO: Check if this is always this type?
-                    new_iloc_id, 
-                    vec![1]             // TODO: Check if this is always item #1?
-                )
-            }
-            else
-            {
-                0  
-            };
+            let               iref_size_delta  = iref.create_new_single_item_reference_box(
+                "cdsc".to_string(), // TODO: Check if this is always this type?
+                new_iloc_id, 
+                vec![1]             // TODO: Check if this is always item #1?
+            );
 
             // Fix the extents in the iloc box
             iloc.add_to_extents(
