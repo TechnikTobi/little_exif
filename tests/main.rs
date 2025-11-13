@@ -653,6 +653,28 @@ write_to_file_avif_no_exif_box_yet()
 	Ok(())
 }
 
+#[test]
+fn
+write_to_file_avif_no_iref()
+-> Result<(), std::io::Error>
+{
+	// Remove file from previous run and replace it with fresh copy
+	if let Err(error) = remove_file("tests/write_sample_no_iref_copy.avif")
+	{
+		println!("{}", error);
+	}
+	copy("tests/write_sample_no_iref.avif", "tests/write_sample_no_iref_copy.avif")?;
+
+	// Create a new set of metadata
+	let mut metadata = Metadata::new();
+    metadata.set_tag(ExifTag::ImageDescription("test".to_string()));
+
+	// Write metadata to file
+	metadata.write_to_file(Path::new("tests/write_sample_no_iref_copy.avif"))?;
+
+	Ok(())
+}
+
 fn 
 compare_write_to_generic
 (
