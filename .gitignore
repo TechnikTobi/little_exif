@@ -41,3 +41,4 @@ tests/resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25_copy
 
 issue_tests/resources/issue_*/*copy*
 vendor/*
+heif_conformance_tests/*.heic
