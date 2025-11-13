@@ -18,6 +18,8 @@ jobs:
     - uses: actions/checkout@v4
     - name: Output rust version for educational purposes
       run: rustup --version
+    - name: Download resources
+      run: cd heif_conformance_tests && chmod +x download.sh && ./download.sh && cd ..
     - name: Build
       run: cargo build --verbose
     - name: Run tests
