@@ -29,6 +29,7 @@ exclude = [
     "debug/*",
     "examples/*",
     "issue_tests/*",
+    "heif_conformance_tests/*",
     "target/*",
     "tests/*",
     "vendor/*",
@@ -47,5 +48,5 @@ name = "tests"
 path = "tests/main.rs"
 
 [workspace]
-members = [".", "issue_tests"]
+members = [".", "issue_tests", "heif_conformance_tests"]
 resolver = "3"
