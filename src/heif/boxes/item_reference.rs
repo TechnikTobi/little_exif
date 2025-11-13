@@ -106,6 +106,18 @@ SingleItemTypeReferenceBox
 impl
 ItemReferenceBox
 {
+    pub(super) fn
+    new
+    ()
+    -> Self
+    {
+        let mut header = BoxHeader::new_full_box_header();
+        header.set_box_type_via_string("iref".to_string());
+        header.set_version(Some(1));
+
+        return ItemReferenceBox { header, references: Vec::new() };
+    }
+
     fn
     construct_from_cursor_unboxed
     <T: Seek + Read>

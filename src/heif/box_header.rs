@@ -69,6 +69,22 @@ BoxHeader
         }
     }
 
+    pub(crate) fn
+    new_full_box_header
+    ()
+    -> Self
+    {
+        Self
+        {
+            box_size:    12,
+            largesize:   false,
+            box_type:    BoxType::unknown { box_type: "tobi".to_owned() },
+            header_size: 12,
+            version:     Some(0),
+            flags:       Some([0, 0, 0]),
+        }
+    }
+
     pub(super) fn
     read_box_header
     <T: Seek + Read>
@@ -183,6 +199,16 @@ BoxHeader
     -> u8
     {
         return self.version.unwrap();
+    }
+
+    pub(super) fn
+    set_version
+    (
+        &mut self,
+        new_version: Option<u8>
+    )
+    {
+        self.version = new_version;
     }
 
     pub(super) fn
