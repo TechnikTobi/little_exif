@@ -60,6 +60,18 @@ decode_tag_with_format_exceptions
 				return Ok(raw_tag.set_value_to_int16u_vec(int16u_data).unwrap());
 			},
 
+			// See issue #74
+			(ExifTagFormat::INT8U, ExifTagFormat::INT16U) => {
+				let int16u_data = <INT16U as U8conversion<INT16U>>::from_u8_vec(raw_data, endian);
+				let int8u_data  = int16u_data.clone().into_iter().map(|x| x as u8).collect::<Vec<u8>>();
+				for (element_u16, element_u8) in int16u_data.iter().zip(int8u_data.iter())
+				{
+					// Assert that the int16u data is within int8u range
+					assert_eq!(*element_u16, *element_u8 as u16);
+				}
+				return Ok(raw_tag.set_value_to_int8u_vec(int8u_data).unwrap());
+			},
+
 			(ExifTagFormat::INT8U, ExifTagFormat::STRING) => {
 				if 
 					raw_tag.as_u16()    == 0x0005            && // GPSAltitudeRef
