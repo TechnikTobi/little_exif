@@ -84,13 +84,19 @@ FileExtension
 
             // JXL (in ISO_BMFF container)
             // In this case, the JXL file starts with the JXL signature box
+            // 4 bytes for length       J     X     L  space more stuff
             [0x00, 0x00, 0x00, 0x0C, 0x4A, 0x58, 0x4C, 0x20, 0x0D, 0x0A, 0x87, 0x0A, ..] =>
             {
                 return Some(FileExtension::JXL);
             }
 
-            // HEIC/HEIF
-            [_, _, _, _, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63, ..] => {
+            // HEIC/HEIF/AVIF
+            // length       f     t     y     p 
+              [_, _, _, _, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63, ..]  // heic
+            | [_, _, _, _, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x66, ..]  // heif
+            | [_, _, _, _, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66, ..]  // avif
+            => 
+            {
                 return Some(FileExtension::HEIF)
             }
 
