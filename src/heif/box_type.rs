@@ -3,9 +3,7 @@
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Debug, PartialEq)]
-pub enum
-BoxType
-{
+pub enum BoxType {
     ftyp,
     meta,
     hdlr,
@@ -35,8 +33,8 @@ BoxType
     stsh,
     sdtp,
     elst,
-    url ,
-    urn ,
+    url,
+    urn,
     dref,
     stsz,
     stz2,
@@ -63,7 +61,7 @@ BoxType
     cprt,
     tsel,
     kind,
-    xml ,
+    xml,
     bxml,
     ipro,
     mere,
@@ -87,41 +85,32 @@ BoxType
     dmix,
     ludt,
     txtC,
-    uri ,
+    uri,
     uriI,
     hmhd,
     sthd,
-    uuid    { usertype: [u8; 16] },
-    unknown { box_type: String }
+    uuid { usertype: [u8; 16] },
+    unknown { box_type: String },
 }
 
-impl
-BoxType
-{
-    pub(super) fn
-    from_4_bytes
-    (
-        bytes: [u8; 4]
-    )
-    -> BoxType
-    {
+impl BoxType {
+    pub(super) fn from_4_bytes(bytes: [u8; 4]) -> BoxType {
         let box_type_str = std::str::from_utf8(&bytes).unwrap_or("");
-        match box_type_str
-        {
+        match box_type_str {
             "ftyp" => BoxType::ftyp,
-            "meta" => BoxType::meta, 
-            "hdlr" => BoxType::hdlr, 
+            "meta" => BoxType::meta,
+            "hdlr" => BoxType::hdlr,
             "dinf" => BoxType::dinf,
-            "pitm" => BoxType::pitm, 
-            "iinf" => BoxType::iinf, 
+            "pitm" => BoxType::pitm,
+            "iinf" => BoxType::iinf,
             "infe" => BoxType::infe,
-            "iloc" => BoxType::iloc, 
-            "iref" => BoxType::iref, 
-            "iprp" => BoxType::iprp, 
-            "ipco" => BoxType::ipco, 
-            "ipma" => BoxType::ipma, 
-            "mdat" => BoxType::mdat, 
-            "idat" => BoxType::idat, 
+            "iloc" => BoxType::iloc,
+            "iref" => BoxType::iref,
+            "iprp" => BoxType::iprp,
+            "ipco" => BoxType::ipco,
+            "ipma" => BoxType::ipma,
+            "mdat" => BoxType::mdat,
+            "idat" => BoxType::idat,
             "pdin" => BoxType::pdin,
             "mvhd" => BoxType::mvhd,
             "tkhd" => BoxType::tkhd,
@@ -137,8 +126,8 @@ BoxType
             "stsh" => BoxType::stsh,
             "sdtp" => BoxType::sdtp,
             "elst" => BoxType::elst,
-            "url " => BoxType::url ,
-            "urn " => BoxType::urn ,
+            "url " => BoxType::url,
+            "urn " => BoxType::urn,
             "dref" => BoxType::dref,
             "stsz" => BoxType::stsz,
             "stz2" => BoxType::stz2,
@@ -165,7 +154,7 @@ BoxType
             "cprt" => BoxType::cprt,
             "tsel" => BoxType::tsel,
             "kind" => BoxType::kind,
-            "xml " => BoxType::xml ,
+            "xml " => BoxType::xml,
             "bxml" => BoxType::bxml,
             "ipro" => BoxType::ipro,
             "mere" => BoxType::mere,
@@ -189,38 +178,35 @@ BoxType
             "dmix" => BoxType::dmix,
             "ludt" => BoxType::ludt,
             "txtC" => BoxType::txtC,
-            "uri " => BoxType::uri ,
+            "uri " => BoxType::uri,
             "uriI" => BoxType::uriI,
             "hmhd" => BoxType::hmhd,
             "sthd" => BoxType::sthd,
-            "uuid" => BoxType::uuid { usertype: [0u8; 16] },
-            _      => BoxType::unknown { box_type: String::from(box_type_str) }
+            "uuid" => BoxType::uuid {
+                usertype: [0u8; 16],
+            },
+            _ => BoxType::unknown {
+                box_type: String::from(box_type_str),
+            },
         }
     }
 
-    pub(super) fn
-    to_4_bytes
-    (
-        &self
-    )
-    -> Vec<u8>
-    {
-        match self
-        {
+    pub(super) fn to_4_bytes(&self) -> Vec<u8> {
+        match self {
             BoxType::ftyp => "ftyp",
-            BoxType::meta => "meta", 
-            BoxType::hdlr => "hdlr", 
+            BoxType::meta => "meta",
+            BoxType::hdlr => "hdlr",
             BoxType::dinf => "dinf",
-            BoxType::pitm => "pitm", 
-            BoxType::iinf => "iinf", 
+            BoxType::pitm => "pitm",
+            BoxType::iinf => "iinf",
             BoxType::infe => "infe",
-            BoxType::iloc => "iloc", 
-            BoxType::iref => "iref", 
-            BoxType::iprp => "iprp", 
-            BoxType::ipco => "ipco", 
-            BoxType::ipma => "ipma", 
-            BoxType::mdat => "mdat", 
-            BoxType::idat => "idat", 
+            BoxType::iloc => "iloc",
+            BoxType::iref => "iref",
+            BoxType::iprp => "iprp",
+            BoxType::ipco => "ipco",
+            BoxType::ipma => "ipma",
+            BoxType::mdat => "mdat",
+            BoxType::idat => "idat",
             BoxType::pdin => "pdin",
             BoxType::mvhd => "mvhd",
             BoxType::tkhd => "tkhd",
@@ -236,8 +222,8 @@ BoxType
             BoxType::stsh => "stsh",
             BoxType::sdtp => "sdtp",
             BoxType::elst => "elst",
-            BoxType::url  => "url ",
-            BoxType::urn  => "urn ",
+            BoxType::url => "url ",
+            BoxType::urn => "urn ",
             BoxType::dref => "dref",
             BoxType::stsz => "stsz",
             BoxType::stz2 => "stz2",
@@ -264,7 +250,7 @@ BoxType
             BoxType::cprt => "cprt",
             BoxType::tsel => "tsel",
             BoxType::kind => "kind",
-            BoxType::xml  => "xml ",
+            BoxType::xml => "xml ",
             BoxType::bxml => "bxml",
             BoxType::ipro => "ipro",
             BoxType::mere => "mere",
@@ -288,106 +274,99 @@ BoxType
             BoxType::dmix => "dmix",
             BoxType::ludt => "ludt",
             BoxType::txtC => "txtC",
-            BoxType::uri  => "uri ",
+            BoxType::uri => "uri ",
             BoxType::uriI => "uriI",
             BoxType::hmhd => "hmhd",
             BoxType::sthd => "sthd",
             BoxType::uuid { usertype: _ } => "uuid",
-            BoxType::unknown { box_type } => box_type
-        }.as_bytes().to_vec()
+            BoxType::unknown { box_type } => box_type,
+        }
+        .as_bytes()
+        .to_vec()
     }
 
-    pub(super) fn
-    extends_fullbox
-    (
-        &self
-    )
-    -> bool
-    {
-        match self
-        {
-            BoxType::meta |
-            BoxType::hdlr |
-            BoxType::iinf |
-            BoxType::infe |
-            BoxType::iloc |
-            BoxType::pitm |
-            BoxType::iref |
-            BoxType::pdin |
-            BoxType::mvhd |
-            BoxType::tkhd |
-            BoxType::mdhd |
-            BoxType::nmhd |
-            BoxType::elng |
-            BoxType::stsd |
-            BoxType::stdp |
-            BoxType::stts |
-            BoxType::ctts |
-            BoxType::cslg |
-            BoxType::stss |
-            BoxType::stsh |
-            BoxType::sdtp |
-            BoxType::elst |
-            BoxType::url  |
-            BoxType::urn  |
-            BoxType::dref |
-            BoxType::stsz |
-            BoxType::stz2 |
-            BoxType::stsc |
-            BoxType::stco |
-            BoxType::co64 |
-            BoxType::padb |
-            BoxType::subs |
-            BoxType::saiz |
-            BoxType::saio |
-            BoxType::mehd |
-            BoxType::trex |
-            BoxType::mfhd |
-            BoxType::tfhd |
-            BoxType::trun |
-            BoxType::tfra |
-            BoxType::mfro |
-            BoxType::tfdt |
-            BoxType::leva |
-            BoxType::trep |
-            BoxType::assp |
-            BoxType::sbgp |
-            BoxType::sgpd |
-            BoxType::cprt |
-            BoxType::tsel |
-            BoxType::kind |
-            BoxType::xml  |
-            BoxType::bxml |
-            BoxType::ipro |
-            BoxType::mere |
-            BoxType::schm |
-            BoxType::fiin |
-            BoxType::fpar |
-            BoxType::fecr |
-            BoxType::gitn |
-            BoxType::fire |
-            BoxType::stri |
-            BoxType::stsg |
-            BoxType::stvi |
-            BoxType::sidx |
-            BoxType::ssix |
-            BoxType::prft |
-            BoxType::srpp |
-            BoxType::vmhd |
-            BoxType::smhd |
-            BoxType::srat |
-            BoxType::chnl |
-            BoxType::dmix |
-            BoxType::ludt |
-            BoxType::txtC |
-            BoxType::uri  |
-            BoxType::uriI |
-            BoxType::hmhd |
-            BoxType::sthd 
-            => true,
+    pub(super) fn extends_fullbox(&self) -> bool {
+        match self {
+            BoxType::meta
+            | BoxType::hdlr
+            | BoxType::iinf
+            | BoxType::infe
+            | BoxType::iloc
+            | BoxType::pitm
+            | BoxType::iref
+            | BoxType::pdin
+            | BoxType::mvhd
+            | BoxType::tkhd
+            | BoxType::mdhd
+            | BoxType::nmhd
+            | BoxType::elng
+            | BoxType::stsd
+            | BoxType::stdp
+            | BoxType::stts
+            | BoxType::ctts
+            | BoxType::cslg
+            | BoxType::stss
+            | BoxType::stsh
+            | BoxType::sdtp
+            | BoxType::elst
+            | BoxType::url
+            | BoxType::urn
+            | BoxType::dref
+            | BoxType::stsz
+            | BoxType::stz2
+            | BoxType::stsc
+            | BoxType::stco
+            | BoxType::co64
+            | BoxType::padb
+            | BoxType::subs
+            | BoxType::saiz
+            | BoxType::saio
+            | BoxType::mehd
+            | BoxType::trex
+            | BoxType::mfhd
+            | BoxType::tfhd
+            | BoxType::trun
+            | BoxType::tfra
+            | BoxType::mfro
+            | BoxType::tfdt
+            | BoxType::leva
+            | BoxType::trep
+            | BoxType::assp
+            | BoxType::sbgp
+            | BoxType::sgpd
+            | BoxType::cprt
+            | BoxType::tsel
+            | BoxType::kind
+            | BoxType::xml
+            | BoxType::bxml
+            | BoxType::ipro
+            | BoxType::mere
+            | BoxType::schm
+            | BoxType::fiin
+            | BoxType::fpar
+            | BoxType::fecr
+            | BoxType::gitn
+            | BoxType::fire
+            | BoxType::stri
+            | BoxType::stsg
+            | BoxType::stvi
+            | BoxType::sidx
+            | BoxType::ssix
+            | BoxType::prft
+            | BoxType::srpp
+            | BoxType::vmhd
+            | BoxType::smhd
+            | BoxType::srat
+            | BoxType::chnl
+            | BoxType::dmix
+            | BoxType::ludt
+            | BoxType::txtC
+            | BoxType::uri
+            | BoxType::uriI
+            | BoxType::hmhd
+            | BoxType::sthd => true,
 
-            _ 
-            => false,
+            _ => false,
         }
     }
 }

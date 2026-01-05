@@ -39,24 +39,21 @@ are empty now.
 Solution: Can't recall :(
 */
 
-use std::path::Path;
-use std::fs::remove_file;
 use std::fs::copy;
+use std::fs::remove_file;
+use std::path::Path;
 
+extern crate little_exif;
 extern crate little_exif_0_4_1;
 extern crate little_exif_0_4_2;
-extern crate little_exif;
 
 #[test]
-#[should_panic (expected = "range end index 2 out of range for slice of length 0")]
-fn
-issue_000055_clear_exif_data_old_version_fails()
-{
+#[should_panic(expected = "range end index 2 out of range for slice of length 0")]
+fn issue_000055_clear_exif_data_old_version_fails() {
     let img_path = Path::new("resources/issue_000015/IMG_20240828_184255.jpg");
     let cpy_path = Path::new("resources/issue_000015/IMG_20240828_184255_copy1.jpg");
 
-    if let Err(error) = remove_file(cpy_path)
-    {
+    if let Err(error) = remove_file(cpy_path) {
         println!("Could not delete file: {}", error);
     }
     copy(img_path, cpy_path).unwrap();
@@ -64,8 +61,7 @@ issue_000055_clear_exif_data_old_version_fails()
     let read_metadata_1 = little_exif_0_4_1::metadata::Metadata::new_from_path(&img_path).unwrap();
 
     let mut tag_counter = 0;
-    for tag in read_metadata_1.data()
-    {
+    for tag in read_metadata_1.data() {
         tag_counter += 1;
         println!("{:?}", tag);
     }
@@ -73,14 +69,15 @@ issue_000055_clear_exif_data_old_version_fails()
     assert_ne!(tag_counter, 0);
 
     let mut new_metadata = little_exif_0_4_1::metadata::Metadata::new();
-    new_metadata.set_tag(little_exif_0_4_1::exif_tag::ExifTag::ImageDescription("Hello World!".to_string()));
+    new_metadata.set_tag(little_exif_0_4_1::exif_tag::ExifTag::ImageDescription(
+        "Hello World!".to_string(),
+    ));
     new_metadata.write_to_file(cpy_path).unwrap();
 
     let read_metadata_2 = little_exif_0_4_1::metadata::Metadata::new_from_path(&cpy_path).unwrap();
 
     let mut tag_counter = 0;
-    for tag in read_metadata_2.data()
-    {
+    for tag in read_metadata_2.data() {
         tag_counter += 1;
         println!("{:?}", tag);
     }
@@ -89,14 +86,11 @@ issue_000055_clear_exif_data_old_version_fails()
 }
 
 #[test]
-fn
-issue_000055_clear_exif_data_fixed()
-{
+fn issue_000055_clear_exif_data_fixed() {
     let img_path = Path::new("resources/issue_000015/IMG_20240828_184255.jpg");
     let cpy_path = Path::new("resources/issue_000015/IMG_20240828_184255_copy2.jpg");
 
-    if let Err(error) = remove_file(cpy_path)
-    {
+    if let Err(error) = remove_file(cpy_path) {
         println!("Could not delete file: {}", error);
     }
     copy(img_path, cpy_path).unwrap();
@@ -104,8 +98,7 @@ issue_000055_clear_exif_data_fixed()
     let read_metadata_1 = little_exif_0_4_2::metadata::Metadata::new_from_path(&img_path).unwrap();
 
     let mut tag_counter = 0;
-    for tag in read_metadata_1.data()
-    {
+    for tag in read_metadata_1.data() {
         tag_counter += 1;
         println!("{:?}", tag);
     }
@@ -113,14 +106,15 @@ issue_000055_clear_exif_data_fixed()
     assert_ne!(tag_counter, 0);
 
     let mut new_metadata = little_exif_0_4_2::metadata::Metadata::new();
-    new_metadata.set_tag(little_exif_0_4_2::exif_tag::ExifTag::ImageDescription("Hello World!".to_string()));
+    new_metadata.set_tag(little_exif_0_4_2::exif_tag::ExifTag::ImageDescription(
+        "Hello World!".to_string(),
+    ));
     new_metadata.write_to_file(cpy_path).unwrap();
 
     let read_metadata_2 = little_exif_0_4_2::metadata::Metadata::new_from_path(&cpy_path).unwrap();
 
     let mut tag_counter = 0;
-    for tag in read_metadata_2.data()
-    {
+    for tag in read_metadata_2.data() {
         tag_counter += 1;
         println!("{:?}", tag);
     }
@@ -129,14 +123,11 @@ issue_000055_clear_exif_data_fixed()
 }
 
 #[test]
-fn
-issue_000055_clear_exif_data_current()
-{
+fn issue_000055_clear_exif_data_current() {
     let img_path = Path::new("resources/issue_000015/IMG_20240828_184255.jpg");
     let cpy_path = Path::new("resources/issue_000015/IMG_20240828_184255_copy3.jpg");
 
-    if let Err(error) = remove_file(cpy_path)
-    {
+    if let Err(error) = remove_file(cpy_path) {
         println!("Could not delete file: {}", error);
     }
     copy(img_path, cpy_path).unwrap();
@@ -144,8 +135,7 @@ issue_000055_clear_exif_data_current()
     let read_metadata_1 = little_exif::metadata::Metadata::new_from_path(&img_path).unwrap();
 
     let mut tag_counter = 0;
-    for tag in &read_metadata_1
-    {
+    for tag in &read_metadata_1 {
         tag_counter += 1;
         println!("{:?}", tag);
     }
@@ -153,14 +143,15 @@ issue_000055_clear_exif_data_current()
     assert_ne!(tag_counter, 0);
 
     let mut new_metadata = little_exif::metadata::Metadata::new();
-    new_metadata.set_tag(little_exif::exif_tag::ExifTag::ImageDescription("Hello World!".to_string()));
+    new_metadata.set_tag(little_exif::exif_tag::ExifTag::ImageDescription(
+        "Hello World!".to_string(),
+    ));
     new_metadata.write_to_file(cpy_path).unwrap();
 
     let read_metadata_2 = little_exif::metadata::Metadata::new_from_path(&cpy_path).unwrap();
 
     let mut tag_counter = 0;
-    for tag in &read_metadata_2
-    {
+    for tag in &read_metadata_2 {
         tag_counter += 1;
         println!("{:?}", tag);
     }

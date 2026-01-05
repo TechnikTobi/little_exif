@@ -7,36 +7,34 @@ pub(super) mod set_value_to;
 use paste::paste;
 
 use crate::endian::Endian;
-use crate::u8conversion::*;
 use crate::exif_tag_format::*;
 use crate::ifd::ExifTagGroup;
+use crate::u8conversion::*;
 
 #[allow(non_camel_case_types)]
 #[derive(PartialEq)]
-pub enum
-TagType
-{
-	VALUE,
-	IFD_OFFSET(ExifTagGroup),
-	DATA_OFFSET(Vec<u32>)
+pub enum TagType {
+    VALUE,
+    IFD_OFFSET(ExifTagGroup),
+    DATA_OFFSET(Vec<u32>),
 }
 
 macro_rules! build_tag_enum {
-	( 
+	(
 		$( (
-			$tag:ident, 
+			$tag:ident,
 			$hex_value:expr,
 			$format_enum:ident,
 			$component_number:expr,
 			$writable:expr,
 			$group:ident
-		) ),* 
-	) 
+		) ),*
+	)
 	=>
 	{
-		/// These are the currently supported tags by little_exif. 
+		/// These are the currently supported tags by little_exif.
 		/// Note that for tags that are unknown at the moment a fallback
-		/// solution is provided using the `Unknown...` variants. 
+		/// solution is provided using the `Unknown...` variants.
 		#[derive(PartialEq, Debug, Clone)]
 		pub enum
 		ExifTag
@@ -44,7 +42,7 @@ macro_rules! build_tag_enum {
 			$(
 				$tag(paste!{[<$format_enum>]}),
 			)*
-			
+
 			StripOffsets(       Vec::<u32>, Vec::<Vec::<u8>>),
 			StripByteCounts(    Vec::<u32>,                 ),
 
@@ -102,15 +100,15 @@ macro_rules! build_tag_enum {
 				}
 			}
 
-			/// Gets the tag for a given hex value. 
+			/// Gets the tag for a given hex value.
 			/// The tag is initialized with new, empty data.
 			/// If the hex value is unknown, an error is returned.
-			/// 
+			///
 			/// # Examples
 			/// ```no_run
 			/// use little_exif::exif_tag::ExifTag;
 			/// use little_exif::ifd::ExifTagGroup;
-			/// 
+			///
 			/// let tag = ExifTag::from_u16(0x010e, &ExifTagGroup::GENERIC).unwrap();
 			/// ```
 			pub fn
@@ -121,7 +119,7 @@ macro_rules! build_tag_enum {
 			)
 			-> Result<ExifTag, String>
 			{
-				
+
 				match (hex_value, group)
 				{
 					$(
@@ -138,19 +136,19 @@ macro_rules! build_tag_enum {
 				}
 			}
 
-			/// Gets the tag for a given hex value. 
+			/// Gets the tag for a given hex value.
 			/// The tag is initialized using the given raw data by converting it
 			/// to the appropriate format.
 			/// If the hex value is unknown, the other parameters are used to
 			/// generate an appropriate unknown tag for the specified format.
-			/// 
+			///
 			/// # Examples
 			/// ```no_run
 			/// use little_exif::endian::Endian;
 			/// use little_exif::exif_tag::ExifTag;
 			/// use little_exif::ifd::ExifTagGroup;
 			/// use little_exif::exif_tag_format::ExifTagFormat;
-			/// 
+			///
 			/// let tag = ExifTag::from_u16_with_data(
 			///     0x0113,                   // An unknown tag hex value
 			///     &ExifTagFormat::INT8U,
@@ -209,11 +207,11 @@ macro_rules! build_tag_enum {
 			/// be written to file.
 			/// Needed e.g. for Offset tags where the given value is useless
 			/// and needs to be computed during the write process.
-			/// 
+			///
 			/// # Examples
 			/// ```no_run
 			/// use little_exif::exif_tag::ExifTag;
-			/// 
+			///
 			/// let writable = ExifTag::ImageDescription(String::new());
 			/// let not_writable = ExifTag::ExifOffset(vec![1u32]);
 			///
@@ -237,7 +235,7 @@ macro_rules! build_tag_enum {
 			}
 
 			/// Checks if the tag is known to little_exif or not
-			/// Note that in the future the value returned by this function 
+			/// Note that in the future the value returned by this function
 			/// for a specific tag might change as the number of known tags
 			/// gets increased
 			pub fn
@@ -363,7 +361,7 @@ macro_rules! build_tag_enum {
 			/// all - `STRING` format type tags).
 			/// Note that for `STRING` format type tags this includes the NUL
 			/// terminator (which gets written automatically and should not be
-			/// provided by the user). 
+			/// provided by the user).
 			pub fn
 			number_of_components
 			(
@@ -422,7 +420,7 @@ macro_rules! build_tag_enum {
 			}
 
 			/// Checks if the format type of the tag is `STRING`.
-			/// Needed for generating the EXIF data to know whether to add a 
+			/// Needed for generating the EXIF data to know whether to add a
 			/// NUL terminator at the end
 			pub fn
 			is_string
@@ -441,7 +439,7 @@ macro_rules! build_tag_enum {
 				}
 			}
 
-			/// Gets the value stored in the tag as an u8 vector, using the 
+			/// Gets the value stored in the tag as an u8 vector, using the
 			/// given endianness for conversion.
 			pub fn
 			value_as_u8_vec
@@ -494,6 +492,7 @@ macro_rules! build_tag_enum {
 // none of them are part of the EXIF 2.32 specification
 // (Source: https://exiftool.org/TagNames/EXIF.html )
 
+#[rustfmt::skip]
 build_tag_enum![
 	// Tag                        Tag ID  Format         Nr. Components     Writable   Group
 
@@ -692,38 +691,30 @@ build_tag_enum![
 	(Gamma,                       0xa500, RATIONAL64U,   Some::<u32>(1),    true,      EXIF)
 ];
 
-impl ExifTag
-{
-	/// Tells us what type of tag this is. The majority of tags is 
-	/// simply for storing values (either within the 4 bytes of an IFD
-	/// entry or at some offset position). The other two types are
-	/// - IFD Offsets: For representing the offset to a SubIFD (e.g. EXIF). 
-	///   Needed for generating the exif data for writing, as the value stored
-	///   in the tag variables is useless because it needs to be computed
-	///   during the writing process.
-	/// - Data Offsets: They are somewhat similar to the case of value tags
-	///   where the value is stored at an offset position. This offset position
-	///   is either in the data 
-	pub fn
-	get_tag_type
-	(
-		&self
-	)
-	-> TagType
-	{
-		match self
-		{
-			ExifTag::ExifOffset(_)                   => TagType::IFD_OFFSET(ExifTagGroup::EXIF),
-			ExifTag::GPSInfo(_)                      => TagType::IFD_OFFSET(ExifTagGroup::GPS),
-			ExifTag::InteropOffset(_)                => TagType::IFD_OFFSET(ExifTagGroup::INTEROP),
+impl ExifTag {
+    /// Tells us what type of tag this is. The majority of tags is
+    /// simply for storing values (either within the 4 bytes of an IFD
+    /// entry or at some offset position). The other two types are
+    /// - IFD Offsets: For representing the offset to a SubIFD (e.g. EXIF).
+    ///   Needed for generating the exif data for writing, as the value stored
+    ///   in the tag variables is useless because it needs to be computed
+    ///   during the writing process.
+    /// - Data Offsets: They are somewhat similar to the case of value tags
+    ///   where the value is stored at an offset position. This offset position
+    ///   is either in the data
+    pub fn get_tag_type(&self) -> TagType {
+        match self {
+            ExifTag::ExifOffset(_) => TagType::IFD_OFFSET(ExifTagGroup::EXIF),
+            ExifTag::GPSInfo(_) => TagType::IFD_OFFSET(ExifTagGroup::GPS),
+            ExifTag::InteropOffset(_) => TagType::IFD_OFFSET(ExifTagGroup::INTEROP),
 
-			ExifTag::StripOffsets(   offset_data, _) => TagType::DATA_OFFSET(offset_data.clone()),
-			ExifTag::StripByteCounts(byte_counts,  ) => TagType::DATA_OFFSET(byte_counts.clone()),
+            ExifTag::StripOffsets(offset_data, _) => TagType::DATA_OFFSET(offset_data.clone()),
+            ExifTag::StripByteCounts(byte_counts) => TagType::DATA_OFFSET(byte_counts.clone()),
 
-			ExifTag::ThumbnailOffset(offset_data, _) => TagType::DATA_OFFSET(offset_data.clone()),
-			ExifTag::ThumbnailLength(length_data   ) => TagType::DATA_OFFSET(length_data.clone()),
+            ExifTag::ThumbnailOffset(offset_data, _) => TagType::DATA_OFFSET(offset_data.clone()),
+            ExifTag::ThumbnailLength(length_data) => TagType::DATA_OFFSET(length_data.clone()),
 
-			_ => TagType::VALUE
-		}
-	}
+            _ => TagType::VALUE,
+        }
+    }
 }

@@ -8,7 +8,7 @@ When I entered this picture, the following error occurred
 remove_private_exif error: Metadata::new_from_vec error: failed to fill whole buffer
 */
 
-/* 
+/*
 Solved: Problem was that originally, JXL was only supported with uncompressed
 metadata. This file however contains brotli-compressed data that is also
 in a different type of box and needs to be decompressed.
@@ -24,80 +24,61 @@ file-based, fixed in this commit:
 use std::path::Path;
 
 extern crate little_exif;
-use little_exif::metadata::Metadata;
 use little_exif::exif_tag::ExifTag;
 use little_exif::filetype::FileExtension;
+use little_exif::metadata::Metadata;
 
 #[test]
-fn
-replace_exif_tag_values()
-{
+fn replace_exif_tag_values() {
     let path_orig = Path::new("resources/issue_000064/a.jxl");
     let path_copy = Path::new("resources/issue_000064/a_copy.jxl");
 
-    let content     = std::fs::read(path_orig).unwrap();
+    let content = std::fs::read(path_orig).unwrap();
     let new_content = remove_private_exif(&content).unwrap();
 
     std::fs::write(path_copy, new_content).unwrap();
 
     let mut orig_tag_counter = 0;
     let orig_metadata = Metadata::new_from_path(path_orig).unwrap();
-    for tag in &orig_metadata
-    {
-        if tag.as_u16() == 0x9004
-        {
+    for tag in &orig_metadata {
+        if tag.as_u16() == 0x9004 {
             assert_eq!(
-                tag.value_as_u8_vec(&orig_metadata.get_endian()), 
-                vec![50, 48, 50, 53, 58, 48, 55, 58, 48, 49, 32, 49, 54, 58, 48, 49, 58, 49, 55, 0]
-                // 2025:07:01 16:01:17
+                tag.value_as_u8_vec(&orig_metadata.get_endian()),
+                vec![50, 48, 50, 53, 58, 48, 55, 58, 48, 49, 32, 49, 54, 58, 48, 49, 58, 49, 55, 0] // 2025:07:01 16:01:17
             );
         }
         orig_tag_counter += 1;
     }
 
     let mut copy_tag_counter = 0;
-    for tag in &Metadata::new_from_path(path_copy).unwrap()
-    {
-        if tag.as_u16() == 0x9004
-        {
+    for tag in &Metadata::new_from_path(path_copy).unwrap() {
+        if tag.as_u16() == 0x9004 {
             assert_eq!(
-                tag.value_as_u8_vec(&orig_metadata.get_endian()), 
-                vec![0]
-                // EMPTY STRING
+                tag.value_as_u8_vec(&orig_metadata.get_endian()),
+                vec![0] // EMPTY STRING
             );
         }
         copy_tag_counter += 1;
     }
 
-    // The actual number of 
+    // The actual number of
     assert_eq!(orig_tag_counter, 67);
     assert_eq!(copy_tag_counter, 67);
 }
 
-
-pub fn 
-remove_private_exif
-(
-    image_vec: &[u8]
-) 
--> Result<Vec<u8>, u8> 
-{
+pub fn remove_private_exif(image_vec: &[u8]) -> Result<Vec<u8>, u8> {
     let mut output_vec = image_vec.to_vec();
 
-    let file_type = if let Some(file_type) = guess_image_type(&output_vec)
-    {
+    let file_type = if let Some(file_type) = guess_image_type(&output_vec) {
         file_type
-    }
-    else
-    {
+    } else {
         println!("only process jpeg/png/webp, returning original");
         return Ok(output_vec);
     };
 
     println!("output_vec length: {}", output_vec.len());
 
-    let mut metadata = match Metadata::new_from_vec(&output_vec, file_type) 
-    {
+    let mut metadata = match Metadata::new_from_vec(&output_vec, file_type) {
         Ok(m) => m,
         Err(e) => {
             println!("Metadata::new_from_vec error: {}", e);
@@ -169,11 +150,9 @@ remove_private_exif
     }
 
     println!("PRINT TAGS:");
-    for tag in &metadata
-    {
+    for tag in &metadata {
         println!("{:?}", tag);
     }
-
 
     println!("Metadata::guess_image_type called 2");
     let file_type2 = match guess_image_type(&output_vec) {
@@ -198,32 +177,22 @@ remove_private_exif
     }
 }
 
-fn 
-guess_image_type
-(
-    data: &[u8]
-) 
--> Option<FileExtension>
-{
-    if data.len() >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF 
-    {
+fn guess_image_type(data: &[u8]) -> Option<FileExtension> {
+    if data.len() >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF {
         return Some(FileExtension::JPEG);
     }
 
-    if data.len() >= 8 && data[0..8] == [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] 
-    {
+    if data.len() >= 8 && data[0..8] == [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] {
         return Some(FileExtension::PNG {
             as_zTXt_chunk: false,
         });
     }
 
-    if data.len() >= 12 && &data[0..4] == b"RIFF" && &data[8..12] == b"WEBP" 
-    {
+    if data.len() >= 12 && &data[0..4] == b"RIFF" && &data[8..12] == b"WEBP" {
         return Some(FileExtension::WEBP);
     }
 
-    if data.len() >= 8 && &data[4..8] == b"JXL "
-    {
+    if data.len() >= 8 && &data[4..8] == b"JXL " {
         return Some(FileExtension::JXL);
     }
 

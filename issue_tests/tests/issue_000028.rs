@@ -20,7 +20,7 @@ Error during decoding: Error { kind: UnexpectedEof, message: "failed to fill who
 
 /*
 Solved:
-Added conversion function in special cases where two different types are 
+Added conversion function in special cases where two different types are
 "acceptable" for the same tag, e.g. INT16U & INT32U (because camera makers are
 too incompetent to stick to the specifications)
 - e2951416652f613aa01a102f7b607d6db965a536
@@ -28,20 +28,20 @@ too incompetent to stick to the specifications)
 
 use std::path::Path;
 
+extern crate little_exif;
 extern crate little_exif_0_5_1;
 extern crate little_exif_0_6_0_beta_2;
-extern crate little_exif;
 
 #[test]
-#[should_panic (expected = "assertion `left == right` failed\n  left: 0\n right: 46")]
-fn
-read_exif_data_1_failed_version()
-{
+#[should_panic(expected = "assertion `left == right` failed\n  left: 0\n right: 46")]
+fn read_exif_data_1_failed_version() {
     let path1 = Path::new("resources/issue_000028/2017_aachen_abendhimmel_emilio.jpg");
 
     let mut tag_counter = 0;
 
-    for _ in little_exif_0_5_1::metadata::Metadata::new_from_path(path1).unwrap().data()
+    for _ in little_exif_0_5_1::metadata::Metadata::new_from_path(path1)
+        .unwrap()
+        .data()
     {
         tag_counter += 1;
     }
@@ -50,14 +50,14 @@ read_exif_data_1_failed_version()
 }
 
 #[test]
-fn
-read_exif_data_2_failed_version()
-{
+fn read_exif_data_2_failed_version() {
     let path2 = Path::new("resources/issue_000028/2017_isernhagen_sorento_1.jpg");
 
     let mut tag_counter = 0;
 
-    for _ in little_exif_0_5_1::metadata::Metadata::new_from_path(path2).unwrap().data()
+    for _ in little_exif_0_5_1::metadata::Metadata::new_from_path(path2)
+        .unwrap()
+        .data()
     {
         tag_counter += 1;
     }
@@ -66,14 +66,14 @@ read_exif_data_2_failed_version()
 }
 
 #[test]
-fn
-read_exif_data_3_failed_version()
-{
+fn read_exif_data_3_failed_version() {
     let path3 = Path::new("resources/issue_000028/2017_stockholm_emilio.jpg");
 
     let mut tag_counter = 0;
 
-    for _ in little_exif_0_5_1::metadata::Metadata::new_from_path(path3).unwrap().data()
+    for _ in little_exif_0_5_1::metadata::Metadata::new_from_path(path3)
+        .unwrap()
+        .data()
     {
         tag_counter += 1;
     }
@@ -81,18 +81,13 @@ read_exif_data_3_failed_version()
     assert_eq!(tag_counter, 0);
 }
 
-
-
 #[test]
-fn
-read_exif_data_1_fixed_version()
-{
+fn read_exif_data_1_fixed_version() {
     let path1 = Path::new("resources/issue_000028/2017_aachen_abendhimmel_emilio.jpg");
 
     let mut tag_counter = 0;
 
-    for _ in &little_exif_0_6_0_beta_1::metadata::Metadata::new_from_path(path1).unwrap()
-    {
+    for _ in &little_exif_0_6_0_beta_1::metadata::Metadata::new_from_path(path1).unwrap() {
         tag_counter += 1;
     }
 
@@ -100,15 +95,12 @@ read_exif_data_1_fixed_version()
 }
 
 #[test]
-fn
-read_exif_data_2_fixed_version()
-{
+fn read_exif_data_2_fixed_version() {
     let path2 = Path::new("resources/issue_000028/2017_isernhagen_sorento_1.jpg");
 
     let mut tag_counter = 0;
 
-    for _ in &little_exif_0_6_0_beta_1::metadata::Metadata::new_from_path(path2).unwrap()
-    {
+    for _ in &little_exif_0_6_0_beta_1::metadata::Metadata::new_from_path(path2).unwrap() {
         tag_counter += 1;
     }
 
@@ -116,33 +108,25 @@ read_exif_data_2_fixed_version()
 }
 
 #[test]
-fn
-read_exif_data_3_fixed_version()
-{
+fn read_exif_data_3_fixed_version() {
     let path3 = Path::new("resources/issue_000028/2017_stockholm_emilio.jpg");
 
     let mut tag_counter = 0;
 
-    for _ in &little_exif_0_6_0_beta_1::metadata::Metadata::new_from_path(path3).unwrap()
-    {
+    for _ in &little_exif_0_6_0_beta_1::metadata::Metadata::new_from_path(path3).unwrap() {
         tag_counter += 1;
     }
 
     assert_eq!(tag_counter, 0);
 }
 
-
-
 #[test]
-fn
-read_exif_data_1_current_version()
-{
+fn read_exif_data_1_current_version() {
     let path1 = Path::new("resources/issue_000028/2017_aachen_abendhimmel_emilio.jpg");
 
     let mut tag_counter = 0;
 
-    for _ in &little_exif::metadata::Metadata::new_from_path(path1).unwrap()
-    {
+    for _ in &little_exif::metadata::Metadata::new_from_path(path1).unwrap() {
         tag_counter += 1;
     }
 
@@ -150,16 +134,15 @@ read_exif_data_1_current_version()
 }
 
 #[test]
-#[should_panic (expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: \"No EXIF data found!\" }")]
-fn
-read_exif_data_2_current_version()
-{
+#[should_panic(
+    expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: \"No EXIF data found!\" }"
+)]
+fn read_exif_data_2_current_version() {
     let path2 = Path::new("resources/issue_000028/2017_isernhagen_sorento_1.jpg");
 
     let mut tag_counter = 0;
 
-    for _ in &little_exif::metadata::Metadata::new_from_path(path2).unwrap()
-    {
+    for _ in &little_exif::metadata::Metadata::new_from_path(path2).unwrap() {
         tag_counter += 1;
     }
 
@@ -167,16 +150,15 @@ read_exif_data_2_current_version()
 }
 
 #[test]
-#[should_panic (expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: \"No EXIF data found!\" }")]
-fn
-read_exif_data_3_current_version()
-{
+#[should_panic(
+    expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: \"No EXIF data found!\" }"
+)]
+fn read_exif_data_3_current_version() {
     let path3 = Path::new("resources/issue_000028/2017_stockholm_emilio.jpg");
 
     let mut tag_counter = 0;
 
-    for _ in &little_exif::metadata::Metadata::new_from_path(path3).unwrap()
-    {
+    for _ in &little_exif::metadata::Metadata::new_from_path(path3).unwrap() {
         tag_counter += 1;
     }
 

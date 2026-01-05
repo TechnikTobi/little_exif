@@ -9,13 +9,13 @@ use super::ExifTag;
 use super::ExifTagFormat;
 
 macro_rules! build_set_function {
-	( 
+	(
 		$( (
-			$function_name:ident, 
+			$function_name:ident,
 			$rust_type:ty,
 			$format_type:ident
-		) ),* 
-	) 
+		) ),*
+	)
 	=>
 	{
 		impl ExifTag
@@ -54,8 +54,8 @@ macro_rules! build_set_function {
 	}
 }
 
-build_set_function![(set_value_to_int8u_vec,  Vec<u8>,   INT8U)];
-build_set_function![(set_value_to_int16u_vec, Vec<u16>,  INT16U)];
-build_set_function![(set_value_to_int32u_vec, Vec<u32>,  INT32U)];
-build_set_function![(set_value_to_iR64_vec,   Vec<iR64>, RATIONAL64S)];
-build_set_function![(set_value_to_undef,      Vec<u8>,   UNDEF)];
+build_set_function![(set_value_to_int8u_vec, Vec<u8>, INT8U)];
+build_set_function![(set_value_to_int16u_vec, Vec<u16>, INT16U)];
+build_set_function![(set_value_to_int32u_vec, Vec<u32>, INT32U)];
+build_set_function![(set_value_to_iR64_vec, Vec<iR64>, RATIONAL64S)];
+build_set_function![(set_value_to_undef, Vec<u8>, UNDEF)];

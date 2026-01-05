@@ -3,98 +3,48 @@
 
 #[allow(non_snake_case)]
 #[derive(Clone)]
-pub(crate) struct
-RiffChunkDescriptor
-{
-	fourCC:  String, // The 4 byte long header at the start of the chunk
-	size:    usize,  // Chunk size WITHOUT the 8 bytes for the header and size section
+pub(crate) struct RiffChunkDescriptor {
+    fourCC: String, // The 4 byte long header at the start of the chunk
+    size: usize,    // Chunk size WITHOUT the 8 bytes for the header and size section
 }
 
-impl
-RiffChunkDescriptor
-{
-	#[allow(non_snake_case)]
-	pub fn
-	new
-	(
-		fourCC: String,
-		size:   usize
-	)
-	-> RiffChunkDescriptor
-	{
-		RiffChunkDescriptor
-		{
-			fourCC: fourCC,
-			size:   size
-		}
-	}
+impl RiffChunkDescriptor {
+    #[allow(non_snake_case)]
+    pub fn new(fourCC: String, size: usize) -> RiffChunkDescriptor {
+        RiffChunkDescriptor {
+            fourCC: fourCC,
+            size: size,
+        }
+    }
 
-	pub fn
-	len
-	(
-		&self
-	)
-	-> usize
-	{
-		self.size
-	}
+    pub fn len(&self) -> usize {
+        self.size
+    }
 
-	pub fn
-	header
-	(
-		&self
-	)
-	-> String
-	{
-		self.fourCC.clone()
-	}
+    pub fn header(&self) -> String {
+        self.fourCC.clone()
+    }
 }
 
-
-pub(crate) struct
-RiffChunk
-{
-	descriptor: RiffChunkDescriptor,
-	payload:    Vec<u8>
+pub(crate) struct RiffChunk {
+    descriptor: RiffChunkDescriptor,
+    payload: Vec<u8>,
 }
 
-impl
-RiffChunk
-{
-	#[allow(non_snake_case)]
-	pub fn
-	new
-	(
-		fourCC:  String,
-		size:    usize,
-		payload: Vec<u8>
-	)
-	-> RiffChunk
-	{
-		RiffChunk
-		{
-			descriptor: RiffChunkDescriptor::new(fourCC, size),
-			payload:    payload
-		}
-	}
+impl RiffChunk {
+    #[allow(non_snake_case)]
+    pub fn new(fourCC: String, size: usize, payload: Vec<u8>) -> RiffChunk {
+        RiffChunk {
+            descriptor: RiffChunkDescriptor::new(fourCC, size),
+            payload: payload,
+        }
+    }
 
-	pub fn
-	descriptor
-	(
-		&self
-	)
-	-> RiffChunkDescriptor
-	{
-		self.descriptor.clone()
-	}
+    pub fn descriptor(&self) -> RiffChunkDescriptor {
+        self.descriptor.clone()
+    }
 
-	pub fn
-	payload
-	(
-		&self
-	)
-	-> &Vec<u8>
-	{
-		&self.payload
-	}
+    pub fn payload(&self) -> &Vec<u8> {
+        &self.payload
+    }
 }

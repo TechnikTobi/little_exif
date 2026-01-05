@@ -18,20 +18,20 @@ Related commit:
 
 use std::path::Path;
 
+extern crate little_exif;
 extern crate little_exif_0_6_18;
 extern crate little_exif_0_6_19;
-extern crate little_exif;
 
 #[test]
-#[should_panic (expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: \"Could not decode SubIFD GPS:\\n  Illegal format for known tag! Tag: GPSAltitudeRef([]) Expected: INT8U Got: INT16U\" }")]
-fn
-read_exif_data_fails()
-{
-    let img_path = Path::new("resources/issue_000074/515375534-6e537b75-8c85-47ca-a62c-27639a90b73c.jpg");
+#[should_panic(
+    expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: \"Could not decode SubIFD GPS:\\n  Illegal format for known tag! Tag: GPSAltitudeRef([]) Expected: INT8U Got: INT16U\" }"
+)]
+fn read_exif_data_fails() {
+    let img_path =
+        Path::new("resources/issue_000074/515375534-6e537b75-8c85-47ca-a62c-27639a90b73c.jpg");
 
     let mut tag_counter = 0;
-    for _ in &little_exif_0_6_18::metadata::Metadata::new_from_path(img_path).unwrap()
-    {
+    for _ in &little_exif_0_6_18::metadata::Metadata::new_from_path(img_path).unwrap() {
         tag_counter += 1;
     }
 
@@ -39,14 +39,12 @@ read_exif_data_fails()
 }
 
 #[test]
-fn
-read_exif_data_fixed()
-{
-    let img_path = Path::new("resources/issue_000074/515375534-6e537b75-8c85-47ca-a62c-27639a90b73c.jpg");
+fn read_exif_data_fixed() {
+    let img_path =
+        Path::new("resources/issue_000074/515375534-6e537b75-8c85-47ca-a62c-27639a90b73c.jpg");
 
     let mut tag_counter = 0;
-    for _ in &little_exif_0_6_19::metadata::Metadata::new_from_path(img_path).unwrap()
-    {
+    for _ in &little_exif_0_6_19::metadata::Metadata::new_from_path(img_path).unwrap() {
         tag_counter += 1;
     }
 
@@ -54,14 +52,12 @@ read_exif_data_fixed()
 }
 
 #[test]
-fn
-read_exif_data_current()
-{
-    let img_path = Path::new("resources/issue_000074/515375534-6e537b75-8c85-47ca-a62c-27639a90b73c.jpg");
+fn read_exif_data_current() {
+    let img_path =
+        Path::new("resources/issue_000074/515375534-6e537b75-8c85-47ca-a62c-27639a90b73c.jpg");
 
     let mut tag_counter = 0;
-    for tag in &little_exif::metadata::Metadata::new_from_path(img_path).unwrap()
-    {
+    for tag in &little_exif::metadata::Metadata::new_from_path(img_path).unwrap() {
         println!("{:?}", tag);
         tag_counter += 1;
     }

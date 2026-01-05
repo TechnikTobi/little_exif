@@ -19,21 +19,20 @@ Removed assert, see the following commit for more details:
 
 use std::path::Path;
 
+extern crate little_exif;
 extern crate little_exif_0_6_0_beta_1;
 extern crate little_exif_0_6_0_beta_2;
-extern crate little_exif;
 
 #[test]
-#[should_panic (expected = "assertion `left == right` failed\n  left: Some(1313426255)\n right: None")]
-fn
-read_exif_data_fails()
-{
+#[should_panic(
+    expected = "assertion `left == right` failed\n  left: Some(1313426255)\n right: None"
+)]
+fn read_exif_data_fails() {
     let path = Path::new("resources/issue_000031/DSC22278.JPG");
 
     let mut tag_counter = 0;
 
-    for _ in &little_exif_0_6_0_beta_1::metadata::Metadata::new_from_path(path).unwrap()
-    {
+    for _ in &little_exif_0_6_0_beta_1::metadata::Metadata::new_from_path(path).unwrap() {
         tag_counter += 1;
     }
 
@@ -41,15 +40,12 @@ read_exif_data_fails()
 }
 
 #[test]
-fn
-read_exif_data_fixed()
-{
+fn read_exif_data_fixed() {
     let path = Path::new("resources/issue_000031/DSC22278.JPG");
 
     let mut tag_counter = 0;
 
-    for _ in &little_exif_0_6_0_beta_2::metadata::Metadata::new_from_path(path).unwrap()
-    {
+    for _ in &little_exif_0_6_0_beta_2::metadata::Metadata::new_from_path(path).unwrap() {
         tag_counter += 1;
     }
 
@@ -57,15 +53,12 @@ read_exif_data_fixed()
 }
 
 #[test]
-fn
-read_exif_data_current()
-{
+fn read_exif_data_current() {
     let path = Path::new("resources/issue_000031/DSC22278.JPG");
 
     let mut tag_counter = 0;
 
-    for _ in &little_exif::metadata::Metadata::new_from_path(path).unwrap()
-    {
+    for _ in &little_exif::metadata::Metadata::new_from_path(path).unwrap() {
         tag_counter += 1;
     }
 

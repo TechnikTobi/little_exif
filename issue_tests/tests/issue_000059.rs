@@ -22,32 +22,36 @@ use std::fs::copy;
 use std::fs::remove_file;
 use std::path::Path;
 
+extern crate little_exif;
 extern crate little_exif_0_6_5;
 extern crate little_exif_0_6_6;
-extern crate little_exif;
 
 #[test]
-#[should_panic (expected = "called `Result::unwrap()` on an `Err` value: FromUtf8Error { bytes: [82, 97, 119, 32, 112, 114, 111, 102, 105, 108, 101, 32, 116, 121, 112, 101, 32, 101, 120, 105, 102, 120, 156, 101, 136, 75, 10, 128, 48, 12, 68, 247, 57, 133, 71, 72, 210, 105, 108, 142, 35, 82, 193, 27, 120, 124, 7, 45, 116, 209, 7, 243, 225, 73, 127, 238, 75, 182, 15, 20, 65, 221, 91, 100, 132, 18, 36, 210, 15, 158, 166, 63, 198, 116, 182, 115, 235, 80, 167, 46, 192, 224, 40, 110, 211, 200, 11, 39, 239, 20, 43], error: Utf8Error { valid_up_to: 22, error_len: Some(1) } }")]
-fn read_exif_data_prior_to_bugfix() 
-{
-    let path_orig = Path::new("resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25.png");
-    let path_copy = Path::new("resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25_copy1.png");
+#[should_panic(
+    expected = "called `Result::unwrap()` on an `Err` value: FromUtf8Error { bytes: [82, 97, 119, 32, 112, 114, 111, 102, 105, 108, 101, 32, 116, 121, 112, 101, 32, 101, 120, 105, 102, 120, 156, 101, 136, 75, 10, 128, 48, 12, 68, 247, 57, 133, 71, 72, 210, 105, 108, 142, 35, 82, 193, 27, 120, 124, 7, 45, 116, 209, 7, 243, 225, 73, 127, 238, 75, 182, 15, 20, 65, 221, 91, 100, 132, 18, 36, 210, 15, 158, 166, 63, 198, 116, 182, 115, 235, 80, 167, 46, 192, 224, 40, 110, 211, 200, 11, 39, 239, 20, 43], error: Utf8Error { valid_up_to: 22, error_len: Some(1) } }"
+)]
+fn read_exif_data_prior_to_bugfix() {
+    let path_orig =
+        Path::new("resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25.png");
+    let path_copy = Path::new(
+        "resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25_copy1.png",
+    );
 
     // Remove file from previous run and replace it with fresh copy
-    if let Err(error) = remove_file(&path_copy)
-    {
+    if let Err(error) = remove_file(&path_copy) {
         println!("{}", error);
     }
     copy(&path_orig, &path_copy).unwrap();
 
     let mut metadata = little_exif_0_6_5::metadata::Metadata::new();
-    metadata.set_tag(little_exif_0_6_5::exif_tag::ExifTag::ImageDescription("ABC!".to_string()));
+    metadata.set_tag(little_exif_0_6_5::exif_tag::ExifTag::ImageDescription(
+        "ABC!".to_string(),
+    ));
     metadata.write_to_file(&path_copy).unwrap();
 
     // Read metadata from file
     let mut tag_counter = 0;
-    for tag in &little_exif_0_6_5::metadata::Metadata::new_from_path(path_copy).unwrap()
-    {
+    for tag in &little_exif_0_6_5::metadata::Metadata::new_from_path(path_copy).unwrap() {
         println!("{:?}", tag);
         tag_counter += 1;
     }
@@ -55,12 +59,13 @@ fn read_exif_data_prior_to_bugfix()
     assert_eq!(tag_counter, 1);
 
     // Update and read again
-    metadata.set_tag(little_exif_0_6_5::exif_tag::ExifTag::ImageDescription("XYZ!".to_string()));
+    metadata.set_tag(little_exif_0_6_5::exif_tag::ExifTag::ImageDescription(
+        "XYZ!".to_string(),
+    ));
     metadata.write_to_file(&path_copy).unwrap();
 
     let mut tag_counter = 0;
-    for tag in &little_exif_0_6_5::metadata::Metadata::new_from_path(path_copy).unwrap()
-    {
+    for tag in &little_exif_0_6_5::metadata::Metadata::new_from_path(path_copy).unwrap() {
         println!("{:?}", tag);
         tag_counter += 1;
     }
@@ -69,27 +74,28 @@ fn read_exif_data_prior_to_bugfix()
 }
 
 #[test]
-fn
-read_exif_data_fixed()
-{
-    let path_orig = Path::new("resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25.png");
-    let path_copy = Path::new("resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25_copy2.png");
+fn read_exif_data_fixed() {
+    let path_orig =
+        Path::new("resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25.png");
+    let path_copy = Path::new(
+        "resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25_copy2.png",
+    );
 
     // Remove file from previous run and replace it with fresh copy
-    if let Err(error) = remove_file(&path_copy)
-    {
+    if let Err(error) = remove_file(&path_copy) {
         println!("{}", error);
     }
     copy(&path_orig, &path_copy).unwrap();
 
     let mut metadata = little_exif_0_6_6::metadata::Metadata::new();
-    metadata.set_tag(little_exif_0_6_6::exif_tag::ExifTag::ImageDescription("ABC!".to_string()));
+    metadata.set_tag(little_exif_0_6_6::exif_tag::ExifTag::ImageDescription(
+        "ABC!".to_string(),
+    ));
     metadata.write_to_file(&path_copy).unwrap();
 
     // Read metadata from file
     let mut tag_counter = 0;
-    for tag in &little_exif_0_6_6::metadata::Metadata::new_from_path(path_copy).unwrap()
-    {
+    for tag in &little_exif_0_6_6::metadata::Metadata::new_from_path(path_copy).unwrap() {
         println!("{:?}", tag);
         tag_counter += 1;
     }
@@ -97,12 +103,13 @@ read_exif_data_fixed()
     assert_eq!(tag_counter, 1);
 
     // Update and read again
-    metadata.set_tag(little_exif_0_6_6::exif_tag::ExifTag::ImageDescription("XYZ!".to_string()));
+    metadata.set_tag(little_exif_0_6_6::exif_tag::ExifTag::ImageDescription(
+        "XYZ!".to_string(),
+    ));
     metadata.write_to_file(&path_copy).unwrap();
 
     let mut tag_counter = 0;
-    for tag in &little_exif_0_6_6::metadata::Metadata::new_from_path(path_copy).unwrap()
-    {
+    for tag in &little_exif_0_6_6::metadata::Metadata::new_from_path(path_copy).unwrap() {
         println!("{:?}", tag);
         tag_counter += 1;
     }
@@ -111,27 +118,28 @@ read_exif_data_fixed()
 }
 
 #[test]
-fn
-read_exif_data_current()
-{
-    let path_orig = Path::new("resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25.png");
-    let path_copy = Path::new("resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25_copy3.png");
+fn read_exif_data_current() {
+    let path_orig =
+        Path::new("resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25.png");
+    let path_copy = Path::new(
+        "resources/issue_000059/447912738-6fd9f973-a793-4f09-97e0-2a8ad4f46e25_copy3.png",
+    );
 
     // Remove file from previous run and replace it with fresh copy
-    if let Err(error) = remove_file(&path_copy)
-    {
+    if let Err(error) = remove_file(&path_copy) {
         println!("{}", error);
     }
     copy(&path_orig, &path_copy).unwrap();
 
     let mut metadata = little_exif::metadata::Metadata::new();
-    metadata.set_tag(little_exif::exif_tag::ExifTag::ImageDescription("ABC!".to_string()));
+    metadata.set_tag(little_exif::exif_tag::ExifTag::ImageDescription(
+        "ABC!".to_string(),
+    ));
     metadata.write_to_file(&path_copy).unwrap();
 
     // Read metadata from file
     let mut tag_counter = 0;
-    for tag in &little_exif::metadata::Metadata::new_from_path(path_copy).unwrap()
-    {
+    for tag in &little_exif::metadata::Metadata::new_from_path(path_copy).unwrap() {
         println!("{:?}", tag);
         tag_counter += 1;
     }
@@ -139,12 +147,13 @@ read_exif_data_current()
     assert_eq!(tag_counter, 1);
 
     // Update and read again
-    metadata.set_tag(little_exif::exif_tag::ExifTag::ImageDescription("XYZ!".to_string()));
+    metadata.set_tag(little_exif::exif_tag::ExifTag::ImageDescription(
+        "XYZ!".to_string(),
+    ));
     metadata.write_to_file(&path_copy).unwrap();
 
     let mut tag_counter = 0;
-    for tag in &little_exif::metadata::Metadata::new_from_path(path_copy).unwrap()
-    {
+    for tag in &little_exif::metadata::Metadata::new_from_path(path_copy).unwrap() {
         println!("{:?}", tag);
         tag_counter += 1;
     }

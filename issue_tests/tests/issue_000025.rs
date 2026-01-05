@@ -18,37 +18,36 @@ The explorer "Details" sow the new ImageDescription as "Betreff" (with different
 Solution: Can't recall :(
 */
 
-use std::path::Path;
-use std::fs::remove_file;
 use std::fs::copy;
+use std::fs::remove_file;
+use std::path::Path;
 
+extern crate little_exif;
 extern crate little_exif_0_5_1;
 extern crate little_exif_0_6_0_beta_1;
-extern crate little_exif;
 
 #[test]
-#[should_panic (expected = "range end index 737 out of range for slice of length 735")]
-fn
-read_write_read_exif_data_fails()
-{
+#[should_panic(expected = "range end index 737 out of range for slice of length 735")]
+fn read_write_read_exif_data_fails() {
     let png_path = Path::new("resources/issue_000025/A0579322.jpg");
     let cpy_path = Path::new("resources/issue_000025/A0579322_copy1.jpg");
 
-    if let Err(error) = remove_file(cpy_path)
-    {
+    if let Err(error) = remove_file(cpy_path) {
         println!("Could not delete file: {}", error);
     }
     copy(png_path, cpy_path).unwrap();
 
     let mut metadata = little_exif_0_5_1::metadata::Metadata::new_from_path(png_path).unwrap();
-    metadata.set_tag(
-        little_exif_0_5_1::exif_tag::ExifTag::ImageDescription("Hello World!".to_string())
-    );
+    metadata.set_tag(little_exif_0_5_1::exif_tag::ExifTag::ImageDescription(
+        "Hello World!".to_string(),
+    ));
 
     metadata.write_to_file(cpy_path).unwrap();
 
     let mut tag_counter = 0;
-    for _ in little_exif_0_5_1::metadata::Metadata::new_from_path(cpy_path).unwrap().data()
+    for _ in little_exif_0_5_1::metadata::Metadata::new_from_path(cpy_path)
+        .unwrap()
+        .data()
     {
         tag_counter += 1;
     }
@@ -57,28 +56,25 @@ read_write_read_exif_data_fails()
 }
 
 #[test]
-fn
-read_write_read_exif_data_fixed()
-{
+fn read_write_read_exif_data_fixed() {
     let png_path = Path::new("resources/issue_000025/A0579322.jpg");
     let cpy_path = Path::new("resources/issue_000025/A0579322_copy2.jpg");
 
-    if let Err(error) = remove_file(cpy_path)
-    {
+    if let Err(error) = remove_file(cpy_path) {
         println!("Could not delete file: {}", error);
     }
     copy(png_path, cpy_path).unwrap();
 
-    let mut metadata = little_exif_0_6_0_beta_1::metadata::Metadata::new_from_path(png_path).unwrap();
+    let mut metadata =
+        little_exif_0_6_0_beta_1::metadata::Metadata::new_from_path(png_path).unwrap();
     metadata.set_tag(
-        little_exif_0_6_0_beta_1::exif_tag::ExifTag::ImageDescription("Hello World!".to_string())
+        little_exif_0_6_0_beta_1::exif_tag::ExifTag::ImageDescription("Hello World!".to_string()),
     );
 
     metadata.write_to_file(cpy_path).unwrap();
 
     let mut tag_counter = 0;
-    for _ in &little_exif_0_6_0_beta_1::metadata::Metadata::new_from_path(cpy_path).unwrap()
-    {
+    for _ in &little_exif_0_6_0_beta_1::metadata::Metadata::new_from_path(cpy_path).unwrap() {
         tag_counter += 1;
     }
 
@@ -86,28 +82,24 @@ read_write_read_exif_data_fixed()
 }
 
 #[test]
-fn
-read_write_read_exif_data_current()
-{
+fn read_write_read_exif_data_current() {
     let png_path = Path::new("resources/issue_000025/A0579322.jpg");
     let cpy_path = Path::new("resources/issue_000025/A0579322_copy3.jpg");
 
-    if let Err(error) = remove_file(cpy_path)
-    {
+    if let Err(error) = remove_file(cpy_path) {
         println!("Could not delete file: {}", error);
     }
     copy(png_path, cpy_path).unwrap();
 
     let mut metadata = little_exif::metadata::Metadata::new_from_path(png_path).unwrap();
-    metadata.set_tag(
-        little_exif::exif_tag::ExifTag::ImageDescription("Hello World!".to_string())
-    );
+    metadata.set_tag(little_exif::exif_tag::ExifTag::ImageDescription(
+        "Hello World!".to_string(),
+    ));
 
     metadata.write_to_file(cpy_path).unwrap();
 
     let mut tag_counter = 0;
-    for _ in &little_exif::metadata::Metadata::new_from_path(cpy_path).unwrap()
-    {
+    for _ in &little_exif::metadata::Metadata::new_from_path(cpy_path).unwrap() {
         tag_counter += 1;
     }
 

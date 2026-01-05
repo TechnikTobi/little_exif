@@ -12,25 +12,25 @@ this PNG file causes little_exif to panic when running clear_metadata()
 Solution: Can't recall :( Maybe something regarding offsets?
 */
 
-use std::path::Path;
-use std::fs::remove_file;
 use std::fs::copy;
 use std::fs::read;
+use std::fs::remove_file;
+use std::path::Path;
 
+extern crate little_exif;
 extern crate little_exif_0_6_3;
 extern crate little_exif_0_6_5;
-extern crate little_exif;
 
 #[test]
-#[should_panic (expected = "not yet implemented")]
-fn
-issue_000055_clear_exif_data_old_version_fails()
-{
-    let png_path = Path::new("resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c.png");
-    let cpy_path = Path::new("resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c_copy1.png");
+#[should_panic(expected = "not yet implemented")]
+fn issue_000055_clear_exif_data_old_version_fails() {
+    let png_path =
+        Path::new("resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c.png");
+    let cpy_path = Path::new(
+        "resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c_copy1.png",
+    );
 
-    if let Err(error) = remove_file(cpy_path)
-    {
+    if let Err(error) = remove_file(cpy_path) {
         println!("Could not delete file: {}", error);
     }
     copy(png_path, cpy_path).unwrap();
@@ -38,25 +38,25 @@ issue_000055_clear_exif_data_old_version_fails()
     let mut image_data = read(png_path).unwrap();
 
     little_exif_0_6_3::metadata::Metadata::clear_metadata(
-        &mut image_data, 
-        little_exif_0_6_3::filetype::FileExtension::PNG { as_zTXt_chunk: false }
-    ).unwrap();
+        &mut image_data,
+        little_exif_0_6_3::filetype::FileExtension::PNG {
+            as_zTXt_chunk: false,
+        },
+    )
+    .unwrap();
 
-    std::fs::write(
-        cpy_path.as_os_str(),
-        image_data
-    ).unwrap();
+    std::fs::write(cpy_path.as_os_str(), image_data).unwrap();
 }
 
 #[test]
-fn
-issue_000055_clear_exif_data_fixed()
-{
-    let png_path = Path::new("resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c.png");
-    let cpy_path = Path::new("resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c_copy2.png");
+fn issue_000055_clear_exif_data_fixed() {
+    let png_path =
+        Path::new("resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c.png");
+    let cpy_path = Path::new(
+        "resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c_copy2.png",
+    );
 
-    if let Err(error) = remove_file(cpy_path)
-    {
+    if let Err(error) = remove_file(cpy_path) {
         println!("Could not delete file: {}", error);
     }
     copy(png_path, cpy_path).unwrap();
@@ -64,25 +64,25 @@ issue_000055_clear_exif_data_fixed()
     let mut image_data = read(png_path).unwrap();
 
     little_exif_0_6_5::metadata::Metadata::clear_metadata(
-        &mut image_data, 
-        little_exif_0_6_5::filetype::FileExtension::PNG { as_zTXt_chunk: false }
-    ).unwrap();
+        &mut image_data,
+        little_exif_0_6_5::filetype::FileExtension::PNG {
+            as_zTXt_chunk: false,
+        },
+    )
+    .unwrap();
 
-    std::fs::write(
-        cpy_path.as_os_str(),
-        image_data
-    ).unwrap();
+    std::fs::write(cpy_path.as_os_str(), image_data).unwrap();
 }
 
 #[test]
-fn
-issue_000055_clear_exif_data_current()
-{
-    let png_path = Path::new("resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c.png");
-    let cpy_path = Path::new("resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c_copy2.png");
+fn issue_000055_clear_exif_data_current() {
+    let png_path =
+        Path::new("resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c.png");
+    let cpy_path = Path::new(
+        "resources/issue_000055/437726296-e38cf0e2-93c9-4e43-9786-6003e167d39c_copy2.png",
+    );
 
-    if let Err(error) = remove_file(cpy_path)
-    {
+    if let Err(error) = remove_file(cpy_path) {
         println!("Could not delete file: {}", error);
     }
     copy(png_path, cpy_path).unwrap();
@@ -90,12 +90,12 @@ issue_000055_clear_exif_data_current()
     let mut image_data = read(png_path).unwrap();
 
     little_exif::metadata::Metadata::clear_metadata(
-        &mut image_data, 
-        little_exif::filetype::FileExtension::PNG { as_zTXt_chunk: false }
-    ).unwrap();
+        &mut image_data,
+        little_exif::filetype::FileExtension::PNG {
+            as_zTXt_chunk: false,
+        },
+    )
+    .unwrap();
 
-    std::fs::write(
-        cpy_path.as_os_str(),
-        image_data
-    ).unwrap();
+    std::fs::write(cpy_path.as_os_str(), image_data).unwrap();
 }

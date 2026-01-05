@@ -12,36 +12,29 @@ use crate::heif::boxes::ParsableIsoBox;
 
 #[allow(dead_code)]
 #[derive(Clone)]
-pub struct
-IsoBox
-{
-    header:    BoxHeader,
-    data:      Vec<u8>,
+pub struct IsoBox {
+    header: BoxHeader,
+    data: Vec<u8>,
 }
 
-impl
-IsoBox
-{
-    fn
-    construct_from_cursor_unboxed
-    <T: Seek + Read>
-    (
+impl IsoBox {
+    fn construct_from_cursor_unboxed<T: Seek + Read>(
         cursor: &mut T,
-        header:  BoxHeader
-    )
-    -> Result<IsoBox, std::io::Error> 
-    {
-        debug_println!("Constructing generic ISO box for type {:?}", header.get_box_type());
+        header: BoxHeader,
+    ) -> Result<IsoBox, std::io::Error> {
+        debug_println!(
+            "Constructing generic ISO box for type {:?}",
+            header.get_box_type()
+        );
 
         // Check if this box is the last in the file
         // See also: ISO/IEC 14496-12:2015, § 4.2
-        if header.get_box_size() == 0
-        {
+        if header.get_box_size() == 0 {
             let mut buffer = Vec::new();
             cursor.read_to_end(&mut buffer)?;
             return Ok(IsoBox {
                 header: header,
-                data:   buffer
+                data: buffer,
             });
         }
 
@@ -52,51 +45,39 @@ IsoBox
 
         return Ok(IsoBox {
             header: header,
-            data:   buffer
+            data: buffer,
         });
     }
 }
 
-impl
-ParsableIsoBox
-for
-IsoBox
-{
-    fn
-    construct_from_cursor
-    <T: Seek + Read>
-    (
+impl ParsableIsoBox for IsoBox {
+    fn construct_from_cursor<T: Seek + Read>(
         cursor: &mut T,
-        header:  BoxHeader
-    )
-    -> Result<Box<dyn GenericIsoBox>, std::io::Error> 
-    {
+        header: BoxHeader,
+    ) -> Result<Box<dyn GenericIsoBox>, std::io::Error> {
         return Ok(Box::new(IsoBox::construct_from_cursor_unboxed(
-            cursor, 
-            header
+            cursor, header,
         )?));
     }
 }
 
-impl
-GenericIsoBox
-for
-IsoBox
-{
-    fn
-    serialize
-    (
-        &self
-    ) 
-    -> Vec<u8>
-    {
+impl GenericIsoBox for IsoBox {
+    fn serialize(&self) -> Vec<u8> {
         let mut serialized = self.header.serialize();
         serialized.extend(&self.data);
         return serialized;
     }
 
-    fn as_any         (&    self) -> &    dyn std::any::Any {      self        }
-    fn as_any_mut     (&mut self) -> &mut dyn std::any::Any {      self        }
-    fn get_header     (&    self) -> &        BoxHeader     { &    self.header }
-    fn get_header_mut (&mut self) -> &mut     BoxHeader     { &mut self.header }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    fn get_header(&self) -> &BoxHeader {
+        &self.header
+    }
+    fn get_header_mut(&mut self) -> &mut BoxHeader {
+        &mut self.header
+    }
 }

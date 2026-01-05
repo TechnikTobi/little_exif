@@ -18,21 +18,18 @@ Related commits:
 
 use std::path::Path;
 
+extern crate little_exif;
 extern crate little_exif_0_6_0_beta_3;
 extern crate little_exif_0_6_0_beta_4;
-extern crate little_exif;
 
 #[test]
-#[should_panic (expected = "assertion `left == right` failed\n  left: 0\n right: 58")]
-fn
-read_exif_data_fails()
-{
+#[should_panic(expected = "assertion `left == right` failed\n  left: 0\n right: 58")]
+fn read_exif_data_fails() {
     let path = Path::new("resources/issue_000038/2017_stuttgart_07_.jpeg");
 
     let mut tag_counter = 0;
 
-    for tag in &little_exif_0_6_0_beta_3::metadata::Metadata::new_from_path(path).unwrap()
-    {
+    for tag in &little_exif_0_6_0_beta_3::metadata::Metadata::new_from_path(path).unwrap() {
         tag_counter += 1;
         println!("{:?}", tag);
     }
@@ -41,15 +38,12 @@ read_exif_data_fails()
 }
 
 #[test]
-fn
-read_exif_data_fixed()
-{
+fn read_exif_data_fixed() {
     let path = Path::new("resources/issue_000038/2017_stuttgart_07_.jpeg");
 
     let mut tag_counter = 0;
 
-    for tag in &little_exif_0_6_0_beta_4::metadata::Metadata::new_from_path(path).unwrap()
-    {
+    for tag in &little_exif_0_6_0_beta_4::metadata::Metadata::new_from_path(path).unwrap() {
         tag_counter += 1;
         println!("{:?}", tag);
     }
@@ -58,15 +52,12 @@ read_exif_data_fixed()
 }
 
 #[test]
-fn
-read_exif_data_current()
-{
+fn read_exif_data_current() {
     let path = Path::new("resources/issue_000038/2017_stuttgart_07_.jpeg");
 
     let mut tag_counter = 0;
 
-    for tag in &little_exif::metadata::Metadata::new_from_path(path).unwrap()
-    {
+    for tag in &little_exif::metadata::Metadata::new_from_path(path).unwrap() {
         tag_counter += 1;
         println!("{:?}", tag);
     }

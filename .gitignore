@@ -13,6 +13,9 @@ Cargo.lock
 /target
 /Cargo.lock
 
+# IntelliJ
+.idea/
+
 # Ignore macOS files
 .DS_Store
 **/.DS_Store

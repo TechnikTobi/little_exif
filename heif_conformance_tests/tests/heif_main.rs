@@ -11,20 +11,14 @@ use test_case::test_case;
 
 extern crate little_exif;
 
-fn 
-construct_cpy_path_string
-(
-    input_path: &str
-) 
--> String 
-{
+fn construct_cpy_path_string(input_path: &str) -> String {
     let mut parts: Vec<&str> = input_path.split('.').collect();
 
     // Store extension for later
     let extension = parts.pop().unwrap_or("");
-    
+
     let base = parts.join(".");
-    
+
     return format!("{}_copy.{}", base, extension);
 }
 
@@ -81,20 +75,13 @@ construct_cpy_path_string
 #[test_case("C051.heic")]
 #[test_case("C052.heic")]
 #[test_case("C053.heic")]
-fn
-test_equal_results
-(
-    testfile: &str
-)
--> Result<(), std::io::Error>
-{
+fn test_equal_results(testfile: &str) -> Result<(), std::io::Error> {
     let cpy_path_string = construct_cpy_path_string(testfile);
 
     let img_path = Path::new(testfile);
     let cpy_path = Path::new(cpy_path_string.as_str());
 
-    if let Err(error) = remove_file(cpy_path)
-    {
+    if let Err(error) = remove_file(cpy_path) {
         println!("Could not delete file: {}", error);
     }
     copy(img_path, cpy_path).unwrap();

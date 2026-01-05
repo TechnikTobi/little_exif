@@ -2,15 +2,13 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 #[allow(non_camel_case_types, dead_code)]
-pub(crate) enum
-PngChunkOrdering
-{
+pub(crate) enum PngChunkOrdering {
     FIRST,
     BEFORE_IDAT,
     BEFORE_PLTE_AND_IDAT,
     AFTER_PLTE_BEFORE_IDAT,
     LAST,
-    NONE
+    NONE,
 }
 
 /// This macro builds the enum for the different type of PNG chunks
@@ -91,6 +89,7 @@ macro_rules! build_png_chunk_type_enum {
     }
 }
 
+#[rustfmt::skip]
 build_png_chunk_type_enum![
     // Tag  Critical    Multiple    Ordering
     (IHDR,  true,       false,      FIRST),

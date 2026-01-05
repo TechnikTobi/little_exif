@@ -7,8 +7,8 @@ use std::io::Seek;
 use crate::debug_println;
 
 use crate::endian::Endian;
-use crate::u8conversion::U8conversion;
 use crate::u8conversion::to_u8_vec_macro;
+use crate::u8conversion::U8conversion;
 use crate::util::read_be_u16;
 use crate::util::read_be_u32;
 use crate::util::read_null_terminated_string;
@@ -18,8 +18,8 @@ use crate::heif::boxes::GenericIsoBox;
 use crate::heif::boxes::ParsableIsoBox;
 
 // - infe
-// 00000015:   size of 0x15 bytes (including the 0x04 bytes of the size field itself) 
-// 696E6665:   byte representation of `infe` 
+// 00000015:   size of 0x15 bytes (including the 0x04 bytes of the size field itself)
+// 696E6665:   byte representation of `infe`
 // 02:         version 2
 // 000001:     24 bits of flags
 // 0019:       item ID (16 bits)
@@ -31,51 +31,40 @@ use crate::heif::boxes::ParsableIsoBox;
 
 #[allow(dead_code)]
 #[derive(Debug)]
-pub struct
-ItemInfoEntryBox
-{
-    pub(self)  header:                BoxHeader,
-    pub(crate) item_id:               u16,
+pub struct ItemInfoEntryBox {
+    pub(self) header: BoxHeader,
+    pub(crate) item_id: u16,
     pub(crate) item_protection_index: u16,
-    pub(crate) item_name:             String,
-    pub(crate) additional_data:       Vec<u8>,
+    pub(crate) item_name: String,
+    pub(crate) additional_data: Vec<u8>,
 }
 
 // - iinf
 // 00000603:   size of 0x603 bytes (including the 0x04 bytes of the size field itself)
-// 69696E66:   byte representation of `iinf` 
+// 69696E66:   byte representation of `iinf`
 // 00000000:   version (here: 0) and 24 bits of flags
 // 0041:       number of item info entries, here 0x41 = 65
 // 0000001569: start of first info entry
 
 #[allow(dead_code)]
 #[derive(Debug)]
-pub struct
-ItemInfoBox
-{
-    pub(self)  header:     BoxHeader,
+pub struct ItemInfoBox {
+    pub(self) header: BoxHeader,
     pub(crate) item_count: usize,
-    pub(crate) items:      Vec<ItemInfoEntryBox>
+    pub(crate) items: Vec<ItemInfoEntryBox>,
 }
 
-impl
-ItemInfoEntryBox
-{
-    fn
-    construct_from_cursor_unboxed
-    <T: Seek + Read>
-    (
+impl ItemInfoEntryBox {
+    fn construct_from_cursor_unboxed<T: Seek + Read>(
         cursor: &mut T,
-        header:  BoxHeader
-    )
-    -> Result<Self, std::io::Error>
-    {
-        let item_id               = read_be_u16(cursor)?;
+        header: BoxHeader,
+    ) -> Result<Self, std::io::Error> {
+        let item_id = read_be_u16(cursor)?;
         let item_protection_index = read_be_u16(cursor)?;
-        let item_name             = read_null_terminated_string(cursor)?;
+        let item_name = read_null_terminated_string(cursor)?;
 
         // Determine how much data is left for this entry
-        let data_read_so_far = header.get_header_size() 
+        let data_read_so_far = header.get_header_size()
             + 2                    // item_id
             + 2                    // item_protection_index
             + item_name.len() + 1; // string len + null terminator
@@ -94,68 +83,38 @@ ItemInfoEntryBox
             additional_data,
         });
     }
-
 }
 
-impl
-ParsableIsoBox
-for
-ItemInfoEntryBox
-{
-    fn
-    construct_from_cursor
-    <T: Seek + Read>
-    (
+impl ParsableIsoBox for ItemInfoEntryBox {
+    fn construct_from_cursor<T: Seek + Read>(
         cursor: &mut T,
-        header:  BoxHeader
-    )
-    -> Result<Box<dyn GenericIsoBox>, std::io::Error>
-    {
+        header: BoxHeader,
+    ) -> Result<Box<dyn GenericIsoBox>, std::io::Error> {
         return Ok(Box::new(ItemInfoEntryBox::construct_from_cursor_unboxed(
-            cursor, 
-            header
+            cursor, header,
         )?));
     }
 }
 
-impl
-ItemInfoBox
-{
-    pub fn
-    get_exif_item
-    (
-        &self
-    )
-    -> Option<&ItemInfoEntryBox>
-    {
-        return self.items.iter()
-            .find(|item| item.item_name == "Exif")
+impl ItemInfoBox {
+    pub fn get_exif_item(&self) -> Option<&ItemInfoEntryBox> {
+        return self.items.iter().find(|item| item.item_name == "Exif");
     }
 
     /// Creates a new item in this item information box and returns by how many
     /// bytes this box got longer
-    pub(crate) fn
-    create_new_item_info_entry
-    (
-        &mut self,
-        iloc_id: u32,
-        name:    &str,
-    )
-    -> usize
-    {
-        self.items.push(ItemInfoEntryBox 
-            { 
-                header:                BoxHeader::new_exif_info_entry_box_header(), 
-                item_id:               iloc_id as u16, 
-                item_protection_index: 0, 
-                item_name:             name.to_string(), 
-                additional_data:       Vec::new()
-            }
-        );
+    pub(crate) fn create_new_item_info_entry(&mut self, iloc_id: u32, name: &str) -> usize {
+        self.items.push(ItemInfoEntryBox {
+            header: BoxHeader::new_exif_info_entry_box_header(),
+            item_id: iloc_id as u16,
+            item_protection_index: 0,
+            item_name: name.to_string(),
+            additional_data: Vec::new(),
+        });
 
         self.item_count += 1;
 
-        // Due to the addition of a new item, the size in the header needs to 
+        // Due to the addition of a new item, the size in the header needs to
         // be adjusted as well
         // TODO: make this more efficient by only computing how much memory is
         // needed, not by actually serializing (and thus, allocating memory)
@@ -167,65 +126,41 @@ ItemInfoBox
     }
 }
 
-impl
-ParsableIsoBox
-for
-ItemInfoBox
-{
-    fn
-    construct_from_cursor
-    <T: Seek + Read>
-    (
+impl ParsableIsoBox for ItemInfoBox {
+    fn construct_from_cursor<T: Seek + Read>(
         cursor: &mut T,
-        header:  BoxHeader
-    )
-    -> Result<Box<dyn GenericIsoBox>, std::io::Error>
-    {
+        header: BoxHeader,
+    ) -> Result<Box<dyn GenericIsoBox>, std::io::Error> {
         let item_count;
 
         // See: ISO/IEC 14496-12:2015, § 8.11.6.2
-        if header.get_version() == 0
-        {
+        if header.get_version() == 0 {
             item_count = read_be_u16(cursor)? as usize;
-        }
-        else
-        {
+        } else {
             item_count = read_be_u32(cursor)? as usize;
         }
 
         let mut items = Vec::new();
-        for _ in 0..item_count
-        {
+        for _ in 0..item_count {
             let header = BoxHeader::read_box_header(cursor)?;
             items.push(ItemInfoEntryBox::construct_from_cursor_unboxed(
-                cursor, 
-                header
+                cursor, header,
             )?);
         }
 
-        return Ok(Box::new(ItemInfoBox { 
-            header:     header,
-            item_count: item_count, 
-            items:      items 
+        return Ok(Box::new(ItemInfoBox {
+            header: header,
+            item_count: item_count,
+            items: items,
         }));
     }
 }
 
-impl
-GenericIsoBox
-for
-ItemInfoEntryBox
-{
-    fn
-    serialize
-    (
-        &self
-    ) 
-    -> Vec<u8>
-    {
+impl GenericIsoBox for ItemInfoEntryBox {
+    fn serialize(&self) -> Vec<u8> {
         let mut serialized = self.header.serialize();
-        
-        serialized.extend(to_u8_vec_macro!(u16, &self.item_id,               &Endian::Big).iter());
+
+        serialized.extend(to_u8_vec_macro!(u16, &self.item_id, &Endian::Big).iter());
         serialized.extend(to_u8_vec_macro!(u16, &self.item_protection_index, &Endian::Big).iter());
         serialized.extend(self.item_name.bytes());
         serialized.push(0x00); // null terminator for item name string
@@ -234,46 +169,49 @@ ItemInfoEntryBox
         return serialized;
     }
 
-    fn as_any         (&    self) -> &    dyn std::any::Any {      self        }
-    fn as_any_mut     (&mut self) -> &mut dyn std::any::Any {      self        }
-    fn get_header     (&    self) -> &        BoxHeader     { &    self.header }
-    fn get_header_mut (&mut self) -> &mut     BoxHeader     { &mut self.header }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    fn get_header(&self) -> &BoxHeader {
+        &self.header
+    }
+    fn get_header_mut(&mut self) -> &mut BoxHeader {
+        &mut self.header
+    }
 }
 
-impl
-GenericIsoBox
-for
-ItemInfoBox
-{
-    fn
-    serialize
-    (
-        &self
-    ) 
-    -> Vec<u8>
-    {
+impl GenericIsoBox for ItemInfoBox {
+    fn serialize(&self) -> Vec<u8> {
         let mut serialized = self.header.serialize();
 
-        if self.header.get_version() == 0
-        {
-            serialized.extend(to_u8_vec_macro!(u16, &(self.item_count as u16), &Endian::Big).iter());
+        if self.header.get_version() == 0 {
+            serialized
+                .extend(to_u8_vec_macro!(u16, &(self.item_count as u16), &Endian::Big).iter());
+        } else {
+            serialized
+                .extend(to_u8_vec_macro!(u32, &(self.item_count as u32), &Endian::Big).iter());
         }
-        else
-        {
-            serialized.extend(to_u8_vec_macro!(u32, &(self.item_count as u32), &Endian::Big).iter());
-        }
-        
-        for item in &self.items
-        {
+
+        for item in &self.items {
             serialized.extend(item.serialize());
         }
 
         return serialized;
     }
 
-
-    fn as_any         (&    self) -> &    dyn std::any::Any {      self        }
-    fn as_any_mut     (&mut self) -> &mut dyn std::any::Any {      self        }
-    fn get_header     (&    self) -> &        BoxHeader     { &    self.header }
-    fn get_header_mut (&mut self) -> &mut     BoxHeader     { &mut self.header }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    fn get_header(&self) -> &BoxHeader {
+        &self.header
+    }
+    fn get_header_mut(&mut self) -> &mut BoxHeader {
+        &mut self.header
+    }
 }

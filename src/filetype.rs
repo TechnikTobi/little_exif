@@ -12,40 +12,27 @@ use crate::general_file_io::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[allow(non_snake_case, non_camel_case_types)]
-pub enum
-FileExtension
-{
-    PNG  {as_zTXt_chunk: bool},
+pub enum FileExtension {
+    PNG { as_zTXt_chunk: bool },
     JPEG,
     JXL,
-    NAKED_JXL,  // A JXL codestream without any data
+    NAKED_JXL, // A JXL codestream without any data
     TIFF,
     WEBP,
     HEIF,
 }
 
-impl
-FileExtension
-{
-    pub(crate) fn
-    auto_detect
-    <T: Seek + Read>
-    (
-        cursor: &mut T
-    )
-    -> Option<Self>
-    {
+impl FileExtension {
+    pub(crate) fn auto_detect<T: Seek + Read>(cursor: &mut T) -> Option<Self> {
         // Read first few bytes (32 bytes because I don't know any better)
         let mut buffer = [0; 32];
         let n = cursor.read(&mut buffer);
 
-        if n.is_err()
-        {
+        if n.is_err() {
             return None;
         }
 
-        if n.unwrap() < 4
-        {
+        if n.unwrap() < 4 {
             return None;
         }
 
@@ -95,7 +82,7 @@ FileExtension
               [_, _, _, _, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63, ..]  // heic
             | [_, _, _, _, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x66, ..]  // heif
             | [_, _, _, _, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66, ..]  // avif
-            => 
+            =>
             {
                 return Some(FileExtension::HEIF)
             }
@@ -103,97 +90,83 @@ FileExtension
             // TODO: Other HEIF formats, e.g. ftypmif1, see also:
             // https://www.loc.gov/preservation/digital/formats/fdd/fdd000526.shtml
 
-            _ => { 
+            _ => {
                 return None;
             }
         };
     }
 }
 
-impl 
-FromStr 
-for 
-FileExtension 
-{
+impl FromStr for FileExtension {
     type Err = std::io::Error;
 
-    fn 
-    from_str
-    (
-        input: &str
-    ) 
-    -> Result<FileExtension, Self::Err> 
-    {
-        match input.to_lowercase().as_str()
-        {
-            "heif" | "hif" | "heic" | "avif"
-                => Ok(FileExtension::HEIF),
-            "jpeg" | "jpg" 
-                => Ok(FileExtension::JPEG),
-            "jxl" 
-                => Ok(FileExtension::JXL),
-            "png" 
-                => Ok(FileExtension::PNG { as_zTXt_chunk: true}),
-            "tiff" | "tif" 
-                => Ok(FileExtension::TIFF),
-            "webp" 
-                => Ok(FileExtension::WEBP),
+    fn from_str(input: &str) -> Result<FileExtension, Self::Err> {
+        match input.to_lowercase().as_str() {
+            "heif" | "hif" | "heic" | "avif" => Ok(FileExtension::HEIF),
+            "jpeg" | "jpg" => Ok(FileExtension::JPEG),
+            "jxl" => Ok(FileExtension::JXL),
+            "png" => Ok(FileExtension::PNG {
+                as_zTXt_chunk: true,
+            }),
+            "tiff" | "tif" => Ok(FileExtension::TIFF),
+            "webp" => Ok(FileExtension::WEBP),
             _ => io_error!(Unsupported, format!("Unknown file type: {}", input)),
         }
     }
 }
 
-pub fn 
-get_file_type
-(
-    path: &Path
-) 
--> Result<FileExtension, io::Error> 
-{
-    if !path.try_exists()? 
-    {
+pub fn get_file_type(path: &Path) -> Result<FileExtension, io::Error> {
+    if !path.try_exists()? {
         return io_error!(Other, "File does not exist!");
     }
 
-    let raw_file_type_str = path.extension()
-        .ok_or(io::Error::new(ErrorKind::Other, "Can't get file extension!"))?;
+    let raw_file_type_str = path.extension().ok_or(io::Error::new(
+        ErrorKind::Other,
+        "Can't get file extension!",
+    ))?;
 
-    let file_type_str = raw_file_type_str.to_str()
+    let file_type_str = raw_file_type_str
+        .to_str()
         .ok_or(io::Error::new(ErrorKind::Other, "Can't convert extension!"))?;
 
-    FileExtension::from_str(file_type_str.to_lowercase().as_str()).map_err(|e| 
-        {
-            io::Error::new(
-                ErrorKind::Unsupported,
-                format!("Unsupported file type: {file_type_str} - {e}"),
-            )
-        }
-    )
+    FileExtension::from_str(file_type_str.to_lowercase().as_str()).map_err(|e| {
+        io::Error::new(
+            ErrorKind::Unsupported,
+            format!("Unsupported file type: {file_type_str} - {e}"),
+        )
+    })
 }
 
 #[cfg(test)]
-mod tests 
-{
+mod tests {
     use super::*;
 
     #[test]
-    fn str_parse() 
-    {
+    fn str_parse() {
         let table = vec![
-            ("png",  FileExtension::PNG { as_zTXt_chunk: true }),
-            ("jpg",  FileExtension::JPEG),
+            (
+                "png",
+                FileExtension::PNG {
+                    as_zTXt_chunk: true,
+                },
+            ),
+            ("jpg", FileExtension::JPEG),
             ("jpeg", FileExtension::JPEG),
-            ("jxl",  FileExtension::JXL),
-            ("tif",  FileExtension::TIFF),
+            ("jxl", FileExtension::JXL),
+            ("tif", FileExtension::TIFF),
             ("tiff", FileExtension::TIFF),
             ("webp", FileExtension::WEBP),
         ];
 
-        for (input, expected) in table 
-        {
+        for (input, expected) in table {
             let result = FileExtension::from_str(input);
             assert!(result.is_ok(), "Failed to parse '{}'", input);
-            assert_eq!(result.unwrap(), expected, "Parsed value mismatch for '{}'", input);
+            assert_eq!(
+                result.unwrap(),
+                expected,
+                "Parsed value mismatch for '{}'",
+                input
+            );
         }
     }
 }

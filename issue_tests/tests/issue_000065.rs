@@ -22,19 +22,16 @@ use std::fs::remove_file;
 use std::path::Path;
 
 extern crate little_exif;
-use little_exif::metadata::Metadata;
 use little_exif::exif_tag::ExifTag;
+use little_exif::metadata::Metadata;
 
 #[test]
-fn
-string_tag_round_trip()
-{
+fn string_tag_round_trip() {
     let path_orig = Path::new("resources/issue_000065/20160513-A0012+001.tiff");
     let path_copy = Path::new("resources/issue_000065/20160513-A0012+001_copy.tiff");
 
     // Remove file from previous run and replace it with fresh copy
-    if let Err(error) = remove_file(&path_copy)
-    {
+    if let Err(error) = remove_file(&path_copy) {
         println!("{}", error);
     }
     copy(&path_orig, &path_copy).unwrap();
@@ -46,9 +43,7 @@ string_tag_round_trip()
     let orig_make_tag = orig_metadata.get_tag(&ExifTag::Make("".to_string())).next();
 
     // "Round-trip", updating some tag so something changes
-    metadata.set_tag(
-        ExifTag::LensMake("Colour".to_string())
-    );
+    metadata.set_tag(ExifTag::LensMake("Colour".to_string()));
     metadata.write_to_file(path_copy).unwrap();
 
     // Read again
@@ -57,7 +52,11 @@ string_tag_round_trip()
     let copy_make_tag = metadata_copy.get_tag(&ExifTag::Make("".to_string())).next();
 
     assert_eq!(
-        orig_make_tag.unwrap().value_as_u8_vec(&orig_metadata.get_endian()), 
-        copy_make_tag.unwrap().value_as_u8_vec(&metadata_copy.get_endian())
+        orig_make_tag
+            .unwrap()
+            .value_as_u8_vec(&orig_metadata.get_endian()),
+        copy_make_tag
+            .unwrap()
+            .value_as_u8_vec(&metadata_copy.get_endian())
     );
 }

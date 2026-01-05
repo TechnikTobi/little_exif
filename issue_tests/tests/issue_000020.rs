@@ -20,20 +20,20 @@ Can't recall :(
 
 use std::path::Path;
 
+extern crate little_exif;
 extern crate little_exif_0_4_3;
 extern crate little_exif_0_5_0;
-extern crate little_exif;
 
 #[test]
-#[should_panic (expected = "attempt to subtract with overflow")]
-fn
-read_exif_data_fails()
-{
+#[should_panic(expected = "attempt to subtract with overflow")]
+fn read_exif_data_fails() {
     let path = Path::new("resources/issue_000020/2017_emilio_meister_IMG_4436.JPG");
 
     let mut tag_counter = 0;
 
-    for _ in little_exif_0_4_3::metadata::Metadata::new_from_path(path).unwrap().data()
+    for _ in little_exif_0_4_3::metadata::Metadata::new_from_path(path)
+        .unwrap()
+        .data()
     {
         tag_counter += 1;
     }
@@ -42,14 +42,14 @@ read_exif_data_fails()
 }
 
 #[test]
-fn
-read_exif_data_fixed()
-{
+fn read_exif_data_fixed() {
     let path = Path::new("resources/issue_000020/2017_emilio_meister_IMG_4436.JPG");
 
     let mut tag_counter = 0;
 
-    for _ in little_exif_0_5_1::metadata::Metadata::new_from_path(path).unwrap().data()
+    for _ in little_exif_0_5_1::metadata::Metadata::new_from_path(path)
+        .unwrap()
+        .data()
     {
         tag_counter += 1;
     }
@@ -58,15 +58,12 @@ read_exif_data_fixed()
 }
 
 #[test]
-fn
-read_exif_data_current()
-{
+fn read_exif_data_current() {
     let path = Path::new("resources/issue_000020/2017_emilio_meister_IMG_4436.JPG");
 
     let mut tag_counter = 0;
 
-    for _ in &little_exif::metadata::Metadata::new_from_path(path).unwrap()
-    {
+    for _ in &little_exif::metadata::Metadata::new_from_path(path).unwrap() {
         tag_counter += 1;
     }
 

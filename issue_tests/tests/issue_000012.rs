@@ -20,20 +20,20 @@ updated to 1.65.0
 
 use std::path::Path;
 
+extern crate little_exif;
 extern crate little_exif_0_4_0;
 extern crate little_exif_0_5_1;
-extern crate little_exif;
 
 #[test]
-#[should_panic (expected = "assertion `left != right` failed\n  left: 0\n right: 0")]
-fn
-read_exif_data_fails()
-{
+#[should_panic(expected = "assertion `left != right` failed\n  left: 0\n right: 0")]
+fn read_exif_data_fails() {
     let path = Path::new("resources/issue_000012/PXL_20241007_142045194.jpg");
 
     let mut tag_counter = 0;
 
-    for _ in little_exif_0_4_0::metadata::Metadata::new_from_path(path).unwrap().data()
+    for _ in little_exif_0_4_0::metadata::Metadata::new_from_path(path)
+        .unwrap()
+        .data()
     {
         tag_counter += 1;
     }
@@ -42,15 +42,12 @@ read_exif_data_fails()
 }
 
 #[test]
-fn
-read_exif_data_fixed()
-{
+fn read_exif_data_fixed() {
     let path = Path::new("resources/issue_000012/PXL_20241007_142045194.jpg");
 
     let mut tag_counter = 0;
 
-    for _ in &little_exif_0_6_0::metadata::Metadata::new_from_path(path).unwrap()
-    {
+    for _ in &little_exif_0_6_0::metadata::Metadata::new_from_path(path).unwrap() {
         tag_counter += 1;
     }
 
@@ -58,15 +55,12 @@ read_exif_data_fixed()
 }
 
 #[test]
-fn
-read_exif_data_current()
-{
+fn read_exif_data_current() {
     let path = Path::new("resources/issue_000012/PXL_20241007_142045194.jpg");
 
     let mut tag_counter = 0;
 
-    for _ in &little_exif::metadata::Metadata::new_from_path(path).unwrap()
-    {
+    for _ in &little_exif::metadata::Metadata::new_from_path(path).unwrap() {
         tag_counter += 1;
     }
 
