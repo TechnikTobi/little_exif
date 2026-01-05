@@ -22,8 +22,7 @@ extern crate little_exif_0_6_0_beta_1;
 #[test]
 #[should_panic(expected = "No GPS tag found")]
 fn read_gps_latitude_fails() {
-    let path =
-        Path::new("resources/issue_000043/381105553-cb23b235-9905-440a-a85c-13f44d5818d4.jpg");
+    let path = Path::new("resources/issue_000043/381105553-cb23b235-9905-440a-a85c-13f44d5818d4.jpg");
     let metadata = little_exif_0_5_1::metadata::Metadata::new_from_path(path).unwrap();
     let tag = metadata.get_tag(&little_exif_0_5_1::exif_tag::ExifTag::GPSInfo(Vec::new()));
 
@@ -34,12 +33,9 @@ fn read_gps_latitude_fails() {
 
 #[test]
 fn read_gps_latitude_fixed() {
-    let path =
-        Path::new("resources/issue_000043/381105553-cb23b235-9905-440a-a85c-13f44d5818d4.jpg");
+    let path = Path::new("resources/issue_000043/381105553-cb23b235-9905-440a-a85c-13f44d5818d4.jpg");
     let metadata = little_exif_0_6_0_beta_1::metadata::Metadata::new_from_path(path).unwrap();
-    let mut tag = metadata.get_tag(&little_exif_0_6_0_beta_1::exif_tag::ExifTag::GPSLatitude(
-        Vec::new(),
-    ));
+    let mut tag = metadata.get_tag(&little_exif_0_6_0_beta_1::exif_tag::ExifTag::GPSLatitude(Vec::new()));
 
     if let Some(unwrapped_tag) = tag.next() {
         println!("{:?}", unwrapped_tag);
@@ -50,8 +46,7 @@ fn read_gps_latitude_fixed() {
 
 #[test]
 fn read_gps_latitude_current() {
-    let path =
-        Path::new("resources/issue_000043/381105553-cb23b235-9905-440a-a85c-13f44d5818d4.jpg");
+    let path = Path::new("resources/issue_000043/381105553-cb23b235-9905-440a-a85c-13f44d5818d4.jpg");
     let metadata = little_exif::metadata::Metadata::new_from_path(path).unwrap();
     let mut tag = metadata.get_tag(&little_exif::exif_tag::ExifTag::GPSLatitude(Vec::new()));
 

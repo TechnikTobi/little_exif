@@ -2,24 +2,18 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::fs::File;
-use std::io::Cursor;
-use std::io::Read;
-use std::io::Seek;
-use std::io::SeekFrom;
-use std::io::Write;
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
 use crate::endian::Endian;
 use crate::general_file_io::*;
 use crate::metadata::Metadata;
 use crate::u8conversion::*;
-use crate::util::insert_multiple_at;
-use crate::util::range_remove;
+use crate::util::{insert_multiple_at, range_remove};
 
 pub(crate) const JXL_SIGNATURE: [u8; 2] = [0xff, 0x0a];
-pub(crate) const ISO_BMFF_JXL_SIGNATURE: [u8; 12] = [
-    0x00, 0x00, 0x00, 0x0c, 0x4a, 0x58, 0x4c, 0x20, 0x0d, 0x0a, 0x87, 0x0a,
-];
+pub(crate) const ISO_BMFF_JXL_SIGNATURE: [u8; 12] =
+    [0x00, 0x00, 0x00, 0x0c, 0x4a, 0x58, 0x4c, 0x20, 0x0d, 0x0a, 0x87, 0x0a];
 
 pub(crate) const FTYP_BOX: [u8; 20] = [
     0x00, 0x00, 0x00, 0x14, // length of this box
@@ -119,12 +113,7 @@ pub(crate) fn clear_metadata(file_buffer: &mut Vec<u8>) -> Result<(), std::io::E
 
         if box_contains_exif(
             &mut Cursor::new(file_buffer[position + 8..position + 12].to_vec()),
-            [
-                type_buffer[0],
-                type_buffer[1],
-                type_buffer[2],
-                type_buffer[3],
-            ],
+            [type_buffer[0], type_buffer[1], type_buffer[2], type_buffer[3]],
         )? {
             range_remove(file_buffer, position, position + length);
         } else {
@@ -190,10 +179,7 @@ fn check_brob_type_for_exif<T: Seek + Read>(cursor: &mut T) -> Result<bool, std:
     return Ok(brob_type == EXIF);
 }
 
-fn box_contains_exif<T: Seek + Read>(
-    cursor: &mut T,
-    type_buffer: [u8; 4],
-) -> Result<bool, std::io::Error> {
+fn box_contains_exif<T: Seek + Read>(cursor: &mut T, type_buffer: [u8; 4]) -> Result<bool, std::io::Error> {
     if type_buffer == EXIF {
         return Ok(true);
     }
@@ -332,10 +318,7 @@ fn find_insert_position(file_buffer: &Vec<u8>) -> Result<usize, std::io::Error> 
     }
 }
 
-pub(crate) fn write_metadata(
-    file_buffer: &mut Vec<u8>,
-    metadata: &Metadata,
-) -> Result<(), std::io::Error> {
+pub(crate) fn write_metadata(file_buffer: &mut Vec<u8>, metadata: &Metadata) -> Result<(), std::io::Error> {
     if starts_with_jxl_signature(file_buffer) {
         // Need to modify the file_buffer first so that it is a ISO BMFF
         let mut new_file_buffer = Vec::new();

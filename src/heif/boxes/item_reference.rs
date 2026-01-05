@@ -1,18 +1,13 @@
 // Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::io::Read;
-use std::io::Seek;
+use std::io::{Read, Seek};
 
 use crate::endian::Endian;
-use crate::u8conversion::to_u8_vec_macro;
-use crate::u8conversion::U8conversion;
-use crate::util::read_be_u16;
-use crate::util::read_be_u32;
-
 use crate::heif::box_header::BoxHeader;
-use crate::heif::boxes::GenericIsoBox;
-use crate::heif::boxes::ParsableIsoBox;
+use crate::heif::boxes::{GenericIsoBox, ParsableIsoBox};
+use crate::u8conversion::{to_u8_vec_macro, U8conversion};
+use crate::util::{read_be_u16, read_be_u32};
 
 #[allow(non_snake_case)]
 #[derive(Debug)]
@@ -97,8 +92,7 @@ impl ItemReferenceBox {
         let mut references = Vec::new();
 
         while bytes_read < header.get_box_size() - header.get_header_size() {
-            let next_reference =
-                SingleItemTypeReferenceBox::construct_from_cursor_unboxed(cursor, &header)?;
+            let next_reference = SingleItemTypeReferenceBox::construct_from_cursor_unboxed(cursor, &header)?;
 
             bytes_read += next_reference.get_header().get_box_size();
 
@@ -167,8 +161,7 @@ impl GenericIsoBox for SingleItemTypeReferenceBox {
         if self.is_large {
             serialized.extend(to_u8_vec_macro!(u32, &self.from_item_ID, &Endian::Big).iter());
         } else {
-            serialized
-                .extend(to_u8_vec_macro!(u16, &(self.from_item_ID as u16), &Endian::Big).iter());
+            serialized.extend(to_u8_vec_macro!(u16, &(self.from_item_ID as u16), &Endian::Big).iter());
         }
 
         // reference_count
@@ -179,9 +172,7 @@ impl GenericIsoBox for SingleItemTypeReferenceBox {
             if self.is_large {
                 serialized.extend(to_u8_vec_macro!(u32, to_item_ID_entry, &Endian::Big).iter());
             } else {
-                serialized.extend(
-                    to_u8_vec_macro!(u16, &(*to_item_ID_entry as u16), &Endian::Big).iter(),
-                );
+                serialized.extend(to_u8_vec_macro!(u16, &(*to_item_ID_entry as u16), &Endian::Big).iter());
             }
         }
 

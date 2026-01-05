@@ -18,8 +18,7 @@ The explorer "Details" sow the new ImageDescription as "Betreff" (with different
 Solution: Can't recall :(
 */
 
-use std::fs::copy;
-use std::fs::remove_file;
+use std::fs::{copy, remove_file};
 use std::path::Path;
 
 extern crate little_exif;
@@ -65,11 +64,10 @@ fn read_write_read_exif_data_fixed() {
     }
     copy(png_path, cpy_path).unwrap();
 
-    let mut metadata =
-        little_exif_0_6_0_beta_1::metadata::Metadata::new_from_path(png_path).unwrap();
-    metadata.set_tag(
-        little_exif_0_6_0_beta_1::exif_tag::ExifTag::ImageDescription("Hello World!".to_string()),
-    );
+    let mut metadata = little_exif_0_6_0_beta_1::metadata::Metadata::new_from_path(png_path).unwrap();
+    metadata.set_tag(little_exif_0_6_0_beta_1::exif_tag::ExifTag::ImageDescription(
+        "Hello World!".to_string(),
+    ));
 
     metadata.write_to_file(cpy_path).unwrap();
 

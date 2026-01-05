@@ -2,9 +2,7 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::io;
-use std::io::ErrorKind;
-use std::io::Read;
-use std::io::Seek;
+use std::io::{ErrorKind, Read, Seek};
 use std::path::Path;
 use std::str::FromStr;
 
@@ -105,9 +103,7 @@ impl FromStr for FileExtension {
             "heif" | "hif" | "heic" | "avif" => Ok(FileExtension::HEIF),
             "jpeg" | "jpg" => Ok(FileExtension::JPEG),
             "jxl" => Ok(FileExtension::JXL),
-            "png" => Ok(FileExtension::PNG {
-                as_zTXt_chunk: true,
-            }),
+            "png" => Ok(FileExtension::PNG { as_zTXt_chunk: true }),
             "tiff" | "tif" => Ok(FileExtension::TIFF),
             "webp" => Ok(FileExtension::WEBP),
             _ => io_error!(Unsupported, format!("Unknown file type: {}", input)),
@@ -120,10 +116,9 @@ pub fn get_file_type(path: &Path) -> Result<FileExtension, io::Error> {
         return io_error!(Other, "File does not exist!");
     }
 
-    let raw_file_type_str = path.extension().ok_or(io::Error::new(
-        ErrorKind::Other,
-        "Can't get file extension!",
-    ))?;
+    let raw_file_type_str = path
+        .extension()
+        .ok_or(io::Error::new(ErrorKind::Other, "Can't get file extension!"))?;
 
     let file_type_str = raw_file_type_str
         .to_str()
@@ -144,12 +139,7 @@ mod tests {
     #[test]
     fn str_parse() {
         let table = vec![
-            (
-                "png",
-                FileExtension::PNG {
-                    as_zTXt_chunk: true,
-                },
-            ),
+            ("png", FileExtension::PNG { as_zTXt_chunk: true }),
             ("jpg", FileExtension::JPEG),
             ("jpeg", FileExtension::JPEG),
             ("jxl", FileExtension::JXL),
@@ -161,12 +151,7 @@ mod tests {
         for (input, expected) in table {
             let result = FileExtension::from_str(input);
             assert!(result.is_ok(), "Failed to parse '{}'", input);
-            assert_eq!(
-                result.unwrap(),
-                expected,
-                "Parsed value mismatch for '{}'",
-                input
-            );
+            assert_eq!(result.unwrap(), expected, "Parsed value mismatch for '{}'", input);
         }
     }
 }

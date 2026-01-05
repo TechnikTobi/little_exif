@@ -2,16 +2,12 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::fs::File;
-use std::io::Read;
-use std::io::Seek;
-use std::io::SeekFrom;
-use std::io::Write;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
 use log::debug;
 
-use super::riff_chunk::RiffChunk;
-use super::riff_chunk::RiffChunkDescriptor;
+use super::riff_chunk::{RiffChunk, RiffChunkDescriptor};
 use super::*;
 use crate::endian::*;
 use crate::general_file_io::*;
@@ -66,9 +62,9 @@ fn get_next_chunk(file: &mut File) -> Result<RiffChunk, std::io::Error> {
     bytes_read = file.read(&mut chunk_data_buffer).unwrap();
     if bytes_read != chunk_length as usize {
         return io_error!(
-			Other,
-			format!("Could not read RIFF chunk data! Expected {chunk_length} bytes but read {bytes_read}")
-		);
+            Other,
+            format!("Could not read RIFF chunk data! Expected {chunk_length} bytes but read {bytes_read}")
+        );
     }
 
     if let Ok(parsed_chunk_name) = chunk_name {
@@ -137,9 +133,7 @@ pub(crate) fn parse_webp(path: &Path) -> Result<Vec<RiffChunkDescriptor>, std::i
             // in the file and we are done with parsing.
             // If the subroutine fails due to other reasons, the error gets
             // propagated further.
-            if next_chunk_descriptor_result.as_ref().err().unwrap().kind()
-                == std::io::ErrorKind::UnexpectedEof
-            {
+            if next_chunk_descriptor_result.as_ref().err().unwrap().kind() == std::io::ErrorKind::UnexpectedEof {
                 break;
             } else {
                 return Err(next_chunk_descriptor_result.err().unwrap());
@@ -217,10 +211,7 @@ pub(crate) fn read_metadata(path: &Path) -> Result<Vec<u8>, std::io::Error> {
     loop {
         // Read the chunk type into the buffer
         if file.read(&mut header_buffer).unwrap() != 4 {
-            return io_error!(
-                Other,
-                "Could not read chunk type while traversing WebP file!"
-            );
+            return io_error!(Other, "Could not read chunk type while traversing WebP file!");
         }
         let chunk_type = String::from_u8_vec(&header_buffer.to_vec(), &Endian::Little);
 
@@ -318,10 +309,7 @@ fn convert_to_extended_format(file: &mut File) -> Result<(), std::io::Error> {
             todo!()
         }
         "VP8L" => get_dimension_info_from_vp8l_chunk(first_chunk.payload()),
-        _ => io_error!(
-            Other,
-            "Expected either 'VP8 ' or 'VP8L' chunk for conversion!"
-        ),
+        _ => io_error!(Other, "Expected either 'VP8 ' or 'VP8L' chunk for conversion!"),
     }?;
 
     let width_vec = to_u8_vec_macro!(u32, &width, &Endian::Little);
@@ -437,17 +425,9 @@ pub(crate) fn clear_metadata(path: &Path) -> Result<(), std::io::Error> {
     // the EXIF flag is set there
     let exif_check_result = check_exif_in_file(path);
     if exif_check_result.is_err() {
-        match exif_check_result
-            .as_ref()
-            .err()
-            .unwrap()
-            .to_string()
-            .as_str()
-        {
+        match exif_check_result.as_ref().err().unwrap().to_string().as_str() {
             "No EXIF chunk according to VP8X flags!" => return Ok(()),
-            "Expected first chunk of WebP file to be of type 'VP8X' but instead got VP8L!" => {
-                return Ok(())
-            }
+            "Expected first chunk of WebP file to be of type 'VP8X' but instead got VP8L!" => return Ok(()),
             _ => return Err(exif_check_result.err().unwrap()),
         }
     }
@@ -482,8 +462,7 @@ pub(crate) fn clear_metadata(path: &Path) -> Result<(), std::io::Error> {
         let old_file_byte_count = file.metadata().unwrap().len();
 
         // Get a backup of the current cursor position
-        let exif_chunk_start_cursor_position =
-            SeekFrom::Start(file.seek(SeekFrom::Current(0)).unwrap());
+        let exif_chunk_start_cursor_position = SeekFrom::Start(file.seek(SeekFrom::Current(0)).unwrap());
 
         // Skip the EXIF chunk ...
         file.seek(std::io::SeekFrom::Current(parsed_chunk_byte_count as i64))?;
@@ -588,8 +567,7 @@ pub(crate) fn write_metadata(path: &Path, metadata: &Metadata) -> Result<(), std
 
 #[cfg(test)]
 mod tests {
-    use std::fs::copy;
-    use std::fs::remove_file;
+    use std::fs::{copy, remove_file};
     use std::path::Path;
 
     #[test]

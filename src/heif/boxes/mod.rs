@@ -1,14 +1,12 @@
 // Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::io::Read;
-use std::io::Seek;
-
-use crate::debug_println;
-use crate::heif::boxes::item_reference::ItemReferenceBox;
+use std::io::{Read, Seek};
 
 use super::box_header::BoxHeader;
 use super::box_type::BoxType;
+use crate::debug_println;
+use crate::heif::boxes::item_reference::ItemReferenceBox;
 
 pub(super) mod iso;
 pub(super) mod item_info;
@@ -50,9 +48,7 @@ pub(super) fn read_box_based_on_header<T: Seek + Read>(
     };
 }
 
-pub(super) fn read_next_box<T: Seek + Read>(
-    cursor: &mut T,
-) -> Result<Box<dyn GenericIsoBox>, std::io::Error> {
+pub(super) fn read_next_box<T: Seek + Read>(cursor: &mut T) -> Result<Box<dyn GenericIsoBox>, std::io::Error> {
     let header = BoxHeader::read_box_header(cursor)?;
 
     debug_println!("{:?}", header);

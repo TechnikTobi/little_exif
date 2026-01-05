@@ -10,20 +10,13 @@ mod box_type;
 mod boxes;
 mod container;
 
-use std::io::Cursor;
-use std::io::Read;
-use std::io::Seek;
-use std::io::Write;
+use std::io::{Cursor, Read, Seek, Write};
 use std::path::Path;
 
-use crate::general_file_io::open_read_file;
-use crate::general_file_io::open_write_file;
-
-use crate::general_file_io::EXIF_HEADER;
-use crate::metadata::Metadata;
-
+use crate::general_file_io::{open_read_file, open_write_file, EXIF_HEADER};
 use crate::heif::boxes::read_next_box;
 use crate::heif::container::HeifContainer;
+use crate::metadata::Metadata;
 
 fn generic_read_metadata<T: Seek + Read>(cursor: &mut T) -> Result<Vec<u8>, std::io::Error> {
     let container = HeifContainer::construct_from_cursor_unboxed(cursor)?;
@@ -40,10 +33,7 @@ pub(crate) fn file_read_metadata(path: &Path) -> Result<Vec<u8>, std::io::Error>
     return generic_read_metadata(&mut file);
 }
 
-pub(crate) fn write_metadata(
-    file_buffer: &mut Vec<u8>,
-    metadata: &Metadata,
-) -> Result<(), std::io::Error> {
+pub(crate) fn write_metadata(file_buffer: &mut Vec<u8>, metadata: &Metadata) -> Result<(), std::io::Error> {
     let mut cursor = Cursor::new(file_buffer);
     let mut container = HeifContainer::construct_from_cursor_unboxed(&mut cursor)?;
 

@@ -24,8 +24,7 @@ extern crate little_exif_0_6_13;
 #[test]
 #[should_panic(expected = "assertion `left == right` failed\n  left: 67\n right: 58")]
 fn remove_tag_fails() {
-    let path =
-        Path::new("resources/issue_000066/464717007-c0dff257-5c39-4b7f-8908-9eeebb5a627c.jpeg");
+    let path = Path::new("resources/issue_000066/464717007-c0dff257-5c39-4b7f-8908-9eeebb5a627c.jpeg");
 
     let mut metadata = little_exif_0_6_12::metadata::Metadata::new_from_path(path).unwrap();
 
@@ -34,15 +33,9 @@ fn remove_tag_fails() {
         original_tag_counter += 1;
     }
 
-    metadata.remove_tag(little_exif_0_6_12::exif_tag::ExifTag::CreateDate(
-        "".to_string(),
-    ));
-    metadata.remove_tag(little_exif_0_6_12::exif_tag::ExifTag::ModifyDate(
-        "".to_string(),
-    ));
-    metadata.remove_tag(little_exif_0_6_12::exif_tag::ExifTag::DateTimeOriginal(
-        "".to_string(),
-    ));
+    metadata.remove_tag(little_exif_0_6_12::exif_tag::ExifTag::CreateDate("".to_string()));
+    metadata.remove_tag(little_exif_0_6_12::exif_tag::ExifTag::ModifyDate("".to_string()));
+    metadata.remove_tag(little_exif_0_6_12::exif_tag::ExifTag::DateTimeOriginal("".to_string()));
 
     // not present in file -> ignore it
     // metadata.remove_tag(little_exif_0_6_12::exif_tag::ExifTag::OffsetTime("".to_string()));
@@ -50,9 +43,7 @@ fn remove_tag_fails() {
     // not present in file -> ignore it
     // metadata.remove_tag(little_exif_0_6_12::exif_tag::ExifTag::OffsetTimeOriginal("".to_string()));
 
-    metadata.remove_tag(little_exif_0_6_12::exif_tag::ExifTag::SubSecTime(
-        "".to_string(),
-    ));
+    metadata.remove_tag(little_exif_0_6_12::exif_tag::ExifTag::SubSecTime("".to_string()));
     metadata.remove_tag(little_exif_0_6_12::exif_tag::ExifTag::SubSecTimeOriginal(
         "".to_string(),
     ));
@@ -73,8 +64,7 @@ fn remove_tag_fails() {
 
 #[test]
 fn remove_tag_fixed() {
-    let path =
-        Path::new("resources/issue_000066/464717007-c0dff257-5c39-4b7f-8908-9eeebb5a627c.jpeg");
+    let path = Path::new("resources/issue_000066/464717007-c0dff257-5c39-4b7f-8908-9eeebb5a627c.jpeg");
 
     let mut metadata = little_exif_0_6_13::metadata::Metadata::new_from_path(path).unwrap();
 
@@ -83,15 +73,9 @@ fn remove_tag_fixed() {
         original_tag_counter += 1;
     }
 
-    metadata.remove_tag(little_exif_0_6_13::exif_tag::ExifTag::CreateDate(
-        "".to_string(),
-    ));
-    metadata.remove_tag(little_exif_0_6_13::exif_tag::ExifTag::ModifyDate(
-        "".to_string(),
-    ));
-    metadata.remove_tag(little_exif_0_6_13::exif_tag::ExifTag::DateTimeOriginal(
-        "".to_string(),
-    ));
+    metadata.remove_tag(little_exif_0_6_13::exif_tag::ExifTag::CreateDate("".to_string()));
+    metadata.remove_tag(little_exif_0_6_13::exif_tag::ExifTag::ModifyDate("".to_string()));
+    metadata.remove_tag(little_exif_0_6_13::exif_tag::ExifTag::DateTimeOriginal("".to_string()));
 
     // not present in file -> ignore it
     // metadata.remove_tag(little_exif_0_6_13::exif_tag::ExifTag::OffsetTime("".to_string()));
@@ -99,9 +83,7 @@ fn remove_tag_fixed() {
     // not present in file -> ignore it
     // metadata.remove_tag(little_exif_0_6_13::exif_tag::ExifTag::OffsetTimeOriginal("".to_string()));
 
-    metadata.remove_tag(little_exif_0_6_13::exif_tag::ExifTag::SubSecTime(
-        "".to_string(),
-    ));
+    metadata.remove_tag(little_exif_0_6_13::exif_tag::ExifTag::SubSecTime("".to_string()));
     metadata.remove_tag(little_exif_0_6_13::exif_tag::ExifTag::SubSecTimeOriginal(
         "".to_string(),
     ));
@@ -122,8 +104,7 @@ fn remove_tag_fixed() {
 
 #[test]
 fn remove_tag_current() {
-    let path =
-        Path::new("resources/issue_000066/464717007-c0dff257-5c39-4b7f-8908-9eeebb5a627c.jpeg");
+    let path = Path::new("resources/issue_000066/464717007-c0dff257-5c39-4b7f-8908-9eeebb5a627c.jpeg");
 
     let mut metadata = little_exif::metadata::Metadata::new_from_path(path).unwrap();
 
@@ -134,9 +115,7 @@ fn remove_tag_current() {
 
     metadata.remove_tag(little_exif::exif_tag::ExifTag::CreateDate("".to_string()));
     metadata.remove_tag(little_exif::exif_tag::ExifTag::ModifyDate("".to_string()));
-    metadata.remove_tag(little_exif::exif_tag::ExifTag::DateTimeOriginal(
-        "".to_string(),
-    ));
+    metadata.remove_tag(little_exif::exif_tag::ExifTag::DateTimeOriginal("".to_string()));
 
     // not present in file -> ignore it
     // metadata.remove_tag(little_exif::exif_tag::ExifTag::OffsetTime("".to_string()));
@@ -145,12 +124,8 @@ fn remove_tag_current() {
     // metadata.remove_tag(little_exif::exif_tag::ExifTag::OffsetTimeOriginal("".to_string()));
 
     metadata.remove_tag(little_exif::exif_tag::ExifTag::SubSecTime("".to_string()));
-    metadata.remove_tag(little_exif::exif_tag::ExifTag::SubSecTimeOriginal(
-        "".to_string(),
-    ));
-    metadata.remove_tag(little_exif::exif_tag::ExifTag::SubSecTimeDigitized(
-        "".to_string(),
-    ));
+    metadata.remove_tag(little_exif::exif_tag::ExifTag::SubSecTimeOriginal("".to_string()));
+    metadata.remove_tag(little_exif::exif_tag::ExifTag::SubSecTimeDigitized("".to_string()));
 
     // not present in file -> ignore it
     // metadata.remove_tag(little_exif::exif_tag::ExifTag::Copyright("".to_string()));

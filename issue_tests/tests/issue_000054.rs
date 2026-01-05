@@ -25,8 +25,7 @@ extern crate little_exif_0_6_4;
 #[test]
 #[should_panic(expected = "Out of bounds access")]
 fn read_exif_data_fails() {
-    let path =
-        Path::new("resources/issue_000054/437532191-50f650a1-788c-44a4-a535-526d10d297ec.png");
+    let path = Path::new("resources/issue_000054/437532191-50f650a1-788c-44a4-a535-526d10d297ec.png");
 
     let mut tag_counter = 0;
 
@@ -40,8 +39,7 @@ fn read_exif_data_fails() {
 
 #[test]
 fn read_exif_data_fixed() {
-    let path =
-        Path::new("resources/issue_000054/437532191-50f650a1-788c-44a4-a535-526d10d297ec.png");
+    let path = Path::new("resources/issue_000054/437532191-50f650a1-788c-44a4-a535-526d10d297ec.png");
 
     let mut tag_counter = 0;
 
@@ -55,8 +53,7 @@ fn read_exif_data_fixed() {
 
 #[test]
 fn read_exif_data_current() {
-    let path =
-        Path::new("resources/issue_000054/437532191-50f650a1-788c-44a4-a535-526d10d297ec.png");
+    let path = Path::new("resources/issue_000054/437532191-50f650a1-788c-44a4-a535-526d10d297ec.png");
 
     let mut tag_counter = 0;
 

@@ -24,9 +24,7 @@ extern crate little_exif_0_6_0_beta_1;
 extern crate little_exif_0_6_0_beta_2;
 
 #[test]
-#[should_panic(
-    expected = "assertion `left == right` failed\n  left: Some(1313426255)\n right: None"
-)]
+#[should_panic(expected = "assertion `left == right` failed\n  left: Some(1313426255)\n right: None")]
 fn read_exif_data_fails() {
     let path = Path::new("resources/issue_000031/DSC22278.JPG");
 

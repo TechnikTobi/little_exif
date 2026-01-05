@@ -1,9 +1,7 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::fs::copy;
-use std::fs::read;
-use std::fs::remove_file;
+use std::fs::{copy, read, remove_file};
 use std::path::Path;
 
 extern crate little_exif;
@@ -58,8 +56,7 @@ fn new_from_path_panic_not_supported() {
 fn new_from_vec() {
     let image_data = read("tests/read_sample.jpg").unwrap();
 
-    let _ =
-        Metadata::new_from_vec(&image_data, little_exif::filetype::FileExtension::JPEG).unwrap();
+    let _ = Metadata::new_from_vec(&image_data, little_exif::filetype::FileExtension::JPEG).unwrap();
 }
 
 fn from_u8_vec_to_u32_le(data: &Vec<u8>) -> u32 {
@@ -88,15 +85,9 @@ fn read_from_file_webp() -> Result<(), std::io::Error> {
         panic!("Could not read ISO tag!")
     }
 
-    if let Some(image_description_tag) = metadata
-        .get_tag(&ExifTag::ImageDescription(String::new()))
-        .next()
-    {
+    if let Some(image_description_tag) = metadata.get_tag(&ExifTag::ImageDescription(String::new())).next() {
         assert_eq!(
-            String::from_utf8(
-                image_description_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)
-            )
-            .unwrap(),
+            String::from_utf8(image_description_tag.value_as_u8_vec(&little_exif::endian::Endian::Little)).unwrap(),
             "Hello World!\0".to_string()
         );
     } else {
@@ -157,10 +148,7 @@ fn read_from_file_avif() -> Result<(), std::io::Error> {
 
     let metadata = raw_metadata.unwrap();
 
-    if let Some(desc_tag) = metadata
-        .get_tag(&ExifTag::ImageDescription(String::new()))
-        .next()
-    {
+    if let Some(desc_tag) = metadata.get_tag(&ExifTag::ImageDescription(String::new())).next() {
         if let ExifTag::ImageDescription(string) = desc_tag {
             assert_eq!(string, &String::from("test"));
         } else {
@@ -253,9 +241,7 @@ fn as_u8_vec_png() {
         "as_u8_vec_png: {}",
         get_test_metadata()
             .unwrap()
-            .as_u8_vec(little_exif::filetype::FileExtension::PNG {
-                as_zTXt_chunk: false
-            })
+            .as_u8_vec(little_exif::filetype::FileExtension::PNG { as_zTXt_chunk: false })
             .unwrap()
             .iter()
             .map(|char_value| *char_value as char)
@@ -271,9 +257,7 @@ fn as_u8_vec_png_zTXt() {
         "as_u8_vec_png_zTXt:             {}",
         get_test_metadata()
             .unwrap()
-            .as_u8_vec(little_exif::filetype::FileExtension::PNG {
-                as_zTXt_chunk: true
-            })
+            .as_u8_vec(little_exif::filetype::FileExtension::PNG { as_zTXt_chunk: true })
             .unwrap()
             .iter()
             .map(|char_value| *char_value as char)
@@ -354,10 +338,7 @@ fn file_clear_metadata_avif() -> Result<(), std::io::Error> {
     if let Err(error) = remove_file("tests/read_sample_copy_no_metadata.avif") {
         println!("{}", error);
     }
-    copy(
-        "tests/read_sample.avif",
-        "tests/read_sample_copy_no_metadata.avif",
-    )?;
+    copy("tests/read_sample.avif", "tests/read_sample_copy_no_metadata.avif")?;
 
     // Clear metadata
     Metadata::file_clear_metadata(Path::new("tests/read_sample_copy_no_metadata.avif"))?;
@@ -482,10 +463,7 @@ fn write_to_file_webp_extended() -> Result<(), std::io::Error> {
     if let Err(error) = remove_file("tests/sample2_extended_copy.webp") {
         println!("{}", error);
     }
-    copy(
-        "tests/sample2_extended.webp",
-        "tests/sample2_extended_copy.webp",
-    )?;
+    copy("tests/sample2_extended.webp", "tests/sample2_extended_copy.webp")?;
 
     // Create newly created & filled metadata struct
     let metadata = get_test_metadata()?;
@@ -608,10 +586,7 @@ fn compare_write_to_generic(
     // Compare their contents
     for i in 0..compare_me.len() {
         if compare_me[i] != image_data[i] {
-            panic!(
-                "Data differs! file: {} vs vec: {}",
-                compare_me[i], image_data[i]
-            );
+            panic!("Data differs! file: {} vs vec: {}", compare_me[i], image_data[i]);
         }
     }
 
@@ -644,9 +619,7 @@ fn compare_write_to_png() -> Result<(), std::io::Error> {
         "tests/sample2.png",
         "tests/sample2_copy1.png",
         "tests/sample2_copy2.png",
-        little_exif::filetype::FileExtension::PNG {
-            as_zTXt_chunk: false,
-        },
+        little_exif::filetype::FileExtension::PNG { as_zTXt_chunk: false },
     );
 }
 

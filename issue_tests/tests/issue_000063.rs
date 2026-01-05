@@ -151,9 +151,7 @@ pub fn remove_private_exif(image_vec: &[u8]) -> Result<Vec<u8>, u8> {
 
     println!("Metadata::guess_image_type called 2");
     let file_type2 = match guess_image_type(&output_vec) {
-        Some(FileExtension::PNG { .. }) => FileExtension::PNG {
-            as_zTXt_chunk: false,
-        },
+        Some(FileExtension::PNG { .. }) => FileExtension::PNG { as_zTXt_chunk: false },
         Some(FileExtension::JPEG) => FileExtension::JPEG,
         Some(FileExtension::WEBP) => FileExtension::WEBP,
         _ => file_type,
@@ -178,9 +176,7 @@ fn guess_image_type(data: &[u8]) -> Option<FileExtension> {
     }
 
     if data.len() >= 8 && data[0..8] == [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] {
-        return Some(FileExtension::PNG {
-            as_zTXt_chunk: false,
-        });
+        return Some(FileExtension::PNG { as_zTXt_chunk: false });
     }
 
     if data.len() >= 12 && &data[0..4] == b"RIFF" && &data[8..12] == b"WEBP" {

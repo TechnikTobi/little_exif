@@ -20,10 +20,7 @@ pub(crate) fn get_keyword_from_text_chunk(chunk_data: &[u8]) -> String {
     return String::from_utf8(keyword_buffer).unwrap();
 }
 
-pub(crate) fn get_data_from_text_chunk(
-    chunk_name: &str,
-    chunk_data: &[u8],
-) -> Result<Vec<u8>, std::io::Error> {
+pub(crate) fn get_data_from_text_chunk(chunk_name: &str, chunk_data: &[u8]) -> Result<Vec<u8>, std::io::Error> {
     // The keyword length is required in all cases for determining the start
     // of the actual data
     let keyword_length = get_keyword_from_text_chunk(chunk_data).len();

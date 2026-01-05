@@ -1,16 +1,12 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::io::BufReader;
-use std::io::BufWriter;
+use std::io::{BufReader, BufWriter};
 use std::path::Path;
 
-use crate::general_file_io::open_read_file;
-use crate::general_file_io::open_write_file;
+use super::{generic_read_metadata, generic_write_metadata};
+use crate::general_file_io::{open_read_file, open_write_file};
 use crate::metadata::Metadata;
-
-use super::generic_read_metadata;
-use super::generic_write_metadata;
 
 pub(crate) fn read_metadata(path: &Path) -> Result<Vec<u8>, std::io::Error> {
     let mut buffered_file = BufReader::new(open_read_file(path)?);

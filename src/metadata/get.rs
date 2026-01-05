@@ -1,12 +1,9 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+use super::{Endian, ImageFileDirectory, Metadata};
 use crate::exif_tag::ExifTag;
 use crate::ifd::ExifTagGroup;
-
-use super::Endian;
-use super::ImageFileDirectory;
-use super::Metadata;
 
 impl Metadata {
     /// Gets the endianness of the metadata
@@ -49,11 +46,7 @@ impl Metadata {
     /// Gets an image file directory that is of a specific group an is
     /// associated with a certain generic IFD number as a mutable reference.
     /// If the desired IFD does not exist yet it gets created.
-    pub fn get_ifd_mut(
-        &mut self,
-        group: ExifTagGroup,
-        generic_ifd_nr: u32,
-    ) -> &mut ImageFileDirectory {
+    pub fn get_ifd_mut(&mut self, group: ExifTagGroup, generic_ifd_nr: u32) -> &mut ImageFileDirectory {
         if self
             .image_file_directories
             .iter()
@@ -108,9 +101,7 @@ impl<'a> Iterator for GetTagIterator<'a> {
         while self.current_ifd_index < self.metadata.image_file_directories.len() {
             // First: Check the group, assuming it is provided
             if let Some(given_group) = self.group {
-                if given_group
-                    != self.metadata.image_file_directories[self.current_ifd_index].get_ifd_type()
-                {
+                if given_group != self.metadata.image_file_directories[self.current_ifd_index].get_ifd_type() {
                     self.current_ifd_index += 1;
                     continue;
                 }
@@ -126,8 +117,7 @@ impl<'a> Iterator for GetTagIterator<'a> {
             {
                 self.current_tag_index += 1;
 
-                if self.metadata.image_file_directories[self.current_ifd_index].get_tags()
-                    [self.current_tag_index - 1]
+                if self.metadata.image_file_directories[self.current_ifd_index].get_tags()[self.current_tag_index - 1]
                     .as_u16()
                     == self.tag_hex_value
                 {

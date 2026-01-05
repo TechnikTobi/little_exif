@@ -7,38 +7,22 @@ mod text;
 
 use std::collections::VecDeque;
 use std::fs::File;
-use std::io::Cursor;
-use std::io::Read;
-use std::io::Seek;
-use std::io::SeekFrom;
-use std::io::Write;
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::Neg;
 use std::path::Path;
 
-use crc::Crc;
-use crc::CRC_32_ISO_HDLC;
+use crc::{Crc, CRC_32_ISO_HDLC};
 use log::warn;
 use miniz_oxide::deflate::compress_to_vec_zlib;
-use text::construct_similar_with_new_data;
-use text::get_data_from_text_chunk;
+use text::{construct_similar_with_new_data, get_data_from_text_chunk};
 
-use crate::general_file_io::io_error;
-use crate::general_file_io::open_read_file;
-use crate::general_file_io::BIG_ENDIAN_INFO;
-use crate::general_file_io::EXIF_HEADER;
-use crate::general_file_io::LITTLE_ENDIAN_INFO;
-use crate::general_file_io::NEWLINE;
-use crate::general_file_io::SPACE;
-
+use crate::general_file_io::{
+    io_error, open_read_file, BIG_ENDIAN_INFO, EXIF_HEADER, LITTLE_ENDIAN_INFO, NEWLINE, SPACE,
+};
 use crate::metadata::Metadata;
-
 use crate::png::chunk::PngChunk;
-use crate::png::read::read_chunk_crc;
-use crate::png::read::read_chunk_data;
-use crate::png::read::read_chunk_length;
-use crate::png::read::read_chunk_name;
+use crate::png::read::{read_chunk_crc, read_chunk_data, read_chunk_length, read_chunk_name};
 use crate::png::text::get_keyword_from_text_chunk;
-
 use crate::util::range_remove;
 use crate::xmp::remove_exif_from_xmp;
 
@@ -63,7 +47,7 @@ pub(crate) const XML_COM_ADOBE_XMP: [u8; 17] = [
 // version of the EXIF data
 // Independent of endian as this does not affect the ordering of values WITHIN a byte
 #[rustfmt::skip]
-fn encode_byte(byte: &u8) -> [u8; 2] 
+fn encode_byte(byte: &u8) -> [u8; 2]
 {
 	[
 		byte / 16 + (if byte / 16 < 10 {'0' as u8} else {'a' as u8 - 10}),
@@ -224,10 +208,7 @@ fn generic_read_metadata<T: Seek + Read>(
                 let keyword = get_keyword_from_text_chunk(&chunk_data);
                 let mut has_raw_profile_type_exif = false;
                 if keyword.len() == RAW_PROFILE_TYPE_EXIF.len() {
-                    has_raw_profile_type_exif = keyword
-                        .bytes()
-                        .zip(RAW_PROFILE_TYPE_EXIF.iter())
-                        .all(|(a, b)| a == *b);
+                    has_raw_profile_type_exif = keyword.bytes().zip(RAW_PROFILE_TYPE_EXIF.iter()).all(|(a, b)| a == *b);
                 }
 
                 if !has_raw_profile_type_exif {
@@ -264,10 +245,7 @@ pub(crate) fn file_clear_metadata(path: &Path) -> Result<(), std::io::Error> {
 
     // Write the file
     // Possible to optimize further by returning the purged bytestream itself?
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .open(path)?;
+    let mut file = std::fs::OpenOptions::new().write(true).truncate(true).open(path)?;
     file.write_all(&file_buffer)?;
 
     return Ok(());
@@ -309,19 +287,13 @@ pub(crate) fn clear_metadata(file_buffer: &mut Vec<u8>) -> Result<(), std::io::E
                 // Compare to the "Raw profile type exif" string constant
                 let mut has_raw_profile_type_exif = false;
                 if keyword.len() == RAW_PROFILE_TYPE_EXIF.len() {
-                    has_raw_profile_type_exif = keyword
-                        .bytes()
-                        .zip(RAW_PROFILE_TYPE_EXIF.iter())
-                        .all(|(a, b)| a == *b);
+                    has_raw_profile_type_exif = keyword.bytes().zip(RAW_PROFILE_TYPE_EXIF.iter()).all(|(a, b)| a == *b);
                 }
 
                 // Compare to the "XML:com.adobe.xmp" string constant
                 let mut has_xml_com_adobe_xmp = false;
                 if keyword.len() == XML_COM_ADOBE_XMP.len() {
-                    has_xml_com_adobe_xmp = keyword
-                        .bytes()
-                        .zip(XML_COM_ADOBE_XMP.iter())
-                        .all(|(a, b)| a == *b);
+                    has_xml_com_adobe_xmp = keyword.bytes().zip(XML_COM_ADOBE_XMP.iter()).all(|(a, b)| a == *b);
                 }
 
                 if has_xml_com_adobe_xmp {
@@ -378,10 +350,7 @@ fn remove_chunk_at(cursor: &mut Cursor<&mut Vec<u8>>) -> Result<(), std::io::Err
     return Ok(());
 }
 
-fn clear_exif_from_xmp_metadata(
-    cursor: &mut Cursor<&mut Vec<u8>>,
-    chunk_data: &[u8],
-) -> Result<(), std::io::Error> {
+fn clear_exif_from_xmp_metadata(cursor: &mut Cursor<&mut Vec<u8>>, chunk_data: &[u8]) -> Result<(), std::io::Error> {
     // Read the chunk name and seek back
     let _ = read_chunk_length(cursor)?;
     let chunk_name = read_chunk_name(cursor)?;
@@ -395,18 +364,14 @@ fn clear_exif_from_xmp_metadata(
     .unwrap();
 
     // Construct new chunk data field
-    let new_chunk_data =
-        construct_similar_with_new_data(chunk_name.as_str(), chunk_data, &clean_xmp_data)?;
+    let new_chunk_data = construct_similar_with_new_data(chunk_name.as_str(), chunk_data, &clean_xmp_data)?;
 
     // Replace chunk
     remove_chunk_at(cursor)?;
     return write_chunk(cursor, chunk_name.as_str(), &new_chunk_data);
 }
 
-pub(crate) fn write_metadata(
-    file_buffer: &mut Vec<u8>,
-    metadata: &Metadata,
-) -> Result<(), std::io::Error> {
+pub(crate) fn write_metadata(file_buffer: &mut Vec<u8>, metadata: &Metadata) -> Result<(), std::io::Error> {
     // First clear the existing metadata
     // This also parses the PNG and checks its validity, so it is safe to
     // assume that is, in fact, a usable PNG file
@@ -431,10 +396,7 @@ pub(crate) fn file_write_metadata(path: &Path, metadata: &Metadata) -> Result<()
 
     // Write the file
     // Possible to optimize further by returning the purged bytestream itself?
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .open(path)?;
+    let mut file = std::fs::OpenOptions::new().write(true).truncate(true).open(path)?;
     file.write_all(&file_buffer)?;
 
     return Ok(());
@@ -485,10 +447,7 @@ fn write_chunk<T: Seek + Read + Write>(
 }
 
 #[allow(non_snake_case)]
-fn generic_write_metadata<T: Seek + Read + Write>(
-    cursor: &mut T,
-    metadata: &Metadata,
-) -> Result<(), std::io::Error> {
+fn generic_write_metadata<T: Seek + Read + Write>(cursor: &mut T, metadata: &Metadata) -> Result<(), std::io::Error> {
     cursor.seek(SeekFrom::Start(8))?;
 
     let mut IHDR_length = 0u32;
@@ -566,9 +525,7 @@ fn decode_metadata_png(encoded_data: &Vec<u8>) -> Result<Vec<u8>, std::io::Error
             continue;
         }
 
-        let value_string = "".to_owned()
-            + &(other_byte.unwrap() as char).to_string()
-            + &(*byte as char).to_string();
+        let value_string = "".to_owned() + &(other_byte.unwrap() as char).to_string() + &(*byte as char).to_string();
 
         if let Ok(value) = u8::from_str_radix(value_string.trim(), 16) {
             exif_all.push_back(value);
@@ -649,10 +606,8 @@ fn decode_metadata_png(encoded_data: &Vec<u8>) -> Result<Vec<u8>, std::io::Error
     let mut given_exif_len = 0u64;
     for i in 0..std::cmp::min(4, pop_storage.len()) {
         let re_encoded_byte = encode_byte(&pop_storage[pop_storage.len() - 1 - i]);
-        let tens_place =
-            u64::from_str_radix(&(re_encoded_byte[0] as char).to_string(), 10).unwrap();
-        let ones_place =
-            u64::from_str_radix(&(re_encoded_byte[1] as char).to_string(), 10).unwrap();
+        let tens_place = u64::from_str_radix(&(re_encoded_byte[0] as char).to_string(), 10).unwrap();
+        let ones_place = u64::from_str_radix(&(re_encoded_byte[1] as char).to_string(), 10).unwrap();
         given_exif_len = given_exif_len + tens_place * 10 * 10_u64.pow((2 * i).try_into().unwrap());
         given_exif_len = given_exif_len + ones_place * 1 * 10_u64.pow((2 * i).try_into().unwrap());
     }
@@ -708,9 +663,7 @@ mod tests {
 
     #[test]
     fn parsing_test() {
-        let chunks =
-            crate::png::file_parse_png(std::path::Path::new("tests/png_parse_test_image.png"))
-                .unwrap();
+        let chunks = crate::png::file_parse_png(std::path::Path::new("tests/png_parse_test_image.png")).unwrap();
         assert_eq!(chunks.len(), 3);
     }
 }

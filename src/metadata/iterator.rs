@@ -1,9 +1,8 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use crate::exif_tag::ExifTag;
-
 use super::Metadata;
+use crate::exif_tag::ExifTag;
 
 impl<'a> IntoIterator for &'a Metadata {
     type Item = &'a ExifTag;

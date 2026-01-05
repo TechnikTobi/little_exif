@@ -1,25 +1,18 @@
 // Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::io::Cursor;
-use std::io::Read;
-use std::io::Seek;
+use std::io::{Cursor, Read, Seek};
 
+use super::read_box_based_on_header;
 use crate::endian::Endian;
-use crate::u8conversion::to_u8_vec_macro;
-use crate::u8conversion::U8conversion;
-use crate::util::read_be_u32;
-
 use crate::heif::box_header::BoxHeader;
 use crate::heif::box_type::BoxType;
-use crate::heif::boxes::GenericIsoBox;
-use crate::heif::boxes::ParsableIsoBox;
-
 use crate::heif::boxes::item_info::ItemInfoBox;
 use crate::heif::boxes::item_location::ItemLocationBox;
 use crate::heif::boxes::item_reference::ItemReferenceBox;
-
-use super::read_box_based_on_header;
+use crate::heif::boxes::{GenericIsoBox, ParsableIsoBox};
+use crate::u8conversion::{to_u8_vec_macro, U8conversion};
+use crate::util::read_be_u32;
 
 #[allow(dead_code)]
 pub struct MetaBox {
@@ -122,8 +115,7 @@ impl ParsableIsoBox for MetaBox {
 
         // Read in the mandatory handler box
         let handler_box_header = BoxHeader::read_box_header(&mut local_cursor)?;
-        let handler_box =
-            HandlerBox::construct_from_cursor_unboxed(&mut local_cursor, handler_box_header)?;
+        let handler_box = HandlerBox::construct_from_cursor_unboxed(&mut local_cursor, handler_box_header)?;
 
         // Read in other boxes
         let mut other_boxes = Vec::new();
@@ -158,11 +150,7 @@ impl HandlerBox {
     ) -> Result<Self, std::io::Error> {
         let pre_defined = read_be_u32(cursor)?;
         let handler_type = read_be_u32(cursor)?;
-        let reserved = [
-            read_be_u32(cursor)?,
-            read_be_u32(cursor)?,
-            read_be_u32(cursor)?,
-        ];
+        let reserved = [read_be_u32(cursor)?, read_be_u32(cursor)?, read_be_u32(cursor)?];
 
         let number_of_bytes_that_form_the_name = header.get_box_size()
             - header.get_header_size() // header

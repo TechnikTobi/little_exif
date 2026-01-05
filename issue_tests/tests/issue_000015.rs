@@ -39,8 +39,7 @@ are empty now.
 Solution: Can't recall :(
 */
 
-use std::fs::copy;
-use std::fs::remove_file;
+use std::fs::{copy, remove_file};
 use std::path::Path;
 
 extern crate little_exif;

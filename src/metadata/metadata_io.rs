@@ -6,19 +6,10 @@ use std::path::Path;
 
 use log::warn;
 
-use crate::filetype::get_file_type;
-use crate::filetype::FileExtension;
-use crate::general_file_io::io_error;
-
-use crate::general_file_io::open_read_file;
-use crate::heif;
-use crate::jpg;
-use crate::jxl;
-use crate::png;
-use crate::tiff;
-use crate::webp;
-
 use super::Metadata;
+use crate::filetype::{get_file_type, FileExtension};
+use crate::general_file_io::{io_error, open_read_file};
+use crate::{heif, jpg, jxl, png, tiff, webp};
 
 impl Metadata {
     /// Constructs a new `Metadata` object with the metadata from an image that is stored as a `Vec<u8>`
@@ -34,10 +25,7 @@ impl Metadata {
     /// let mut metadata: Metadata = Metadata::new_from_vec(&file_data, FileExtension::JPEG).unwrap();
     /// ```
     #[allow(unreachable_patterns)]
-    pub fn new_from_vec(
-        file_buffer: &Vec<u8>,
-        file_type: FileExtension,
-    ) -> Result<Metadata, std::io::Error> {
+    pub fn new_from_vec(file_buffer: &Vec<u8>, file_type: FileExtension) -> Result<Metadata, std::io::Error> {
         // First, try to determine the file type automatically
         let mut cursor = Cursor::new(file_buffer);
         let auto_detected_file_type = FileExtension::auto_detect(&mut cursor);
@@ -63,10 +51,7 @@ impl Metadata {
             _ => {
                 return io_error!(
                     Other,
-                    format!(
-                        "Function 'new_from_vec' not yet implemented for {:?}",
-                        file_type
-                    )
+                    format!("Function 'new_from_vec' not yet implemented for {:?}", file_type)
                 )
             }
         };
@@ -132,10 +117,7 @@ impl Metadata {
             _ => {
                 return io_error!(
                     Other,
-                    format!(
-                        "Function 'new_from_path' not yet implemented for {:?}",
-                        file_type
-                    )
+                    format!("Function 'new_from_path' not yet implemented for {:?}", file_type)
                 )
             }
         };
@@ -144,10 +126,7 @@ impl Metadata {
     }
 
     #[allow(unreachable_patterns)]
-    pub fn clear_metadata(
-        file_buffer: &mut Vec<u8>,
-        file_type: FileExtension,
-    ) -> Result<(), std::io::Error> {
+    pub fn clear_metadata(file_buffer: &mut Vec<u8>, file_type: FileExtension) -> Result<(), std::io::Error> {
         match file_type {
             FileExtension::HEIF => heif::clear_metadata(file_buffer),
             FileExtension::JPEG => jpg::clear_metadata(file_buffer),
@@ -158,10 +137,7 @@ impl Metadata {
             _ => {
                 return io_error!(
                     Other,
-                    format!(
-                        "Function 'clear_metadata' not yet implemented for {:?}",
-                        file_type
-                    )
+                    format!("Function 'clear_metadata' not yet implemented for {:?}", file_type)
                 )
             }
         }
@@ -172,22 +148,18 @@ impl Metadata {
     /// for other software to see e.g. the ImageDescription written in the
     /// APP1 exif segment by little_exif
     #[allow(unreachable_patterns)]
-    pub fn clear_app12_segment(
-        file_buffer: &mut Vec<u8>,
-        file_type: FileExtension,
-    ) -> Result<(), std::io::Error> {
-        match file_type
-        {
-            FileExtension::JPEG
-                =>  jpg::clear_segment(file_buffer, 0xec),
-            _
-                => return io_error!(
+    pub fn clear_app12_segment(file_buffer: &mut Vec<u8>, file_type: FileExtension) -> Result<(), std::io::Error> {
+        match file_type {
+            FileExtension::JPEG => jpg::clear_segment(file_buffer, 0xec),
+            _ => {
+                return io_error!(
                     Other,
                     format!(
-                        "Function 'clear_app12_segment' not available for {:?} (only relevant for JPEG)", 
+                        "Function 'clear_app12_segment' not available for {:?} (only relevant for JPEG)",
                         file_type
                     )
-                ),
+                )
+            }
         }
     }
 
@@ -196,22 +168,18 @@ impl Metadata {
     /// for other software to see e.g. the ImageDescription written in the
     /// APP1 exif segment by little_exif
     #[allow(unreachable_patterns)]
-    pub fn clear_app13_segment(
-        file_buffer: &mut Vec<u8>,
-        file_type: FileExtension,
-    ) -> Result<(), std::io::Error> {
-        match file_type
-        {
-            FileExtension::JPEG
-                =>  jpg::clear_segment(file_buffer, 0xed),
-            _
-                => return io_error!(
+    pub fn clear_app13_segment(file_buffer: &mut Vec<u8>, file_type: FileExtension) -> Result<(), std::io::Error> {
+        match file_type {
+            FileExtension::JPEG => jpg::clear_segment(file_buffer, 0xed),
+            _ => {
+                return io_error!(
                     Other,
                     format!(
-                        "Function 'clear_app13_segment' not available for {:?} (only relevant for JPEG)", 
+                        "Function 'clear_app13_segment' not available for {:?} (only relevant for JPEG)",
                         file_type
                     )
-                ),
+                )
+            }
         }
     }
 
@@ -223,18 +191,17 @@ impl Metadata {
     pub fn file_clear_app12_segment(path: &Path) -> Result<(), std::io::Error> {
         let file_type = get_file_type(path)?;
 
-        match file_type
-        {
-            FileExtension::JPEG
-                =>  jpg::file_clear_segment(path, 0xec),
-            _
-                => return io_error!(
+        match file_type {
+            FileExtension::JPEG => jpg::file_clear_segment(path, 0xec),
+            _ => {
+                return io_error!(
                     Other,
                     format!(
-                        "Function 'file_clear_app12_segment' not available for {:?} (only relevant for JPEG)", 
+                        "Function 'file_clear_app12_segment' not available for {:?} (only relevant for JPEG)",
                         file_type
                     )
-                ),
+                )
+            }
         }
     }
 
@@ -246,18 +213,17 @@ impl Metadata {
     pub fn file_clear_app13_segment(path: &Path) -> Result<(), std::io::Error> {
         let file_type = get_file_type(path)?;
 
-        match file_type
-        {
-            FileExtension::JPEG
-                =>  jpg::file_clear_segment(path, 0xed),
-            _
-                => return io_error!(
+        match file_type {
+            FileExtension::JPEG => jpg::file_clear_segment(path, 0xed),
+            _ => {
+                return io_error!(
                     Other,
                     format!(
-                        "Function 'file_clear_app13_segment' not available for {:?} (only relevant for JPEG)", 
+                        "Function 'file_clear_app13_segment' not available for {:?} (only relevant for JPEG)",
                         file_type
                     )
-                ),
+                )
+            }
         }
     }
 
@@ -275,10 +241,7 @@ impl Metadata {
             _ => {
                 return io_error!(
                     Other,
-                    format!(
-                        "Function 'file_clear_metadata' not yet implemented for {:?}",
-                        file_type
-                    )
+                    format!("Function 'file_clear_metadata' not yet implemented for {:?}", file_type)
                 )
             }
         }
@@ -296,9 +259,7 @@ impl Metadata {
         let general_encoded_metadata = self.encode()?;
 
         Ok(match for_file_type {
-            FileExtension::PNG { as_zTXt_chunk } => {
-                png::as_u8_vec(&general_encoded_metadata, as_zTXt_chunk)
-            }
+            FileExtension::PNG { as_zTXt_chunk } => png::as_u8_vec(&general_encoded_metadata, as_zTXt_chunk),
             FileExtension::JPEG => jpg::as_u8_vec(&general_encoded_metadata),
             FileExtension::WEBP => webp::as_u8_vec(&general_encoded_metadata),
             FileExtension::HEIF => heif::as_u8_vec(&general_encoded_metadata),
@@ -311,11 +272,7 @@ impl Metadata {
     /// Writes the metadata to an image stored as a Vec<u8>
     /// For now, this only works for JPGs
     #[allow(unreachable_patterns)]
-    pub fn write_to_vec(
-        &self,
-        file_buffer: &mut Vec<u8>,
-        file_type: FileExtension,
-    ) -> Result<(), std::io::Error> {
+    pub fn write_to_vec(&self, file_buffer: &mut Vec<u8>, file_type: FileExtension) -> Result<(), std::io::Error> {
         match file_type {
             FileExtension::HEIF => heif::write_metadata(file_buffer, self),
             FileExtension::JPEG => jpg::write_metadata(file_buffer, self),
@@ -326,10 +283,7 @@ impl Metadata {
             _ => {
                 return io_error!(
                     Other,
-                    format!(
-                        "Function 'file_clear_metadata' not yet implemented for {:?}",
-                        file_type
-                    )
+                    format!("Function 'file_clear_metadata' not yet implemented for {:?}", file_type)
                 )
             }
         }
@@ -354,10 +308,7 @@ impl Metadata {
             _ => {
                 return io_error!(
                     Other,
-                    format!(
-                        "Function 'write_to_file' not yet implemented for {:?}",
-                        file_type
-                    )
+                    format!("Function 'write_to_file' not yet implemented for {:?}", file_type)
                 )
             }
         }

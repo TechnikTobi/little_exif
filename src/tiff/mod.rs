@@ -1,9 +1,7 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::io::Read;
-use std::io::Seek;
-use std::io::Write;
+use std::io::{Read, Seek, Write};
 
 use crate::general_file_io::EXIF_HEADER;
 use crate::metadata::Metadata;

@@ -3,10 +3,8 @@
 
 use std::io::Cursor;
 
+use super::{generic_read_metadata, generic_write_metadata};
 use crate::metadata::Metadata;
-
-use super::generic_read_metadata;
-use super::generic_write_metadata;
 
 pub(crate) fn read_metadata(file_buffer: &Vec<u8>) -> Result<Vec<u8>, std::io::Error> {
     let mut cursor = Cursor::new(file_buffer);
@@ -30,10 +28,7 @@ pub(crate) fn clear_metadata(file_buffer: &mut Vec<u8>) -> Result<(), std::io::E
     return generic_write_metadata(&mut cursor, &data);
 }
 
-pub(crate) fn write_metadata(
-    file_buffer: &mut Vec<u8>,
-    metadata: &Metadata,
-) -> Result<(), std::io::Error> {
+pub(crate) fn write_metadata(file_buffer: &mut Vec<u8>, metadata: &Metadata) -> Result<(), std::io::Error> {
     let mut cursor = Cursor::new(file_buffer);
     return generic_write_metadata(&mut cursor, metadata);
 }

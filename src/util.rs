@@ -1,8 +1,7 @@
 // Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::io::Read;
-use std::io::Seek;
+use std::io::{Read, Seek};
 
 use crate::general_file_io::io_error;
 
@@ -129,9 +128,7 @@ pub(crate) fn read_be_u64<T: Seek + Read>(cursor: &mut T) -> Result<u64, std::io
     return Ok(value);
 }
 
-pub(crate) fn read_null_terminated_string<T: Seek + Read>(
-    cursor: &mut T,
-) -> Result<String, std::io::Error> {
+pub(crate) fn read_null_terminated_string<T: Seek + Read>(cursor: &mut T) -> Result<String, std::io::Error> {
     let mut string_buffer = Vec::new();
     let mut character_buffer = read_1_bytes(cursor)?;
     while character_buffer[0] != 0x00 {
@@ -147,11 +144,7 @@ pub(crate) fn read_null_terminated_string<T: Seek + Read>(
 /// Returns 0 (zero) if the operation was successful, non-zero if the offset
 /// is larger than the current length of the destination vector. In the latter
 /// case, everything stays untouched.
-pub(crate) fn insert_multiple_at<T>(
-    vec_dst: &mut Vec<T>,
-    offset: usize,
-    vec_src: &mut Vec<T>,
-) -> usize
+pub(crate) fn insert_multiple_at<T>(vec_dst: &mut Vec<T>, offset: usize, vec_src: &mut Vec<T>) -> usize
 where
     T: Copy,
 {

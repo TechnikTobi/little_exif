@@ -1,20 +1,12 @@
 // Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::io::Read;
-use std::io::Seek;
-
-use crate::endian::Endian;
-use crate::u8conversion::to_u8_vec_macro;
-use crate::u8conversion::U8conversion;
-use crate::util::read_16_bytes;
-use crate::util::read_1_bytes;
-use crate::util::read_3_bytes;
-use crate::util::read_4_bytes;
-use crate::util::read_be_u32;
-use crate::util::read_be_u64;
+use std::io::{Read, Seek};
 
 use super::box_type::BoxType;
+use crate::endian::Endian;
+use crate::u8conversion::{to_u8_vec_macro, U8conversion};
+use crate::util::{read_16_bytes, read_1_bytes, read_3_bytes, read_4_bytes, read_be_u32, read_be_u64};
 
 #[derive(Clone, Debug)]
 pub struct BoxHeader {
@@ -105,9 +97,7 @@ impl BoxHeader {
 
         if let BoxType::uuid { usertype: _ } = header.box_type {
             let new_usertype = read_16_bytes(cursor)?;
-            header.box_type = BoxType::uuid {
-                usertype: new_usertype,
-            };
+            header.box_type = BoxType::uuid { usertype: new_usertype };
 
             // Adjust header size information
             header.header_size += 16;

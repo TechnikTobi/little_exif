@@ -182,9 +182,7 @@ impl BoxType {
             "uriI" => BoxType::uriI,
             "hmhd" => BoxType::hmhd,
             "sthd" => BoxType::sthd,
-            "uuid" => BoxType::uuid {
-                usertype: [0u8; 16],
-            },
+            "uuid" => BoxType::uuid { usertype: [0u8; 16] },
             _ => BoxType::unknown {
                 box_type: String::from(box_type_str),
             },

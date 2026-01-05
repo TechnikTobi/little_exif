@@ -1,10 +1,9 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+use super::Metadata;
 use crate::exif_tag::ExifTag;
 use crate::ifd::ExifTagGroup;
-
-use super::Metadata;
 
 impl Metadata {
     /// Reduces the `Metadata` struct to the absolute minimum required for

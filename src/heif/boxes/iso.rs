@@ -1,14 +1,11 @@
 // Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::io::Read;
-use std::io::Seek;
+use std::io::{Read, Seek};
 
 use crate::debug_println;
-
 use crate::heif::box_header::BoxHeader;
-use crate::heif::boxes::GenericIsoBox;
-use crate::heif::boxes::ParsableIsoBox;
+use crate::heif::boxes::{GenericIsoBox, ParsableIsoBox};
 
 #[allow(dead_code)]
 #[derive(Clone)]
@@ -22,10 +19,7 @@ impl IsoBox {
         cursor: &mut T,
         header: BoxHeader,
     ) -> Result<IsoBox, std::io::Error> {
-        debug_println!(
-            "Constructing generic ISO box for type {:?}",
-            header.get_box_type()
-        );
+        debug_println!("Constructing generic ISO box for type {:?}", header.get_box_type());
 
         // Check if this box is the last in the file
         // See also: ISO/IEC 14496-12:2015, § 4.2
@@ -55,9 +49,7 @@ impl ParsableIsoBox for IsoBox {
         cursor: &mut T,
         header: BoxHeader,
     ) -> Result<Box<dyn GenericIsoBox>, std::io::Error> {
-        return Ok(Box::new(IsoBox::construct_from_cursor_unboxed(
-            cursor, header,
-        )?));
+        return Ok(Box::new(IsoBox::construct_from_cursor_unboxed(cursor, header)?));
     }
 }
 

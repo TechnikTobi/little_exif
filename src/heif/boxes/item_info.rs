@@ -1,21 +1,14 @@
 // Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::io::Read;
-use std::io::Seek;
+use std::io::{Read, Seek};
 
 use crate::debug_println;
-
 use crate::endian::Endian;
-use crate::u8conversion::to_u8_vec_macro;
-use crate::u8conversion::U8conversion;
-use crate::util::read_be_u16;
-use crate::util::read_be_u32;
-use crate::util::read_null_terminated_string;
-
 use crate::heif::box_header::BoxHeader;
-use crate::heif::boxes::GenericIsoBox;
-use crate::heif::boxes::ParsableIsoBox;
+use crate::heif::boxes::{GenericIsoBox, ParsableIsoBox};
+use crate::u8conversion::{to_u8_vec_macro, U8conversion};
+use crate::util::{read_be_u16, read_be_u32, read_null_terminated_string};
 
 // - infe
 // 00000015:   size of 0x15 bytes (including the 0x04 bytes of the size field itself)
@@ -143,9 +136,7 @@ impl ParsableIsoBox for ItemInfoBox {
         let mut items = Vec::new();
         for _ in 0..item_count {
             let header = BoxHeader::read_box_header(cursor)?;
-            items.push(ItemInfoEntryBox::construct_from_cursor_unboxed(
-                cursor, header,
-            )?);
+            items.push(ItemInfoEntryBox::construct_from_cursor_unboxed(cursor, header)?);
         }
 
         return Ok(Box::new(ItemInfoBox {
@@ -188,11 +179,9 @@ impl GenericIsoBox for ItemInfoBox {
         let mut serialized = self.header.serialize();
 
         if self.header.get_version() == 0 {
-            serialized
-                .extend(to_u8_vec_macro!(u16, &(self.item_count as u16), &Endian::Big).iter());
+            serialized.extend(to_u8_vec_macro!(u16, &(self.item_count as u16), &Endian::Big).iter());
         } else {
-            serialized
-                .extend(to_u8_vec_macro!(u32, &(self.item_count as u32), &Endian::Big).iter());
+            serialized.extend(to_u8_vec_macro!(u32, &(self.item_count as u32), &Endian::Big).iter());
         }
 
         for item in &self.items {

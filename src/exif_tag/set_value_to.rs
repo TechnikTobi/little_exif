@@ -1,12 +1,10 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+use super::{ExifTag, ExifTagFormat};
 use crate::endian::Endian;
 use crate::rational::iR64;
 use crate::u8conversion::*;
-
-use super::ExifTag;
-use super::ExifTagFormat;
 
 macro_rules! build_set_function {
 	(

@@ -1,26 +1,19 @@
 // Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::io::Cursor;
-use std::io::Read;
-use std::io::Seek;
+use std::io::{Cursor, Read, Seek};
 
-use crate::general_file_io::io_error;
-use crate::general_file_io::EXIF_HEADER;
+use super::boxes::item_info::ItemInfoBox;
+use super::boxes::item_location::ItemLocationBox;
+use super::boxes::GenericIsoBox;
+use crate::general_file_io::{io_error, EXIF_HEADER};
 use crate::heif::box_type::BoxType;
 use crate::heif::boxes::item_location::ItemConstructionMethod;
 use crate::heif::boxes::item_reference::ItemReferenceBox;
 use crate::heif::boxes::meta::MetaBox;
 use crate::heif::read_next_box;
-
 use crate::metadata::Metadata;
-use crate::util::insert_multiple_at;
-use crate::util::range_remove;
-use crate::util::read_be_u32;
-
-use super::boxes::item_info::ItemInfoBox;
-use super::boxes::item_location::ItemLocationBox;
-use super::boxes::GenericIsoBox;
+use crate::util::{insert_multiple_at, range_remove, read_be_u32};
 
 pub struct HeifContainer {
     boxes: Vec<Box<dyn GenericIsoBox>>,
@@ -70,9 +63,7 @@ pub struct HeifContainer {
 // ┗━━━━━━┻━━━━━━━━━━┻━━━━━━━━━━┛
 
 impl HeifContainer {
-    pub(super) fn construct_from_cursor_unboxed<T: Seek + Read>(
-        cursor: &mut T,
-    ) -> Result<Self, std::io::Error> {
+    pub(super) fn construct_from_cursor_unboxed<T: Seek + Read>(cursor: &mut T) -> Result<Self, std::io::Error> {
         let mut boxes = Vec::new();
 
         loop {
@@ -153,10 +144,7 @@ impl HeifContainer {
         }
     }
 
-    pub(super) fn get_exif_data<T: Seek + Read>(
-        &self,
-        cursor: &mut T,
-    ) -> Result<Vec<u8>, std::io::Error> {
+    pub(super) fn get_exif_data<T: Seek + Read>(&self, cursor: &mut T) -> Result<Vec<u8>, std::io::Error> {
         // Locate exif data
         let exif_item_id = self.get_item_id_exif_data()?;
         let (start, length) = self.get_exif_data_pos_and_len(exif_item_id);
@@ -313,8 +301,7 @@ impl HeifContainer {
             // iloc and iinf boxes) - but this does not matter as this will
             // be updated anyway later by `add_to_extents`
             // This way, we don't need any exception during the update procedure
-            let (new_iloc_id, iloc_size_delta) =
-                iloc.create_new_item_location_entry(new_exif_start, 0);
+            let (new_iloc_id, iloc_size_delta) = iloc.create_new_item_location_entry(new_exif_start, 0);
             let iinf_size_delta = iinf.create_new_item_info_entry(new_iloc_id, "Exif");
             let iref_size_delta = iref.create_new_single_item_reference_box(
                 "cdsc".to_string(), // TODO: Check if this is always this type?
@@ -327,9 +314,7 @@ impl HeifContainer {
 
             // Fix up the size of the meta box as well
             let new_box_size = self.get_meta_box().serialize().len();
-            self.get_meta_box_mut()
-                .get_header_mut()
-                .set_box_size(new_box_size);
+            self.get_meta_box_mut().get_header_mut().set_box_size(new_box_size);
 
             // No change to the mdat data at this point as we set up the
             // iloc item so that the exif area currently has a length of zero
@@ -348,15 +333,9 @@ impl HeifContainer {
         let mut cursor = Cursor::new(file_buffer);
 
         // Construct new exif data area
-        let (mut new_exif_area, delta) =
-            self.construct_new_exif_data_area(&mut cursor, metadata)?;
+        let (mut new_exif_area, delta) = self.construct_new_exif_data_area(&mut cursor, metadata)?;
 
-        for item in self
-            .get_meta_box_mut()
-            .get_item_location_box_mut()
-            .items
-            .iter_mut()
-        {
+        for item in self.get_meta_box_mut().get_item_location_box_mut().items.iter_mut() {
             // First, check if any extent of this item has the same offset as
             // the old exif data area. In that case, there must be only one
             // extent - other cases can't be handled right now
@@ -371,8 +350,7 @@ impl HeifContainer {
 
                 // In case of the EXIF extent information we need to update
                 // the length information, not the offset!
-                let new_ext_len =
-                    (item.extents.first().unwrap().extent_length as i64 + delta) as u64;
+                let new_ext_len = (item.extents.first().unwrap().extent_length as i64 + delta) as u64;
                 item.extents.first_mut().unwrap().extent_length = new_ext_len;
 
                 continue;
@@ -473,10 +451,7 @@ impl HeifContainer {
         return Ok(());
     }
 
-    pub(super) fn generic_clear_metadata(
-        &mut self,
-        file_buffer: &mut Vec<u8>,
-    ) -> Result<(), std::io::Error> {
+    pub(super) fn generic_clear_metadata(&mut self, file_buffer: &mut Vec<u8>) -> Result<(), std::io::Error> {
         // Instead of truly clearing the metadata, just write an empty
         // exif data area
         // Based on what the macOS shortcut is doing, only keeps the tags

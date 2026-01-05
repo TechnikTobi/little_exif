@@ -1,21 +1,15 @@
 // Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::io::Cursor;
-use std::io::Read;
-use std::io::Seek;
-use std::io::Write;
+use std::io::{Cursor, Read, Seek, Write};
 
 use log::debug;
 
+use super::riff_chunk::{RiffChunk, RiffChunkDescriptor};
+use super::*;
 use crate::general_file_io::EXIF_HEADER;
 use crate::metadata::Metadata;
-use crate::util::insert_multiple_at;
-use crate::util::range_remove;
-
-use super::riff_chunk::RiffChunk;
-use super::riff_chunk::RiffChunkDescriptor;
-use super::*;
+use crate::util::{insert_multiple_at, range_remove};
 
 /// A WebP file starts as follows
 /// - The RIFF signature: ASCII characters "R", "I", "F", "F"  -> 4 bytes
@@ -58,9 +52,9 @@ fn get_next_chunk(cursor: &mut Cursor<&Vec<u8>>) -> Result<RiffChunk, std::io::E
     bytes_read = cursor.read(&mut chunk_data_buffer).unwrap();
     if bytes_read != chunk_length as usize {
         return io_error!(
-			Other,
-			format!("Could not read RIFF chunk data! Expected {chunk_length} bytes but read {bytes_read}")
-		);
+            Other,
+            format!("Could not read RIFF chunk data! Expected {chunk_length} bytes but read {bytes_read}")
+        );
     }
 
     if let Ok(parsed_chunk_name) = chunk_name {
@@ -78,9 +72,7 @@ fn get_next_chunk(cursor: &mut Cursor<&Vec<u8>>) -> Result<RiffChunk, std::io::E
 /// cursor position. Advances the cursor to the start of the next chunk
 /// Relies on `get_next_chunk` by basically calling that function and throwing
 /// away the actual payload
-fn get_next_chunk_descriptor(
-    cursor: &mut Cursor<&Vec<u8>>,
-) -> Result<RiffChunkDescriptor, std::io::Error> {
+fn get_next_chunk_descriptor(cursor: &mut Cursor<&Vec<u8>>) -> Result<RiffChunkDescriptor, std::io::Error> {
     let next_chunk_result = get_next_chunk(cursor)?;
     return Ok(next_chunk_result.descriptor());
 }
@@ -88,9 +80,7 @@ fn get_next_chunk_descriptor(
 /// "Parses" the WebP file by checking various properties:
 /// - Can the file be opened and is the signature valid, including the file size?
 /// - Are the chunks and their size descriptions OK? Relies on the local subroutine `get_next_chunk_descriptor`
-pub(crate) fn parse_webp(
-    file_buffer: &Vec<u8>,
-) -> Result<Vec<RiffChunkDescriptor>, std::io::Error> {
+pub(crate) fn parse_webp(file_buffer: &Vec<u8>) -> Result<Vec<RiffChunkDescriptor>, std::io::Error> {
     let mut cursor = check_signature(file_buffer)?;
 
     let mut chunks = Vec::new();
@@ -128,9 +118,7 @@ pub(crate) fn parse_webp(
             // in the file and we are done with parsing.
             // If the subroutine fails due to other reasons, the error gets
             // propagated further.
-            if next_chunk_descriptor_result.as_ref().err().unwrap().kind()
-                == std::io::ErrorKind::UnexpectedEof
-            {
+            if next_chunk_descriptor_result.as_ref().err().unwrap().kind() == std::io::ErrorKind::UnexpectedEof {
                 break;
             } else {
                 return Err(next_chunk_descriptor_result.err().unwrap());
@@ -141,9 +129,7 @@ pub(crate) fn parse_webp(
     return Ok(chunks);
 }
 
-fn check_exif_in_file(
-    file_buffer: &Vec<u8>,
-) -> Result<(Cursor<&Vec<u8>>, Vec<RiffChunkDescriptor>), std::io::Error> {
+fn check_exif_in_file(file_buffer: &Vec<u8>) -> Result<(Cursor<&Vec<u8>>, Vec<RiffChunkDescriptor>), std::io::Error> {
     // Parse the WebP file - if this fails, we surely can't read any metadata
     let parsed_webp_result = parse_webp(file_buffer);
     if let Err(error) = parsed_webp_result {
@@ -210,10 +196,7 @@ pub(crate) fn read_metadata(file_buffer: &Vec<u8>) -> Result<Vec<u8>, std::io::E
     loop {
         // Read the chunk type into the buffer
         if cursor.read(&mut header_buffer).unwrap() != 4 {
-            return io_error!(
-                Other,
-                "Could not read chunk type while traversing WebP file!"
-            );
+            return io_error!(Other, "Could not read chunk type while traversing WebP file!");
         }
         let chunk_type = String::from_u8_vec(&header_buffer.to_vec(), &Endian::Little);
 
@@ -264,10 +247,7 @@ pub(crate) fn read_metadata(file_buffer: &Vec<u8>) -> Result<Vec<u8>, std::io::E
     }
 }
 
-fn update_file_size_information(
-    cursor: &mut Cursor<&mut Vec<u8>>,
-    delta: i32,
-) -> Result<(), std::io::Error> {
+fn update_file_size_information(cursor: &mut Cursor<&mut Vec<u8>>, delta: i32) -> Result<(), std::io::Error> {
     // Note from the documentation:
     // As the size of any chunk is even, the size given by the RIFF header is also even.
 
@@ -374,10 +354,7 @@ fn get_dimension_info_from_vp8l_chunk(payload: &Vec<u8>) -> Result<(u32, u32), s
     return Ok((width, height));
 }
 
-fn set_exif_flag(
-    cursor: &mut Cursor<&mut Vec<u8>>,
-    exif_flag_value: bool,
-) -> Result<(), std::io::Error> {
+fn set_exif_flag(cursor: &mut Cursor<&mut Vec<u8>>, exif_flag_value: bool) -> Result<(), std::io::Error> {
     // Parse the WebP file - if this fails, we surely can't read any metadata
     let parsed_webp_result = parse_webp(cursor.get_ref())?;
 
@@ -411,17 +388,9 @@ pub(crate) fn clear_metadata(file_buffer: &mut Vec<u8>) -> Result<(), std::io::E
     // the EXIF flag is set there
     let exif_check_result = check_exif_in_file(file_buffer);
     if exif_check_result.is_err() {
-        match exif_check_result
-            .as_ref()
-            .err()
-            .unwrap()
-            .to_string()
-            .as_str()
-        {
+        match exif_check_result.as_ref().err().unwrap().to_string().as_str() {
             "No EXIF chunk according to VP8X flags!" => return Ok(()),
-            "Expected first chunk of WebP file to be of type 'VP8X' but instead got VP8L!" => {
-                return Ok(())
-            }
+            "Expected first chunk of WebP file to be of type 'VP8X' but instead got VP8L!" => return Ok(()),
             _ => return Err(exif_check_result.err().unwrap()),
         }
     }
@@ -476,10 +445,7 @@ pub(crate) fn clear_metadata(file_buffer: &mut Vec<u8>) -> Result<(), std::io::E
 /// the specified path.
 /// Note that *all* previously stored EXIF metadata gets removed first before
 /// writing the "new" metadata.
-pub(crate) fn write_metadata(
-    file_buffer: &mut Vec<u8>,
-    metadata: &Metadata,
-) -> Result<(), std::io::Error> {
+pub(crate) fn write_metadata(file_buffer: &mut Vec<u8>, metadata: &Metadata) -> Result<(), std::io::Error> {
     // Clear the metadata from the file and return if this results in an error
     clear_metadata(file_buffer)?;
 
@@ -521,11 +487,7 @@ pub(crate) fn write_metadata(
     }
 
     // Write the EXIF chunk at the found location
-    insert_multiple_at(
-        file_buffer,
-        read_cursor.position() as usize,
-        &mut encoded_metadata,
-    );
+    insert_multiple_at(file_buffer, read_cursor.position() as usize, &mut encoded_metadata);
 
     // Update the file size information by adding the byte count of the EXIF chunk
     // (Note: Due to  the WebP specific encoding function, this vector already

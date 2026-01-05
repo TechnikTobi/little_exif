@@ -27,12 +27,9 @@ extern crate little_exif_0_6_1;
 #[test]
 #[should_panic(expected = "assertion `left == right` failed\n  left: 4\n right: 24")]
 fn read_gps_latitude_fails() {
-    let path =
-        Path::new("resources/issue_000049/382577930-5fd51906-3f81-4371-a968-a83ba43f4b20.jpg");
+    let path = Path::new("resources/issue_000049/382577930-5fd51906-3f81-4371-a968-a83ba43f4b20.jpg");
     let metadata = little_exif_0_6_0::metadata::Metadata::new_from_path(path).unwrap();
-    let mut tag_iterator = metadata.get_tag(&little_exif_0_6_0::exif_tag::ExifTag::GPSLatitude(
-        Vec::new(),
-    ));
+    let mut tag_iterator = metadata.get_tag(&little_exif_0_6_0::exif_tag::ExifTag::GPSLatitude(Vec::new()));
 
     match tag_iterator.next() {
         Some(tag) => assert_eq!(tag.value_as_u8_vec(&metadata.get_endian()).len(), 24),
@@ -42,12 +39,9 @@ fn read_gps_latitude_fails() {
 
 #[test]
 fn read_gps_latitude_fixed() {
-    let path =
-        Path::new("resources/issue_000049/382577930-5fd51906-3f81-4371-a968-a83ba43f4b20.jpg");
+    let path = Path::new("resources/issue_000049/382577930-5fd51906-3f81-4371-a968-a83ba43f4b20.jpg");
     let metadata = little_exif_0_6_1::metadata::Metadata::new_from_path(path).unwrap();
-    let mut tag_iterator = metadata.get_tag(&little_exif_0_6_1::exif_tag::ExifTag::GPSLatitude(
-        Vec::new(),
-    ));
+    let mut tag_iterator = metadata.get_tag(&little_exif_0_6_1::exif_tag::ExifTag::GPSLatitude(Vec::new()));
 
     match tag_iterator.next() {
         Some(tag) => assert_eq!(tag.value_as_u8_vec(&metadata.get_endian()).len(), 24),
@@ -57,11 +51,9 @@ fn read_gps_latitude_fixed() {
 
 #[test]
 fn read_gps_latitude_current() {
-    let path =
-        Path::new("resources/issue_000049/382577930-5fd51906-3f81-4371-a968-a83ba43f4b20.jpg");
+    let path = Path::new("resources/issue_000049/382577930-5fd51906-3f81-4371-a968-a83ba43f4b20.jpg");
     let metadata = little_exif::metadata::Metadata::new_from_path(path).unwrap();
-    let mut tag_iterator =
-        metadata.get_tag(&little_exif::exif_tag::ExifTag::GPSLatitude(Vec::new()));
+    let mut tag_iterator = metadata.get_tag(&little_exif::exif_tag::ExifTag::GPSLatitude(Vec::new()));
 
     match tag_iterator.next() {
         Some(tag) => assert_eq!(tag.value_as_u8_vec(&metadata.get_endian()).len(), 24),

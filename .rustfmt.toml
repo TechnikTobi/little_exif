@@ -1,0 +1,6 @@
+newline_style = "Unix"
+max_width = 120
+
+# Enable only with nightly channel via - cargo +nightly fmt
+imports_granularity = "Module"
+group_imports = "StdExternalCrate"

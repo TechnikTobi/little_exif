@@ -1,12 +1,10 @@
 // Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::io::Read;
-use std::io::Seek;
+use std::io::{Read, Seek};
 
 use crate::general_file_io::io_error;
-use crate::util::read_4_bytes;
-use crate::util::read_be_u32;
+use crate::util::{read_4_bytes, read_be_u32};
 
 /// Assumes the cursor to be positioned at the start of the chunk where the
 /// length field is located.
@@ -27,10 +25,7 @@ pub(super) fn read_chunk_name<T: Seek + Read>(cursor: &mut T) -> Result<String, 
 
 /// Assumes the cursor to be positioned at the start of the chunk data
 /// Advances the cursor to the start of the chunk's CRC field
-pub(super) fn read_chunk_data<T: Seek + Read>(
-    cursor: &mut T,
-    chunk_length: usize,
-) -> Result<Vec<u8>, std::io::Error> {
+pub(super) fn read_chunk_data<T: Seek + Read>(cursor: &mut T, chunk_length: usize) -> Result<Vec<u8>, std::io::Error> {
     let mut chunk_data_buffer = vec![0u8; chunk_length];
     let bytes_read = cursor.read(&mut chunk_data_buffer)?;
 

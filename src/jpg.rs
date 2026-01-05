@@ -2,12 +2,7 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::fs::File;
-use std::io::BufReader;
-use std::io::Cursor;
-use std::io::Read;
-use std::io::Seek;
-use std::io::SeekFrom;
-use std::io::Write;
+use std::io::{BufReader, Cursor, Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
 use crate::endian::Endian;
@@ -71,10 +66,7 @@ pub(crate) fn clear_metadata(file_buffer: &mut Vec<u8>) -> Result<(), std::io::E
     return clear_segment(file_buffer, 0xe1);
 }
 
-pub(crate) fn clear_segment(
-    file_buffer: &mut Vec<u8>,
-    segment_marker: u8,
-) -> Result<(), std::io::Error> {
+pub(crate) fn clear_segment(file_buffer: &mut Vec<u8>, segment_marker: u8) -> Result<(), std::io::Error> {
     check_signature(&file_buffer)?;
 
     // Setup of variables necessary for going through the file
@@ -159,10 +151,7 @@ pub(crate) fn file_clear_segment(path: &Path, segment_marker: u8) -> Result<(), 
 
     // Write the file
     // Possible to optimize further by returning the purged bytestream itself?
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .open(path)?;
+    let mut file = std::fs::OpenOptions::new().write(true).truncate(true).open(path)?;
     perform_file_action!(file.write_all(&file_buffer));
 
     return Ok(());
@@ -178,10 +167,7 @@ pub(crate) fn as_u8_vec(general_encoded_metadata: &Vec<u8>) -> Vec<u8> {
     encode_metadata_jpg(general_encoded_metadata)
 }
 
-pub(crate) fn write_metadata(
-    file_buffer: &mut Vec<u8>,
-    metadata: &Metadata,
-) -> Result<(), std::io::Error> {
+pub(crate) fn write_metadata(file_buffer: &mut Vec<u8>, metadata: &Metadata) -> Result<(), std::io::Error> {
     // Remove old metadata
     clear_metadata(file_buffer)?;
 

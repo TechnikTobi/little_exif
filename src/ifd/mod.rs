@@ -5,23 +5,18 @@ pub mod get;
 pub mod set;
 
 use core::panic;
-use std::io::Cursor;
-use std::io::Read;
-use std::io::Seek;
+use std::io::{Cursor, Read, Seek};
 use std::vec;
 
 use log::warn;
 
 use crate::endian::*;
 use crate::exif_tag::decode::decode_tag_with_format_exceptions;
-use crate::exif_tag::ExifTag;
-use crate::exif_tag::TagType;
+use crate::exif_tag::{ExifTag, TagType};
 use crate::exif_tag_format::ExifTagFormat;
 use crate::general_file_io::io_error;
 use crate::metadata::Metadata;
-use crate::u8conversion::from_u8_vec_macro;
-use crate::u8conversion::to_u8_vec_macro;
-use crate::u8conversion::U8conversion;
+use crate::u8conversion::{from_u8_vec_macro, to_u8_vec_macro, U8conversion};
 
 /// Useful constants for dealing with IFDs: The length of a single IFD entry is
 /// equal to 12 bytes, as the entry consists of the tags hex value (2 byte),
@@ -103,10 +98,8 @@ impl ImageFileDirectory {
         let number_of_entries = from_u8_vec_macro!(u16, &number_of_entries_buffer.to_vec(), endian);
 
         // Check that there is enough data to unpack
-        let required =
-            0 + 2 + IFD_ENTRY_LENGTH as usize * number_of_entries as usize + IFD_END_NO_LINK.len();
-        let available =
-            (0 + data_cursor.get_ref().len() as i64 - data_cursor_entry_position as i64) as usize;
+        let required = 0 + 2 + IFD_ENTRY_LENGTH as usize * number_of_entries as usize + IFD_END_NO_LINK.len();
+        let available = (0 + data_cursor.get_ref().len() as i64 - data_cursor_entry_position as i64) as usize;
 
         if required > available {
             return io_error!(
@@ -143,8 +136,7 @@ impl ImageFileDirectory {
             // Decode the first 8 bytes with the tag, format and component number
             let hex_tag = from_u8_vec_macro!(u16, &entry_buffer[0..2].to_vec(), endian);
             let hex_format = from_u8_vec_macro!(u16, &entry_buffer[2..4].to_vec(), endian);
-            let hex_component_number =
-                from_u8_vec_macro!(u32, &entry_buffer[4..8].to_vec(), endian);
+            let hex_component_number = from_u8_vec_macro!(u32, &entry_buffer[4..8].to_vec(), endian);
 
             // Decode the format
             // TODO: What to do in case these two differ but the given format
@@ -196,10 +188,7 @@ impl ImageFileDirectory {
                 // Note: `from_u16_with_data` can NOT be called initially due
                 // to some possible conversion of data needed, e.g. INT16U to
                 // INT32U, which is not accounted for yet at this stage
-                tags.push(
-                    ExifTag::from_u16_with_data(hex_tag, &format, &raw_data, &endian, group)
-                        .unwrap(),
-                );
+                tags.push(ExifTag::from_u16_with_data(hex_tag, &format, &raw_data, &endian, group).unwrap());
                 continue;
             }
 
@@ -259,8 +248,7 @@ impl ImageFileDirectory {
 
             // At this point we check if the format is actually what we expect
             // it to be and convert it if possible
-            tag =
-                decode_tag_with_format_exceptions(&tag, format, &raw_data, endian, hex_tag, group)?;
+            tag = decode_tag_with_format_exceptions(&tag, format, &raw_data, endian, hex_tag, group)?;
 
             // Now we have at least confirmed that the format is ok (or has
             // been corrected). Next, we need to differ between the two other
@@ -487,11 +475,7 @@ impl ImageFileDirectory {
                                 // Store the current offset where the strip is
                                 // pushed, push the strip and account for its length
                                 // in the offset variable
-                                value.extend(to_u8_vec_macro!(
-                                    u32,
-                                    &current_offset.clone(),
-                                    &data.get_endian()
-                                ));
+                                value.extend(to_u8_vec_macro!(u32, &current_offset.clone(), &data.get_endian()));
                                 ifd_offset_area.extend(strip);
                                 *current_offset += strip.len() as u32;
                             }
@@ -499,8 +483,7 @@ impl ImageFileDirectory {
                         }
 
                         ExifTag::ThumbnailOffset(_, thumbnail_data) => {
-                            let value =
-                                to_u8_vec_macro!(u32, &current_offset.clone(), &data.get_endian());
+                            let value = to_u8_vec_macro!(u32, &current_offset.clone(), &data.get_endian());
                             ifd_offset_area.extend(thumbnail_data);
                             *current_offset += thumbnail_data.len() as u32;
                             value
@@ -517,17 +500,11 @@ impl ImageFileDirectory {
                             .get_ifds()
                             .iter()
                             .filter(|ifd| {
-                                ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr()
-                                    && ifd.get_ifd_type() == group
+                                ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() && ifd.get_ifd_type() == group
                             })
                             .next()
                             .unwrap()
-                            .encode_ifd(
-                                data,
-                                ifds_with_offset_info_only,
-                                &mut ifd_offset_area,
-                                current_offset,
-                            )
+                            .encode_ifd(data, ifds_with_offset_info_only, &mut ifd_offset_area, current_offset)
                         {
                             subifd_offset
                         } else {
@@ -546,13 +523,11 @@ impl ImageFileDirectory {
 
             // Add Tag & Data Format /                                          2 + 2 bytes
             encode_vec.extend(to_u8_vec_macro!(u16, &tag.as_u16(), &data.get_endian()).iter());
-            encode_vec
-                .extend(to_u8_vec_macro!(u16, &tag.format().as_u16(), &data.get_endian()).iter());
+            encode_vec.extend(to_u8_vec_macro!(u16, &tag.format().as_u16(), &data.get_endian()).iter());
 
             // Add number of components /                                       4 bytes
             let number_of_components: u32 = tag.number_of_components();
-            encode_vec
-                .extend(to_u8_vec_macro!(u32, &number_of_components, &data.get_endian()).iter());
+            encode_vec.extend(to_u8_vec_macro!(u32, &number_of_components, &data.get_endian()).iter());
 
             // Optional string padding (i.e. string is shorter than it should be)
             let mut string_padding: Vec<u8> = Vec::new();

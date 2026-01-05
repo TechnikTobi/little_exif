@@ -22,8 +22,7 @@ extern crate little_exif_0_5_0_beta_2;
 #[test]
 #[should_panic(expected = "assertion failed: u8_vec.len() == 4")]
 fn read_exif_data_fails() {
-    let jpg_path =
-        Path::new("resources/issue_000006/309465781-9420afb8-2a57-4bae-a188-a719f6d62b1f.JPG");
+    let jpg_path = Path::new("resources/issue_000006/309465781-9420afb8-2a57-4bae-a188-a719f6d62b1f.JPG");
 
     match little_exif_0_3_1::metadata::Metadata::new_from_path(jpg_path) {
         Ok(metadata) => {
@@ -38,8 +37,7 @@ fn read_exif_data_fails() {
 #[test]
 #[should_panic(expected = "from_u8_vec: Mangled EXIF data encountered!")]
 fn read_exif_data_last_fail() {
-    let jpg_path =
-        Path::new("resources/issue_000006/309465781-9420afb8-2a57-4bae-a188-a719f6d62b1f.JPG");
+    let jpg_path = Path::new("resources/issue_000006/309465781-9420afb8-2a57-4bae-a188-a719f6d62b1f.JPG");
 
     match little_exif_0_5_0_beta_1::metadata::Metadata::new_from_path(jpg_path) {
         Ok(metadata) => {
@@ -53,8 +51,7 @@ fn read_exif_data_last_fail() {
 
 #[test]
 fn read_exif_data_fixed() {
-    let jpg_path =
-        Path::new("resources/issue_000006/309465781-9420afb8-2a57-4bae-a188-a719f6d62b1f.JPG");
+    let jpg_path = Path::new("resources/issue_000006/309465781-9420afb8-2a57-4bae-a188-a719f6d62b1f.JPG");
 
     match little_exif_0_5_0_beta_2::metadata::Metadata::new_from_path(jpg_path) {
         Ok(metadata) => {
@@ -68,8 +65,7 @@ fn read_exif_data_fixed() {
 
 #[test]
 fn read_exif_data_current() {
-    let jpg_path =
-        Path::new("resources/issue_000006/309465781-9420afb8-2a57-4bae-a188-a719f6d62b1f.JPG");
+    let jpg_path = Path::new("resources/issue_000006/309465781-9420afb8-2a57-4bae-a188-a719f6d62b1f.JPG");
 
     match little_exif::metadata::Metadata::new_from_path(jpg_path) {
         Ok(metadata) => {

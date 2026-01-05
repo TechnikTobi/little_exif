@@ -3,9 +3,8 @@
 
 use log::warn;
 
-use crate::exif_tag::ExifTag;
-
 use super::ImageFileDirectory;
+use crate::exif_tag::ExifTag;
 
 impl ImageFileDirectory {
     /// Sets the value of an image file directory. Checks if the group of the

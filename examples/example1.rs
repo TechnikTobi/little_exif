@@ -1,8 +1,7 @@
 // Copyright © 2022 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::fs::copy;
-use std::fs::remove_file;
+use std::fs::{copy, remove_file};
 use std::path::Path;
 
 extern crate little_exif;

@@ -12,9 +12,7 @@ use std::fs::File;
 
 use crate::endian::Endian;
 use crate::general_file_io::io_error;
-use crate::u8conversion::from_u8_vec_macro;
-use crate::u8conversion::to_u8_vec_macro;
-use crate::u8conversion::U8conversion;
+use crate::u8conversion::{from_u8_vec_macro, to_u8_vec_macro, U8conversion};
 
 fn check_riff_signature(file_buffer: &Vec<u8>) -> Result<(), std::io::Error> {
     // Check the RIFF signature

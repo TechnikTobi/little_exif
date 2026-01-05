@@ -25,8 +25,7 @@ macro_rules! io_error {
     };
 }
 
-use std::fs::File;
-use std::fs::OpenOptions;
+use std::fs::{File, OpenOptions};
 use std::path::Path;
 
 pub(crate) fn open_read_file(path: &Path) -> Result<File, std::io::Error> {
@@ -45,5 +44,4 @@ pub(crate) fn open_write_file(path: &Path) -> Result<File, std::io::Error> {
     OpenOptions::new().read(true).write(true).open(path)
 }
 
-pub(crate) use io_error;
-pub(crate) use perform_file_action;
+pub(crate) use {io_error, perform_file_action};

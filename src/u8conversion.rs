@@ -31,12 +31,10 @@ macro_rules! build_u8conversion {
                 }
 
                 match *endian {
-                    Endian::Little => <paste! {[<$type>]}>::from_le_bytes(
-                        u8_vec[0..$number_of_bytes].try_into().unwrap(),
-                    ),
-                    Endian::Big => <paste! {[<$type>]}>::from_be_bytes(
-                        u8_vec[0..$number_of_bytes].try_into().unwrap(),
-                    ),
+                    Endian::Little => {
+                        <paste! {[<$type>]}>::from_le_bytes(u8_vec[0..$number_of_bytes].try_into().unwrap())
+                    }
+                    Endian::Big => <paste! {[<$type>]}>::from_be_bytes(u8_vec[0..$number_of_bytes].try_into().unwrap()),
                 }
             }
         }
@@ -94,10 +92,7 @@ impl U8conversion<uR64> for uR64 {
         let nominator = from_u8_vec_macro!(u32, &u8_vec[0..4].to_vec(), endian);
         let denominator = from_u8_vec_macro!(u32, &u8_vec[4..8].to_vec(), endian);
 
-        return uR64 {
-            nominator,
-            denominator,
-        };
+        return uR64 { nominator, denominator };
     }
 }
 
@@ -116,10 +111,7 @@ impl U8conversion<iR64> for iR64 {
         let nominator = from_u8_vec_macro!(i32, &u8_vec[0..4].to_vec(), endian);
         let denominator = from_u8_vec_macro!(i32, &u8_vec[4..8].to_vec(), endian);
 
-        return iR64 {
-            nominator,
-            denominator,
-        };
+        return iR64 { nominator, denominator };
     }
 }
 
@@ -183,5 +175,4 @@ macro_rules! from_u8_vec_macro {
     };
 }
 
-pub(crate) use from_u8_vec_macro;
-pub(crate) use to_u8_vec_macro;
+pub(crate) use {from_u8_vec_macro, to_u8_vec_macro};

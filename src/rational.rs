@@ -107,21 +107,15 @@ fn f64_to_rational64u(real_number: f64) -> uR64 {
 
         n = (i32::MAX as u32 - previous_convergent.denominator) / convergent.denominator;
         if convergent.nominator > 0 {
-            n = std::cmp::min(
-                (u32::MAX - previous_convergent.nominator) / convergent.nominator,
-                n,
-            );
+            n = std::cmp::min((u32::MAX - previous_convergent.nominator) / convergent.nominator, n);
         }
 
         if continued_fraction_term >= n as f64 {
             break;
         }
 
-        let next_convergent = add_next_fraction_term(
-            &(continued_fraction_term as u32),
-            &convergent,
-            &previous_convergent,
-        );
+        let next_convergent =
+            add_next_fraction_term(&(continued_fraction_term as u32), &convergent, &previous_convergent);
         previous_convergent = convergent;
         convergent = next_convergent;
     }

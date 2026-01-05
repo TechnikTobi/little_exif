@@ -17,8 +17,7 @@ Solved:
 Changed U8 string conversion
 */
 
-use std::fs::copy;
-use std::fs::remove_file;
+use std::fs::{copy, remove_file};
 use std::path::Path;
 
 extern crate little_exif;
@@ -52,11 +51,7 @@ fn string_tag_round_trip() {
     let copy_make_tag = metadata_copy.get_tag(&ExifTag::Make("".to_string())).next();
 
     assert_eq!(
-        orig_make_tag
-            .unwrap()
-            .value_as_u8_vec(&orig_metadata.get_endian()),
-        copy_make_tag
-            .unwrap()
-            .value_as_u8_vec(&metadata_copy.get_endian())
+        orig_make_tag.unwrap().value_as_u8_vec(&orig_metadata.get_endian()),
+        copy_make_tag.unwrap().value_as_u8_vec(&metadata_copy.get_endian())
     );
 }

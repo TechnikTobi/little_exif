@@ -3,8 +3,7 @@
 // and testing purposes to the respective issue on GitHub.
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use std::fs::copy;
-use std::fs::remove_file;
+use std::fs::{copy, remove_file};
 use std::path::Path;
 
 use test_case::test_case;

@@ -8,20 +8,14 @@ pub mod metadata_io;
 pub mod set;
 
 use core::panic;
-use std::io::Cursor;
-use std::io::Read;
-use std::io::Seek;
-use std::io::Write;
+use std::io::{Cursor, Read, Seek, Write};
 
 use log::error;
 
 use crate::endian::*;
-use crate::general_file_io::io_error;
-use crate::general_file_io::EXIF_HEADER;
-use crate::ifd::ExifTagGroup;
-use crate::ifd::ImageFileDirectory;
-use crate::u8conversion::from_u8_vec_macro;
-use crate::u8conversion::U8conversion;
+use crate::general_file_io::{io_error, EXIF_HEADER};
+use crate::ifd::{ExifTagGroup, ImageFileDirectory};
+use crate::u8conversion::{from_u8_vec_macro, U8conversion};
 
 #[derive(Clone, Debug)]
 pub struct Metadata {
@@ -106,12 +100,10 @@ impl Metadata {
         for ifd in self.image_file_directories.iter() {
             if let Some((parent_ifd_group, offset_tag)) = ifd.get_offset_tag_for_parent_ifd() {
                 // Check if the parent IFD is already in the vector
-                if let Some(parent_ifd) =
-                    ifds_with_offset_info_only.iter_mut().find(|candidate_ifd| {
-                        candidate_ifd.get_ifd_type() == parent_ifd_group
-                            && candidate_ifd.get_generic_ifd_nr() == ifd.get_generic_ifd_nr()
-                    })
-                {
+                if let Some(parent_ifd) = ifds_with_offset_info_only.iter_mut().find(|candidate_ifd| {
+                    candidate_ifd.get_ifd_type() == parent_ifd_group
+                        && candidate_ifd.get_generic_ifd_nr() == ifd.get_generic_ifd_nr()
+                }) {
                     parent_ifd.set_tag(offset_tag);
                 } else {
                     // This *can* happen! For example, take a new Metadata
@@ -142,9 +134,7 @@ impl Metadata {
             let filter_result = self
                 .image_file_directories
                 .iter()
-                .filter(|ifd| {
-                    ifd.get_generic_ifd_nr() == n && ifd.get_ifd_type() == ExifTagGroup::GENERIC
-                })
+                .filter(|ifd| ifd.get_generic_ifd_nr() == n && ifd.get_ifd_type() == ExifTagGroup::GENERIC)
                 .collect::<Vec<&ImageFileDirectory>>();
 
             assert!(filter_result.len() <= 1);
@@ -189,9 +179,7 @@ impl Metadata {
         });
     }
 
-    fn decode(
-        data_cursor: &mut Cursor<&Vec<u8>>,
-    ) -> Result<(Endian, Vec<ImageFileDirectory>), std::io::Error> {
+    fn decode(data_cursor: &mut Cursor<&Vec<u8>>) -> Result<(Endian, Vec<ImageFileDirectory>), std::io::Error> {
         // Get the start position
         let mut data_start_position = data_cursor.position();
 
@@ -229,12 +217,7 @@ impl Metadata {
                     "Expected endian information, but found something that suspectedly is XMP data"
                 )
             }
-            _ => {
-                return io_error!(
-                    Other,
-                    format!("Illegal endian information: {:?}", endian_buffer)
-                )
-            }
+            _ => return io_error!(Other, format!("Illegal endian information: {:?}", endian_buffer)),
         };
 
         // Validate magic number
@@ -249,11 +232,7 @@ impl Metadata {
         // Get offset to IFD0
         let mut ifd0_offset_buffer = vec![0u8; 4];
         data_cursor.read_exact(&mut ifd0_offset_buffer)?;
-        let mut ifd_offset_option = Some(from_u8_vec_macro!(
-            u32,
-            &ifd0_offset_buffer.to_vec(),
-            &endian
-        ));
+        let mut ifd_offset_option = Some(from_u8_vec_macro!(u32, &ifd0_offset_buffer.to_vec(), &endian));
 
         // Decode all the IFDs
         let mut ifds = Vec::new();
