@@ -196,18 +196,18 @@ file_clear_metadata
 
 			// ... copy everything from here onwards into a buffer ...
 			let mut buffer = Vec::new();
-			perform_file_action!(file.read_to_end(&mut buffer));
+			file.read_to_end(&mut buffer)?;
 
 			// ... seek back to the start of the EXIF box ...
-			perform_file_action!(file.seek(std::io::SeekFrom::Start(position)));
+			file.seek(std::io::SeekFrom::Start(position))?;
 
 			// ... overwrite everything from here onward ...
-			perform_file_action!(file.write_all(&buffer));
-			perform_file_action!(file.seek(std::io::SeekFrom::Start(position)));
+			file.write_all(&buffer)?;
+			file.seek(std::io::SeekFrom::Start(position))?;
 
 			// ... and finally update the file size - otherwise there will be
 			// duplicate bytes at the end!
-			perform_file_action!(file.set_len(old_file_length - length as u64));
+			file.set_len(old_file_length - length as u64)?;
 		}
 		else
 		{
@@ -486,7 +486,7 @@ file_write_metadata
 	// seek and write operations
 	let mut file = open_write_file(path)?;
 	let mut file_buffer: Vec<u8> = Vec::new();
-	perform_file_action!(file.read_to_end(&mut file_buffer));
+	file.read_to_end(&mut file_buffer)?;
 
 	// Writes the metadata to the file_buffer vec
 	// The called function handles the removal of old metadata and the JXL
@@ -494,8 +494,8 @@ file_write_metadata
 	write_metadata(&mut file_buffer, metadata)?;
 
 	// Seek back to start & write the file
-	perform_file_action!(file.seek(SeekFrom::Start(0)));
-	perform_file_action!(file.write_all(&file_buffer));
+	file.seek(SeekFrom::Start(0))?;
+	file.write_all(&file_buffer)?;
 
 	return Ok(());
 }

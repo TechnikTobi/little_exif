@@ -36,7 +36,7 @@ check_signature
 
 	// Get the first 12 bytes that are required for the following checks
 	let mut first_12_bytes = [0u8; 12];
-	perform_file_action!(file.read(&mut first_12_bytes));
+	file.read(&mut first_12_bytes)?;
 	let first_12_bytes_vec = first_12_bytes.to_vec();
 	
 	// Perform checks
@@ -236,7 +236,7 @@ check_exif_in_file
 	// - VP8X chunk size         ->  4 byte
 	let mut file = check_signature(path).unwrap();
 	let mut flag_buffer = vec![0u8; 4usize];
-	perform_file_action!(file.seek(SeekFrom::Start(12u64 + 4u64 + 4u64)));
+	file.seek(SeekFrom::Start(12u64 + 4u64 + 4u64))?;
 	if file.read(&mut flag_buffer).unwrap() != 4
 	{
 		return io_error!(Other, "Could not read flags of VP8X chunk!");
@@ -273,7 +273,7 @@ read_metadata
 	// Start by seeking to the start of the first chunk and visiting chunk after
 	// chunk via checking the type and seeking again to the next chunk via the
 	// size information
-	perform_file_action!(file.seek(SeekFrom::Start(12u64)));
+	file.seek(SeekFrom::Start(12u64))?;
 	let mut header_buffer = vec![0u8; 4usize];
 	let mut chunk_index = 0usize;
 	loop
@@ -306,7 +306,7 @@ read_metadata
 		{
 			// Read the EXIF chunk's data into a buffer
 			let mut payload_buffer = vec![0u8; chunk_size];
-			perform_file_action!(file.read(&mut payload_buffer));
+			file.read(&mut payload_buffer)?;
 
 			// Add the 6 bytes of the EXIF_HEADER as Prefix for the generic EXIF
 			// data parser that is called on the result of this read function
@@ -347,11 +347,11 @@ update_file_size_information
 	// As the size of any chunk is even, the size given by the RIFF header is also even.
 
 	// Update the file size information, first by reading in the current value...
-	perform_file_action!(file.seek(SeekFrom::Start(4)));
+	file.seek(SeekFrom::Start(4))?;
 	let mut file_size_buffer = [0u8; 4];
 
 	// ...converting it to u32 representation...
-	perform_file_action!(file.read(&mut file_size_buffer));
+	file.read(&mut file_size_buffer)?;
 	let old_file_size = from_u8_vec_macro!(u32, &file_size_buffer.to_vec(), &Endian::Little);
 
 	// ...adding the delta byte count (and performing some checks)...
@@ -365,8 +365,8 @@ update_file_size_information
 	assert!(new_file_size % 2 == 0);
 
 	// ...and writing back to file...
-	perform_file_action!(file.seek(SeekFrom::Start(4)));
-	perform_file_action!(file.write_all(&to_u8_vec_macro!(u32, &new_file_size, &Endian::Little)));
+	file.seek(SeekFrom::Start(4))?;
+	file.write_all(&to_u8_vec_macro!(u32, &new_file_size, &Endian::Little))?;
 
 	Ok(())
 }
@@ -381,7 +381,7 @@ convert_to_extended_format
 -> Result<(), std::io::Error>
 {
 	// Start by getting the first chunk of the WebP file
-	perform_file_action!(file.seek(SeekFrom::Start(12)));
+	file.seek(SeekFrom::Start(12))?;
 	let first_chunk_result = get_next_chunk(file);
 
 	// Check that this get operation was successful
@@ -419,15 +419,15 @@ convert_to_extended_format
 	// Write the VP8X chunk, first by reading the file (except for the header)
 	// into a buffer...
 	let mut buffer = Vec::new();
-	perform_file_action!(file.seek(SeekFrom::Start(12u64)));
-	perform_file_action!(file.read_to_end(&mut buffer));
+	file.seek(SeekFrom::Start(12u64))?;
+	file.read_to_end(&mut buffer)?;
 
 	// ...actually writing the VP8X chunk data...
-	perform_file_action!(file.seek(SeekFrom::Start(12u64)));
-	perform_file_action!(file.write(&vp8x_chunk));
+	file.seek(SeekFrom::Start(12u64))?;
+	file.write(&vp8x_chunk)?;
 
 	// ...and writing back the file contents
-	perform_file_action!(file.write(&buffer));
+	file.write(&buffer)?;
 
 	// Finally, update the file size information
 	update_file_size_information(file, 18)?;
@@ -510,7 +510,7 @@ set_exif_flag
 	// At this point we know that we have a VP8X chunk at the expected location
 	// So, read in the flags and set the EXIF flag according to the given bool
 	let mut flag_buffer = vec![0u8; 4usize];
-	perform_file_action!(file.seek(SeekFrom::Start(12u64 + 4u64 + 4u64)));
+	file.seek(SeekFrom::Start(12u64 + 4u64 + 4u64))?;
 	if file.read(&mut flag_buffer).unwrap() != 4
 	{
 		return io_error!(Other, "Could not read flags of VP8X chunk!");
@@ -529,8 +529,8 @@ set_exif_flag
 	};
 
 	// Write flag buffer back to the file
-	perform_file_action!(file.seek(SeekFrom::Start(12u64 + 4u64 + 4u64)));
-	perform_file_action!(file.write_all(&flag_buffer));
+	file.seek(SeekFrom::Start(12u64 + 4u64 + 4u64))?;
+	file.write_all(&flag_buffer)?;
 
 	Ok(())
 }
@@ -599,16 +599,16 @@ clear_metadata
 
 		// ...and copy everything afterwards into a buffer...
 		let mut buffer = Vec::new();
-		perform_file_action!(file.read_to_end(&mut buffer));
+		file.read_to_end(&mut buffer)?;
 
 		// ...and seek back to where the EXIF chunk is located...
-		perform_file_action!(file.seek(exif_chunk_start_cursor_position));
+		file.seek(exif_chunk_start_cursor_position)?;
 
 		// ...and overwrite the EXIF chunk...
-		perform_file_action!(file.write_all(&buffer));
+		file.write_all(&buffer)?;
 
 		// ...and finally update the size of the file
-		perform_file_action!(file.set_len(old_file_byte_count - parsed_chunk_byte_count));
+		file.set_len(old_file_byte_count - parsed_chunk_byte_count)?;
 
 		// Additionally, update the size information that gets written to the 
 		// file header after this loop
@@ -619,7 +619,7 @@ clear_metadata
 	update_file_size_information(&mut file, delta)?;
 	
 	// Set the flags in the VP8X chunk. First, read in the current flags
-	perform_file_action!(set_exif_flag(path, false));
+	set_exif_flag(path, false)?;
 
 	return Ok(());
 }
@@ -695,14 +695,14 @@ write_metadata
 	// Next, read remaining file into a buffer...
 	let current_file_cursor = SeekFrom::Start(file.seek(SeekFrom::Current(0)).unwrap());
 	let mut read_buffer = Vec::new();
-	perform_file_action!(file.read_to_end(&mut read_buffer));
+	file.read_to_end(&mut read_buffer)?;
 
 	// ...and write the EXIF chunk at the previously found location...
-	perform_file_action!(file.seek(current_file_cursor));
-	perform_file_action!(file.write_all(&encoded_metadata));
+	file.seek(current_file_cursor)?;
+	file.write_all(&encoded_metadata)?;
 
 	// ...and writing back the remaining file content
-	perform_file_action!(file.write_all(&read_buffer));
+	file.write_all(&read_buffer)?;
 
 	// Update the file size information by adding the byte count of the EXIF chunk
 	// (Note: Due to  the WebP specific encoding function, this vector already
@@ -713,7 +713,7 @@ write_metadata
 	update_file_size_information(&mut file, encoded_metadata.len() as i32)?;
 
 	// Finally, set the EXIF flag
-	perform_file_action!(set_exif_flag(path, true));
+	set_exif_flag(path, true)?;
 
 	return Ok(());
 }

@@ -206,7 +206,7 @@ file_clear_segment
 	// Write the file
 	// Possible to optimize further by returning the purged bytestream itself?
 	let mut file = std::fs::OpenOptions::new().write(true).truncate(true).open(path)?;
-	perform_file_action!(file.write_all(&file_buffer));
+	file.write_all(&file_buffer)?;
 
 	return Ok(());
 }
