@@ -347,8 +347,9 @@ HeifContainer
             // Where to put the new exif area
             let new_exif_start = self.get_start_address_for_new_exif_area();
 
-            // If there is no iref box yet, create one so we can find one
-            self.get_meta_box_mut()
+            // If there is no iref box yet, create one so we can find one, 
+            // and get the size delta of the new box for extents
+            let mut iref_size_delta = self.get_meta_box_mut()
                 .create_new_item_reference_box_if_none_exists_yet();
 
             // Acquire the item location, the item information and the item 
@@ -403,7 +404,7 @@ HeifContainer
                 new_iloc_id, 
                 "Exif"
             );
-            let               iref_size_delta  = iref.create_new_single_item_reference_box(
+            iref_size_delta += iref.create_new_single_item_reference_box(
                 "cdsc".to_string(), // TODO: Check if this is always this type?
                 new_iloc_id, 
                 vec![1]             // TODO: Check if this is always item #1?

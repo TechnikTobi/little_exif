@@ -111,14 +111,15 @@ MetaBox
     create_new_item_reference_box_if_none_exists_yet
     (
         &mut self
-    )
+    ) -> usize
     {
         if self.get_item_reference_box().is_some()
         {
-            return;
+            return 0;
         }
 
         let new_iref_box = ItemReferenceBox::new();
+        let new_iref_box_size = new_iref_box.get_header().get_box_size();
 
         let index = self.other_boxes
             .iter()
@@ -126,6 +127,8 @@ MetaBox
             .unwrap();
         
         self.other_boxes.insert(index, Box::new(new_iref_box));
+
+        return new_iref_box_size;
     }
 }
 
