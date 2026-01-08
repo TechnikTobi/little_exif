@@ -35,7 +35,7 @@ generic_read_metadata
 -> Result<Vec<u8>, std::io::Error>
 {
     let container = HeifContainer::construct_from_cursor_unboxed(cursor)?;
-    return Ok(container.get_exif_data(cursor)?);
+    return container.get_exif_data(cursor);
 }
 
 pub(crate) fn
@@ -98,7 +98,7 @@ file_write_metadata
     // Seek back to start, write the file and adjust its length, possibly 
     // truncating the file if new contents are shorter
     file.seek(std::io::SeekFrom::Start(0))?;
-    file.write_all(&mut cursor.get_mut())?;
+    file.write_all(cursor.get_mut())?;
     file.set_len(cursor.get_ref().len() as u64)?;
 
     return Ok(());
@@ -109,7 +109,7 @@ file_write_metadata
 pub(crate) fn 
 as_u8_vec
 (
-    general_encoded_metadata: &Vec<u8>
+    general_encoded_metadata: &[u8]
 ) 
 -> Vec<u8> 
 {
@@ -161,7 +161,7 @@ file_clear_metadata
     // Seek back to start, write the file and adjust its length, possibly 
     // truncating the file if new contents are shorter
     file.seek(std::io::SeekFrom::Start(0))?;
-    file.write_all(&mut cursor.get_mut())?;
+    file.write_all(cursor.get_mut())?;
     file.set_len(cursor.get_ref().len() as u64)?;
 
     return Ok(());

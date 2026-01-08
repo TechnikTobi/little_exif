@@ -148,7 +148,6 @@ construct_similar_with_new_data
 	let     keyword        = get_keyword_from_text_chunk(old_chunk_data);
 	let mut new_chunk_data = keyword
 		.bytes()
-		.map(|byte| byte as u8)
 		.collect::<Vec<u8>>();
 	new_chunk_data.push(0x00);
 
@@ -168,7 +167,7 @@ construct_similar_with_new_data
 				);
 			}
 
-			new_chunk_data.extend(compress_to_vec_zlib(&new_data, 8).iter());
+			new_chunk_data.extend(compress_to_vec_zlib(new_data, 8).iter());
 		},
 
 		"iTXt" => {
@@ -187,11 +186,11 @@ construct_similar_with_new_data
 
 			// Add the language tag and translated keyword
 			new_chunk_data.extend(
-				language_tag.bytes().map(|byte| byte as u8)
+				language_tag.bytes()
 			);
 			new_chunk_data.push(0x00);
 			new_chunk_data.extend(
-				translated_keyword.bytes().map(|byte| byte as u8)
+				translated_keyword.bytes()
 			);
 			new_chunk_data.push(0x00);
 
@@ -211,7 +210,7 @@ construct_similar_with_new_data
 					);
 				}
 				new_chunk_data.extend(
-					compress_to_vec_zlib(&new_data, 8).iter()
+					compress_to_vec_zlib(new_data, 8).iter()
 				);
 			}
 		},

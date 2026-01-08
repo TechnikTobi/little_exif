@@ -61,7 +61,7 @@ get_next_chunk
 {
 	// Read the start of the chunk
 	let mut chunk_start = [0u8; 8];
-	let mut bytes_read = file.read(&mut chunk_start).unwrap();
+	let mut bytes_read = file.read(&mut chunk_start)?;
 
 	// Check that indeed 8 bytes were read
 	if bytes_read != 8
@@ -71,14 +71,14 @@ get_next_chunk
 
 	// Construct name of chunk and its length
 	let chunk_name = String::from_utf8(chunk_start[0..4].to_vec());
-	let mut chunk_length = from_u8_vec_macro!(u32, &chunk_start[4..8].to_vec(), &Endian::Little);
+	let mut chunk_length = from_u8_vec_macro!(u32, &chunk_start[4..8], &Endian::Little);
 
 	// Account for the possible padding byte
 	chunk_length += chunk_length % 2;
 
 	// Read RIFF chunk data
 	let mut chunk_data_buffer = vec![0u8; chunk_length as usize];
-	bytes_read = file.read(&mut chunk_data_buffer).unwrap();
+	bytes_read = file.read(&mut chunk_data_buffer)?;
 	if bytes_read != chunk_length as usize
 	{
 		return io_error!(
@@ -283,12 +283,12 @@ read_metadata
 		{
 			return io_error!(Other, "Could not read chunk type while traversing WebP file!");
 		}
-		let chunk_type = String::from_u8_vec(&header_buffer.to_vec(), &Endian::Little);
+		let chunk_type = String::from_u8_vec(&header_buffer.clone(), &Endian::Little);
 
 		// Check that this is still the type that we expect from the previous
 		// parsing over the file
 		// TODO: Maybe remove this part?
-		let expected_chunk_type = parse_webp_result.iter().nth(chunk_index).unwrap().header();
+		let expected_chunk_type = parse_webp_result.get(chunk_index).unwrap().header();
 		if chunk_type != expected_chunk_type
 		{
 			return io_error!(
@@ -299,7 +299,7 @@ read_metadata
 
 		// Get the size of this chunk from the previous parsing process and skip
 		// the 4 bytes regarding the size
-		let chunk_size = parse_webp_result.iter().nth(chunk_index).unwrap().len();
+		let chunk_size = parse_webp_result.get(chunk_index).unwrap().len();
 		file.seek(std::io::SeekFrom::Current(4))?;
 
 		if chunk_type.to_lowercase() == EXIF_CHUNK_HEADER.to_lowercase()
@@ -352,7 +352,7 @@ update_file_size_information
 
 	// ...converting it to u32 representation...
 	perform_file_action!(file.read(&mut file_size_buffer));
-	let old_file_size = from_u8_vec_macro!(u32, &file_size_buffer.to_vec(), &Endian::Little);
+	let old_file_size = from_u8_vec_macro!(u32, &file_size_buffer, &Endian::Little);
 
 	// ...adding the delta byte count (and performing some checks)...
 	if delta < 0
@@ -396,7 +396,7 @@ convert_to_extended_format
 	let (width, height) = match first_chunk.descriptor().header().as_str()
 	{
 		"VP8" 
-			=> {debug!("VP8 !"); todo!()},
+			=> {debug!("VP8 !"); io_error!(Other, "Conversion from 'VP8' Simple File Format WebP to Extended File Format WebP not yet implemented!")},
 		"VP8L"
 			=> get_dimension_info_from_vp8l_chunk(first_chunk.payload()),
 		_ 
@@ -440,7 +440,7 @@ convert_to_extended_format
 fn
 get_dimension_info_from_vp8l_chunk
 (
-	payload: &Vec<u8>
+	payload: &[u8]
 )
 -> Result<(u32, u32), std::io::Error>
 {
@@ -489,7 +489,7 @@ set_exif_flag
 	}
 
 	// Open the file for further processing
-	let mut file = check_signature(path).unwrap();
+	let mut file = check_signature(path)?;
 
 	// Next, check if this is an Extended File Format WebP file
 	// In this case, the first Chunk SHOULD have the type "VP8X"
@@ -589,10 +589,10 @@ clear_metadata
 		}
 
 		// Get the current size of the file in bytes
-		let old_file_byte_count = file.metadata().unwrap().len();
+		let old_file_byte_count = file.metadata()?.len();
 
 		// Get a backup of the current cursor position
-		let exif_chunk_start_cursor_position = SeekFrom::Start(file.seek(SeekFrom::Current(0)).unwrap());
+		let exif_chunk_start_cursor_position = SeekFrom::Start(file.stream_position().unwrap());
 
 		// Skip the EXIF chunk ...
 		file.seek(std::io::SeekFrom::Current(parsed_chunk_byte_count as i64))?;
@@ -693,7 +693,7 @@ write_metadata
 	}
 
 	// Next, read remaining file into a buffer...
-	let current_file_cursor = SeekFrom::Start(file.seek(SeekFrom::Current(0)).unwrap());
+	let current_file_cursor = SeekFrom::Start(file.stream_position()?);
 	let mut read_buffer = Vec::new();
 	perform_file_action!(file.read_to_end(&mut read_buffer));
 

@@ -304,8 +304,7 @@ BoxType
     )
     -> bool
     {
-        match self
-        {
+        matches!(self,
             BoxType::meta |
             BoxType::hdlr |
             BoxType::iinf |
@@ -383,11 +382,7 @@ BoxType
             BoxType::uri  |
             BoxType::uriI |
             BoxType::hmhd |
-            BoxType::sthd 
-            => true,
-
-            _ 
-            => false,
-        }
+            BoxType::sthd
+        )
     }
 }

@@ -74,17 +74,17 @@ macro_rules! build_png_chunk_type_enum {
             pub(crate) fn
             from_string
             (
-                string_name: &String,
+                string_name: &str,
                 length: u32
             )
             -> Result<PngChunk, PngChunk>
             {
-                match &(*string_name.as_str())
+                match string_name
                 {
                     $(
                         stringify!($tag) => Ok(PngChunk::$tag(length)),
                     )*
-                    _ => Err(PngChunk::UNKNOWN(string_name.clone(), length)),
+                    _ => Err(PngChunk::UNKNOWN(string_name.to_string(), length)),
                 }
             }
         }

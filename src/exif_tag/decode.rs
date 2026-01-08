@@ -32,7 +32,7 @@ decode_tag_with_format_exceptions
 		// The expected format and the given format in the file
 		// do *not* match. Check special cases (e.g. INT16U -> INT32U)
 		// If no special cases match, return an error
-		match (raw_tag.format(), format.clone())
+		match (raw_tag.format(), format)
 		{
 			// Expected for tag   VS Decoded from data
 			(ExifTagFormat::INT32U, ExifTagFormat::INT16U) => {
@@ -98,7 +98,7 @@ decode_tag_with_format_exceptions
 						0x0005, 
 						&ExifTagFormat::INT8U, 
 						&int8u_data, 
-						&endian, 
+						endian, 
 						group
 					).unwrap());
 				}
@@ -124,7 +124,7 @@ decode_tag_with_format_exceptions
 					raw_tag.as_u16()    == 0x001b            && // GPSProcessingMethod	
 					raw_tag.get_group() == ExifTagGroup::GPS
 				{
-					return Ok(raw_tag.set_value_to_undef(raw_data.to_vec()).unwrap());
+					return Ok(raw_tag.set_value_to_undef(raw_data.clone()).unwrap());
 				}
 				else
 				{
@@ -143,8 +143,8 @@ decode_tag_with_format_exceptions
 		return Ok(ExifTag::from_u16_with_data(
 			hex_tag, 
 			&format, 
-			&raw_data, 
-			&endian, 
+			raw_data, 
+			endian, 
 			group
 		).unwrap());
 	}

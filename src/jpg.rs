@@ -25,7 +25,7 @@ const JPG_APP1_MARKER:   u16 = 0xffe1;
 fn
 encode_metadata_jpg
 (
-	exif_vec: &Vec<u8>
+	exif_vec: &[u8]
 )
 -> Vec<u8>
 {
@@ -51,7 +51,7 @@ encode_metadata_jpg
 fn
 check_signature
 (
-	file_buffer: &Vec<u8>
+	file_buffer: &[u8]
 )
 -> Result<(), std::io::Error>
 {
@@ -82,7 +82,7 @@ file_check_signature
 	// Check the signature
 	let mut signature_buffer = [0u8; 2];
 	file.read(&mut signature_buffer)?;
-	check_signature(&signature_buffer.to_vec())?;
+	check_signature(&signature_buffer)?;
 
 	// Signature is valid - can proceed using the file as JPG file
 	return Ok(file);
@@ -108,7 +108,7 @@ clear_segment
 )
 -> Result<(), std::io::Error>
 {
-	check_signature(&file_buffer)?;
+	check_signature(file_buffer)?;
 
 	// Setup of variables necessary for going through the file
 	let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
@@ -139,7 +139,7 @@ clear_segment
 			cursor.read_exact(&mut length_buffer)?;
 
 			// Decode the length to determine how much more data there is
-			let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
+			let length = from_u8_vec_macro!(u16, &length_buffer, &Endian::Big);
 			let remaining_length = (length - 2) as usize;
 
 			if byte_buffer[0] == segment_marker                                 // Given marker, e.g. for APP1
@@ -227,7 +227,7 @@ file_clear_metadata
 pub(crate) fn
 as_u8_vec
 (
-	general_encoded_metadata: &Vec<u8>
+	general_encoded_metadata: &[u8]
 )
 -> Vec<u8>
 {
@@ -403,7 +403,7 @@ generic_read_metadata
 			cursor.read_exact(&mut length_buffer)?;
 
 			// Decode the length to determine how much more data there is
-			let length = from_u8_vec_macro!(u16, &length_buffer.to_vec(), &Endian::Big);
+			let length = from_u8_vec_macro!(u16, &length_buffer, &Endian::Big);
 			let remaining_length = (length - 2) as usize;
 
 			match byte_buffer[0]

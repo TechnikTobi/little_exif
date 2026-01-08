@@ -3,7 +3,6 @@
 
 // Based on: https://github.com/google/audio-to-tactile/blob/main/src/dsp/number_util.c
 
-use std::u32;
 use std::convert::Into;
 
 const MAX_TERM_COUNT:        usize = 42;

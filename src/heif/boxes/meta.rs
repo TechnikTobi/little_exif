@@ -172,9 +172,9 @@ MetaBox
         }
 
         return Ok(Box::new(MetaBox { 
-            header:           header,
-            handler_box:      handler_box,
-            other_boxes:      other_boxes,
+            header,
+            handler_box,
+            other_boxes,
         }));
     }
 }
@@ -221,10 +221,10 @@ HandlerBox
         cursor.read_exact(&mut name_buffer)?;
 
         return Ok(HandlerBox { 
-            header:       header, 
-            pre_defined:  pre_defined, 
-            handler_type: handler_type, 
-            reserved:     reserved, 
+            header, 
+            pre_defined, 
+            handler_type, 
+            reserved, 
             name:         name_buffer 
         });
     }

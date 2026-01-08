@@ -37,14 +37,11 @@ FileExtension
     {
         // Read first few bytes (32 bytes because I don't know any better)
         let mut buffer = [0; 32];
-        let n = cursor.read(&mut buffer);
-
-        if n.is_err()
-        {
+        let Ok(n) = cursor.read(&mut buffer) else {
             return None;
-        }
+        };
 
-        if n.unwrap() < 4
+        if n < 4
         {
             return None;
         }

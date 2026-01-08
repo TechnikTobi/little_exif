@@ -20,7 +20,7 @@ U8conversion<T>
 	fn
 	from_u8_vec
 	(
-		u8_vec: &Vec<u8>,
+		u8_vec: &[u8],
 		endian: &Endian
 	)
 	-> T;
@@ -54,7 +54,7 @@ macro_rules! build_u8conversion
 			fn
 			from_u8_vec
 			(
-				u8_vec: &Vec<u8>,
+				u8_vec: &[u8],
 				endian: &Endian
 			)
 			-> $type
@@ -98,14 +98,14 @@ impl U8conversion<String> for String
 	-> Vec<u8>
 	{
 		let mut u8_vec = self.as_bytes().to_vec();
-		u8_vec.push(0x00 as u8);
+		u8_vec.push(0x00_u8);
 		return u8_vec;
 	}
 
 	fn
 	from_u8_vec
 	(
-		u8_vec: &Vec<u8>,
+		u8_vec: &[u8],
 		_endian: &Endian
 	)
 	-> String
@@ -148,18 +148,15 @@ impl U8conversion<uR64> for uR64
 	fn
 	from_u8_vec
 	(
-		u8_vec: &Vec<u8>,
+		u8_vec: &[u8],
 		endian: &Endian
 	)
 	-> uR64
 	{
-		if u8_vec.len() != 8
-		{
-			panic!("from_u8_vec (r64u): Mangled EXIF data encountered!")
-		}
+		assert!(u8_vec.len() == 8, "from_u8_vec (r64u): Mangled EXIF data encountered!");
 
-		let nominator   = from_u8_vec_macro!(u32, &u8_vec[0..4].to_vec(), endian);
-		let denominator = from_u8_vec_macro!(u32, &u8_vec[4..8].to_vec(), endian);
+		let nominator   = from_u8_vec_macro!(u32, &u8_vec[0..4], endian);
+		let denominator = from_u8_vec_macro!(u32, &u8_vec[4..8], endian);
 
 		return uR64 { nominator, denominator };
 	}
@@ -183,18 +180,15 @@ impl U8conversion<iR64> for iR64
 	fn
 	from_u8_vec
 	(
-		u8_vec: &Vec<u8>,
+		u8_vec: &[u8],
 		endian: &Endian
 	)
 	-> iR64
 	{
-		if u8_vec.len() != 8
-		{
-			panic!("from_u8_vec (r64u): Mangled EXIF data encountered!")
-		}
+		assert!(u8_vec.len() == 8, "from_u8_vec (r64u): Mangled EXIF data encountered!");
 
-		let nominator   = from_u8_vec_macro!(i32, &u8_vec[0..4].to_vec(), endian);
-		let denominator = from_u8_vec_macro!(i32, &u8_vec[4..8].to_vec(), endian);
+		let nominator   = from_u8_vec_macro!(i32, &u8_vec[0..4], endian);
+		let denominator = from_u8_vec_macro!(i32, &u8_vec[4..8], endian);
 
 		return iR64 { nominator, denominator };
 	}
@@ -231,7 +225,7 @@ macro_rules! build_vec_u8conversion
 			fn
 			from_u8_vec
 			(
-				u8_vec: &Vec<u8>,
+				u8_vec: &[u8],
 				endian: &Endian
 			)
 			-> Vec<$type>
