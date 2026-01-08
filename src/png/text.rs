@@ -22,7 +22,8 @@ get_keyword_from_text_chunk
 		if *character == 0x00 { break; }
 		keyword_buffer.push(*character);
 	}
-	return String::from_utf8(keyword_buffer).unwrap();
+	// Use a lossy conversion to avoid panics on invalid UTF-8.
+	return String::from_utf8_lossy(&keyword_buffer).into_owned();
 }
 
 pub(crate) fn

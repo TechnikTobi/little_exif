@@ -54,7 +54,7 @@ get_next_chunk
 	let mut chunk_start = [0u8; 8];
 
 	
-	let mut bytes_read = cursor.read(&mut chunk_start).unwrap();
+	let mut bytes_read = cursor.read(&mut chunk_start)?;
 
 	// Check that indeed 8 bytes were read
 	if bytes_read != 8
@@ -140,38 +140,37 @@ parse_webp
 
 	loop
 	{
-		let next_chunk_descriptor_result = get_next_chunk_descriptor(&mut cursor);
-		if let Ok(chunk_descriptor) = next_chunk_descriptor_result
-		{
-			// The parsed length increases by the length of the chunk's 
-			// header (4 byte) + it's size section (4 byte) and the payload
-			// size, which is noted by the aforementioned size section
-			parsed_length += 4 + 4 + chunk_descriptor.len();
+		match get_next_chunk_descriptor(&mut cursor) {
+			Ok(chunk_descriptor) =>  {
+				// The parsed length increases by the length of the chunk's
+				// header (4 byte) + it's size section (4 byte) and the payload
+				// size, which is noted by the aforementioned size section
+				parsed_length += 4 + 4 + chunk_descriptor.len();
 
-			// Add the chunk descriptor
-			chunks.push(chunk_descriptor);
-			
-			if parsed_length == expected_length
-			{
-				// In this case we don't expect any more data to be in the file
-				break;
-			}			
-		}
-		else
-		{
-			// This is the case when the read of the next chunk descriptor 
-			// fails due to not being able to fetch 8 bytes for the header and
-			// chunk size information, indicating that there is no further data
-			// in the file and we are done with parsing.
-			// If the subroutine fails due to other reasons, the error gets
-			// propagated further.
-			if next_chunk_descriptor_result.as_ref().err().unwrap().kind() == std::io::ErrorKind::UnexpectedEof
-			{
-				break;
+				// Add the chunk descriptor
+				chunks.push(chunk_descriptor);
+
+				if parsed_length == expected_length
+				{
+					// In this case we don't expect any more data to be in the file
+					break;
+				}
 			}
-			else
-			{
-				return Err(next_chunk_descriptor_result.err().unwrap());
+			Err(e) => {
+				// This is the case when the read of the next chunk descriptor
+				// fails due to not being able to fetch 8 bytes for the header and
+				// chunk size information, indicating that there is no further data
+				// in the file and we are done with parsing.
+				// If the subroutine fails due to other reasons, the error gets
+				// propagated further.
+				if e.kind() == std::io::ErrorKind::UnexpectedEof
+				{
+					break;
+				}
+				else
+				{
+					return Err(e);
+				}
 			}
 		}
 	}
@@ -249,7 +248,7 @@ read_metadata
 {
 	// Check the signature, parse it, check that it has a VP8X chunk and the
 	// EXIF flag is set there
-	let (mut cursor, parse_webp_result) = check_exif_in_file(file_buffer).unwrap();
+	let (mut cursor, parse_webp) = check_exif_in_file(file_buffer)?;
 
 	// At this point we have established that the file has to contain an EXIF
 	// chunk at some point. So, now we need to find & return it
@@ -262,16 +261,22 @@ read_metadata
 	loop
 	{
 		// Read the chunk type into the buffer
-		if cursor.read(&mut header_buffer).unwrap() != 4
+		if cursor.read(&mut header_buffer)? != 4
 		{
 			return io_error!(Other, "Could not read chunk type while traversing WebP file!");
 		}
 		let chunk_type = String::from_u8_vec(&header_buffer.clone(), &Endian::Little);
 
+		let chunk = match parse_webp.get(chunk_index)
+		{
+			Some(c) => c,
+			None    => return io_error!(Other, "Could not get chunk descriptor while traversing WebP file!")
+		};
+
 		// Check that this is still the type that we expect from the previous
 		// parsing over the file
 		// TODO: Maybe remove this part?
-		let expected_chunk_type = parse_webp_result.get(chunk_index).unwrap().header();
+		let expected_chunk_type = chunk.header();
 		if chunk_type != expected_chunk_type
 		{
 			return io_error!(
@@ -282,7 +287,7 @@ read_metadata
 
 		// Get the size of this chunk from the previous parsing process and skip
 		// the 4 bytes regarding the size
-		let chunk_size = parse_webp_result.get(chunk_index).unwrap().len();
+		let chunk_size = chunk.len();
 		cursor.seek(std::io::SeekFrom::Current(4))?;
 
 		if chunk_type.to_lowercase() == EXIF_CHUNK_HEADER.to_lowercase()
@@ -364,15 +369,8 @@ convert_to_extended_format
 	// Start by getting the first chunk of the WebP file
 	let mut read_cursor: Cursor<&Vec<u8>> = Cursor::new(cursor.get_ref());
 	read_cursor.set_position(12);
-	let first_chunk_result = get_next_chunk(&mut read_cursor);
 
-	// Check that this get operation was successful
-	if first_chunk_result.is_err()
-	{
-		return Err(first_chunk_result.err().unwrap());
-	}
-
-	let first_chunk = first_chunk_result.unwrap();
+	let first_chunk = get_next_chunk(&mut read_cursor)?;
 
 	// Find out what simple type of WebP file we are dealing with
 	let (width, height) = match first_chunk.descriptor().header().as_str()
@@ -601,32 +599,30 @@ write_metadata
 	{
 		// Request a chunk descriptor. If this fails, check the error 
 		// Depending on its type, either continue normally or return it
-		let chunk_descriptor_result = get_next_chunk_descriptor(&mut read_cursor);
+		match get_next_chunk_descriptor(&mut read_cursor) {
+			Ok(chunk_descriptor) => {
+				let mut chunk_type_found_in_pre_exif_chunks = false;
 
-		if let Ok(chunk_descriptor) = chunk_descriptor_result
-		{
-			let mut chunk_type_found_in_pre_exif_chunks = false;
+				// Check header of chunk descriptor against any of the known chunks
+				// that should come before the EXIF chunk
+				for pre_exif_chunk in &pre_exif_chunks
+				{
+					chunk_type_found_in_pre_exif_chunks |= pre_exif_chunk.to_lowercase() == chunk_descriptor.header().to_lowercase();
+				}
 
-			// Check header of chunk descriptor against any of the known chunks
-			// that should come before the EXIF chunk
-			for pre_exif_chunk in &pre_exif_chunks
-			{
-				chunk_type_found_in_pre_exif_chunks |= pre_exif_chunk.to_lowercase() == chunk_descriptor.header().to_lowercase();
-			}
-
-			if !chunk_type_found_in_pre_exif_chunks
-			{
-				break;
-			}
-		}
-		else
-		{
-			match chunk_descriptor_result.as_ref().err().unwrap().kind()
-			{
-				std::io::ErrorKind::UnexpectedEof
+				if !chunk_type_found_in_pre_exif_chunks
+				{
+					break;
+				}
+			},
+			Err(e) => {
+				match e.kind()
+				{
+					std::io::ErrorKind::UnexpectedEof
 					=> break, // No further chunks, place EXIF chunk here
-				_
-					=> return Err(chunk_descriptor_result.err().unwrap())
+					_
+					=> return Err(e)
+				}
 			}
 		}
 	}
