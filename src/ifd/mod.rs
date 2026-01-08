@@ -227,19 +227,34 @@ ImageFileDirectory
                 // Note: `from_u16_with_data` can NOT be called initially due
                 // to some possible conversion of data needed, e.g. INT16U to
                 // INT32U, which is not accounted for yet at this stage
-                tags.push(ExifTag::from_u16_with_data(
+                match ExifTag::from_u16_with_data(
                     hex_tag, 
                     &format, 
                     &raw_data, 
                     endian, 
                     group
-                ).unwrap());
+                )
+                {
+                    Ok(tag) => tags.push(tag),
+                    Err(e)  => return io_error!(
+                        Other, 
+                        format!(
+                            "Could not construct unknown tag 0x{:04x}: {}", 
+                            hex_tag, 
+                            e
+                        )
+                    ),
+                }
+
                 continue;
             }
 
-            // We can now safely unwrap the result as it can't be an error
-            #[allow(clippy::unwrap_used)]
-            let mut tag = tag_result.unwrap();
+            // We should now be able to safely unwrap the tag
+            let mut tag = match tag_result
+            {
+                Ok(tag) => tag,
+                Err(e)  => return io_error!(Other, e)
+            };
 
             // If this is an IFD offset tag, perform a recursive call
             if let TagType::IFD_OFFSET(subifd_group) = tag.get_tag_type()
@@ -343,7 +358,7 @@ ImageFileDirectory
         // At this stage we have decoded the tags themselves. 
         // However, the data offset tags need further processing (i.e. their 
         // data needs to be read as well)
-        if strip_tags.0.is_some() && strip_tags.1.is_some()
+        if let (Some(strip_tags_0), Some(strip_tags_1)) = strip_tags 
         {
             // 0 -> offsets
             // 1 -> byte counts
@@ -354,8 +369,8 @@ ImageFileDirectory
                 )
                 = 
                 (
-                    strip_tags.0.unwrap().get_tag_type(),
-                    strip_tags.1.unwrap().get_tag_type()
+                    strip_tags_0.get_tag_type(),
+                    strip_tags_1.get_tag_type()
                 )
             {
                 let backup_position = data_cursor.position();
@@ -384,7 +399,7 @@ ImageFileDirectory
             }
         }
 
-        if thumbnail_info.0.is_some() && thumbnail_info.1.is_some()
+        if let (Some(thumbnail_info_0), Some(thumbnail_info_1)) = thumbnail_info 
         {
             // 0 -> offset
             // 1 -> length
@@ -395,8 +410,8 @@ ImageFileDirectory
                 )
                 =
                 (
-                    thumbnail_info.0.unwrap().get_tag_type(),
-                    thumbnail_info.1.unwrap().get_tag_type()
+                    thumbnail_info_0.get_tag_type(),
+                    thumbnail_info_1.get_tag_type()
                 )
             {
                 let backup_position = data_cursor.position();
@@ -479,14 +494,16 @@ ImageFileDirectory
 
         // Store all relevant tags (IFD tags + offset tags) in a temporary 
         // location and sort them there
-        let all_relevant_tags = self.tags.iter().chain(ifds_with_offset_info_only
+        let mut all_relevant_tags = self.tags.clone();
+        if let Some(ifd_with_offset_info_only) = ifds_with_offset_info_only
             .iter()
             .find(|ifd| 
                 ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
                 ifd.get_ifd_type()       == self.get_ifd_type()
             )
-            .unwrap().get_tags()
-            .iter()).cloned().collect::<Vec<ExifTag>>();
+        {
+            all_relevant_tags.extend(ifd_with_offset_info_only.get_tags().iter().cloned());
+        }
 
         // Start writing this IFD by adding the number of entries
         let count_entries = all_relevant_tags.iter().filter(
@@ -574,19 +591,20 @@ ImageFileDirectory
                     if let Some(group) = Self::get_ifd_type_for_offset_tag(tag)
                     {
                         // Find that IFD in the parent struct and encode that
-                        if let Ok((_, subifd_offset)) = data.get_ifds()
+                        if let Some(found_ifd) = data.get_ifds()
                             .iter()
                             .find(|ifd| 
                                 ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
                                 ifd.get_ifd_type()       == group
                             )
-                            .unwrap().encode_ifd(
+                        {
+                            let (_, subifd_offset) = found_ifd.encode_ifd(
                                 data, 
                                 ifds_with_offset_info_only, 
                                 &mut ifd_offset_area, 
                                 current_offset
-                            )
-                        {
+                            )?;
+                            
                             subifd_offset
                         }
                         else
