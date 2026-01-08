@@ -118,8 +118,13 @@ file_check_signature
 
     let mut signature_buffer = [0u8; 12];
     let bytes_read = file.read(&mut signature_buffer)?;
-    assert_eq!(bytes_read, 12);
-    check_signature(&signature_buffer.to_vec())?;
+
+    if bytes_read != 12
+    {
+        return io_error!(InvalidData, "Can't open JXL file - Can't read signature!");
+    }
+
+    check_signature(&signature_buffer)?;
 
     return Ok(file);
 }
@@ -289,8 +294,14 @@ file_read_metadata
 
     // Read first 12 bytes and check that we have a ISO BMFF file
     let mut first_12_bytes = [0u8; 12];
-    file.read(&mut first_12_bytes)?;
-    check_signature(&first_12_bytes.to_vec())?;
+    let     bytes_read     = file.read(&mut first_12_bytes)?;
+
+    if bytes_read != 12
+    {
+        return io_error!(InvalidData, "Can't open JXL file - Can't read & check ISO BMFF signature!");
+    }
+
+    check_signature(&first_12_bytes)?;
 
     return generic_read_metadata(&mut file);
 }

@@ -485,12 +485,10 @@ ImageFileDirectory
         // Start writing this IFD by adding the number of entries
         let count_entries = all_relevant_tags.iter().filter(
             |tag| tag.is_writable() || 
-            match tag.get_tag_type()
-            {
-                 TagType::IFD_OFFSET(_)  => true,
-                 TagType::DATA_OFFSET(_) => true,
-                 _                       => false,
-            }
+            matches!(tag.get_tag_type(),
+                 TagType::IFD_OFFSET(_) |
+                 TagType::DATA_OFFSET(_)
+            )
         ).count() as u16;
 
         encode_vec.extend(to_u8_vec_macro!(u16, &count_entries, &data.get_endian()).iter());

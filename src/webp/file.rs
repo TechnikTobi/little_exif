@@ -37,7 +37,13 @@ check_signature
 
     // Get the first 12 bytes that are required for the following checks
     let mut first_12_bytes = [0u8; 12];
-    file.read(&mut first_12_bytes)?;
+    let     bytes_read     = file.read(&mut first_12_bytes)?;
+
+    if bytes_read != 12
+    {
+        return io_error!(InvalidData, "Can't open WebP file - Can't read & check signature!");
+    }
+
     let first_12_bytes_vec = first_12_bytes.to_vec();
     
     // Perform checks
@@ -308,7 +314,15 @@ read_metadata
         {
             // Read the EXIF chunk's data into a buffer
             let mut payload_buffer = vec![0u8; chunk_size];
-            file.read(&mut payload_buffer)?;
+            let     bytes_read     = file.read(&mut payload_buffer)?;
+
+            if bytes_read != chunk_size
+            {
+                return io_error!(
+                    Other, 
+                    format!("Could not read entire EXIF chunk data! Expected {chunk_size} bytes but read {bytes_read}")
+                );
+            }
 
             // Add the 6 bytes of the EXIF_HEADER as Prefix for the generic EXIF
             // data parser that is called on the result of this read function
@@ -353,7 +367,13 @@ update_file_size_information
     let mut file_size_buffer = [0u8; 4];
 
     // ...converting it to u32 representation...
-    file.read(&mut file_size_buffer)?;
+    let bytes_read = file.read(&mut file_size_buffer)?;
+
+    if bytes_read != 4
+    {
+        return io_error!(Other, "Could not read file size information from WebP file!");
+    }
+
     let old_file_size = from_u8_vec_macro!(u32, &file_size_buffer, &Endian::Little);
 
     // ...adding the delta byte count (and performing some checks)...
@@ -426,10 +446,16 @@ convert_to_extended_format
 
     // ...actually writing the VP8X chunk data...
     file.seek(SeekFrom::Start(12u64))?;
-    file.write(&vp8x_chunk)?;
+    if file.write(&vp8x_chunk)? != vp8x_chunk.len()
+    {
+        return io_error!(Other, "Could not write entire VP8X chunk data!");
+    }
 
     // ...and writing back the file contents
-    file.write(&buffer)?;
+    if file.write(&buffer)? != buffer.len()
+    {
+        return io_error!(Other, "Could not write back entire WebP file data!");
+    }
 
     // Finally, update the file size information
     update_file_size_information(file, 18)?;
@@ -590,7 +616,7 @@ clear_metadata
         let old_file_byte_count = file.metadata().unwrap().len();
 
         // Get a backup of the current cursor position
-        let exif_chunk_start_cursor_position = SeekFrom::Start(file.seek(SeekFrom::Current(0)).unwrap());
+        let exif_chunk_start_cursor_position = SeekFrom::Start(file.stream_position()?);
 
         // Skip the EXIF chunk ...
         file.seek(std::io::SeekFrom::Current(parsed_chunk_byte_count as i64))?;
@@ -691,7 +717,7 @@ write_metadata
     }
 
     // Next, read remaining file into a buffer...
-    let current_file_cursor = SeekFrom::Start(file.seek(SeekFrom::Current(0)).unwrap());
+    let current_file_cursor = SeekFrom::Start(file.stream_position()?);
     let mut read_buffer = Vec::new();
     file.read_to_end(&mut read_buffer)?;
 
