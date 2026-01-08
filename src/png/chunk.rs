@@ -1,4 +1,4 @@
-// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2022-2026 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 #[allow(non_camel_case_types, dead_code)]
@@ -74,17 +74,17 @@ macro_rules! build_png_chunk_type_enum {
             pub(crate) fn
             from_string
             (
-                string_name: &String,
-                length: u32
+                string_name: &str,
+                length:       u32
             )
             -> Result<PngChunk, PngChunk>
             {
-                match &(*string_name.as_str())
+                match string_name
                 {
                     $(
                         stringify!($tag) => Ok(PngChunk::$tag(length)),
                     )*
-                    _ => Err(PngChunk::UNKNOWN(string_name.clone(), length)),
+                    _ => Err(PngChunk::UNKNOWN(string_name.to_string(), length)),
                 }
             }
         }

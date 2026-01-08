@@ -22,6 +22,7 @@ use super::*;
 /// - The RIFF signature: ASCII characters "R", "I", "F", "F"  -> 4 bytes
 /// - The file size starting at offset 8                       -> 4 bytes
 /// - The WEBP signature: ASCII characters "W", "E", "B", "P"  -> 4 bytes
+/// 
 /// This function checks these 3 sections and their correctness after making
 /// sure that the file actually exists and can be opened. 
 /// Finally, the file struct is returned for further processing
@@ -72,7 +73,7 @@ get_next_chunk
 
     // Construct name of chunk and its length
     let chunk_name = String::from_utf8(chunk_start[0..4].to_vec());
-    let mut chunk_length = from_u8_vec_macro!(u32, &chunk_start[4..8].to_vec(), &Endian::Little);
+    let mut chunk_length = from_u8_vec_macro!(u32, &chunk_start[4..8], &Endian::Little);
 
     // Account for the possible padding byte
     chunk_length += chunk_length % 2;
@@ -170,7 +171,7 @@ parse_webp
             {
                 // In this case we don't expect any more data to be in the file
                 break;
-            }			
+            }
         }
         else
         {
@@ -204,17 +205,13 @@ check_exif_in_file
 -> Result<(File, Vec<RiffChunkDescriptor>), std::io::Error>
 {
     // Parse the WebP file - if this fails, we surely can't read any metadata
-    let parsed_webp_result = parse_webp(path);
-    if let Err(error) = parsed_webp_result
-    {
-        return Err(error);
-    }
+    let parsed_webp_result = parse_webp(path)?;
 
     // Next, check if this is an Extended File Format WebP file
     // In this case, the first Chunk SHOULD have the type "VP8X"
     // Otherwise, the file is either invalid ("VP8X" at wrong location) or a 
     // Simple File Format WebP file which don't contain any EXIF metadata.
-    if let Some(first_chunk) = parsed_webp_result.as_ref().unwrap().first()
+    if let Some(first_chunk) = parsed_webp_result.first()
     {
         // Compare the chunk descriptor header.
         if first_chunk.header().to_lowercase() != VP8X_HEADER.to_lowercase()
@@ -252,7 +249,7 @@ check_exif_in_file
         return io_error!(Other, "No EXIF chunk according to VP8X flags!");
     }
 
-    return Ok((file, parsed_webp_result.unwrap()));
+    return Ok((file, parsed_webp_result));
 }
 
 
@@ -290,18 +287,21 @@ read_metadata
         // Check that this is still the type that we expect from the previous
         // parsing over the file
         // TODO: Maybe remove this part?
-        let expected_chunk_type = parse_webp_result.iter().nth(chunk_index).unwrap().header();
+        let expected_chunk_type = parse_webp_result.get(chunk_index).unwrap().header();
         if chunk_type != expected_chunk_type
         {
             return io_error!(
                 Other, 
-                format!("Got unexpected chunk type! Expected {} but got {}", expected_chunk_type, chunk_type)
+                format!("Got unexpected chunk type! Expected {} but got {}", 
+                    expected_chunk_type, 
+                    chunk_type
+                )
             );
         }
 
         // Get the size of this chunk from the previous parsing process and skip
         // the 4 bytes regarding the size
-        let chunk_size = parse_webp_result.iter().nth(chunk_index).unwrap().len();
+        let chunk_size = parse_webp_result.get(chunk_index).unwrap().len();
         file.seek(std::io::SeekFrom::Current(4))?;
 
         if chunk_type.to_lowercase() == EXIF_CHUNK_HEADER.to_lowercase()
@@ -354,7 +354,7 @@ update_file_size_information
 
     // ...converting it to u32 representation...
     file.read(&mut file_size_buffer)?;
-    let old_file_size = from_u8_vec_macro!(u32, &file_size_buffer.to_vec(), &Endian::Little);
+    let old_file_size = from_u8_vec_macro!(u32, &file_size_buffer, &Endian::Little);
 
     // ...adding the delta byte count (and performing some checks)...
     if delta < 0
@@ -484,11 +484,7 @@ set_exif_flag
 -> Result<(), std::io::Error>
 {
     // Parse the WebP file - if this fails, we surely can't read any metadata
-    let parsed_webp_result = parse_webp(path);
-    if let Err(error) = parsed_webp_result
-    {
-        return Err(error);
-    }
+    let parsed_webp_result = parse_webp(path)?;
 
     // Open the file for further processing
     let mut file = check_signature(path).unwrap();
@@ -496,7 +492,7 @@ set_exif_flag
     // Next, check if this is an Extended File Format WebP file
     // In this case, the first Chunk SHOULD have the type "VP8X"
     // Otherwise we have to create the VP8X chunk!
-    if let Some(first_chunk) = parsed_webp_result.as_ref().unwrap().first()
+    if let Some(first_chunk) = parsed_webp_result.first()
     {
         // Compare the chunk descriptor header and call chunk creator if required
         if first_chunk.header().to_lowercase() != VP8X_HEADER.to_lowercase()

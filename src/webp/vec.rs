@@ -189,17 +189,13 @@ check_exif_in_file
 -> Result<(Cursor<&Vec<u8>>, Vec<RiffChunkDescriptor>), std::io::Error>
 {
     // Parse the WebP file - if this fails, we surely can't read any metadata
-    let parsed_webp_result = parse_webp(file_buffer);
-    if let Err(error) = parsed_webp_result
-    {
-        return Err(error);
-    }
+    let parsed_webp_result = parse_webp(file_buffer)?;
 
     // Next, check if this is an Extended File Format WebP file
     // In this case, the first Chunk SHOULD have the type "VP8X"
     // Otherwise, the file is either invalid ("VP8X" at wrong location) or a 
     // Simple File Format WebP file which don't contain any EXIF metadata.
-    if let Some(first_chunk) = parsed_webp_result.as_ref().unwrap().first()
+    if let Some(first_chunk) = parsed_webp_result.first()
     {
         // Compare the chunk descriptor header.
         if first_chunk.header().to_lowercase() != VP8X_HEADER.to_lowercase()
@@ -237,7 +233,7 @@ check_exif_in_file
         return io_error!(Other, "No EXIF chunk according to VP8X flags!");
     }
 
-    return Ok((cursor, parsed_webp_result.unwrap()));
+    return Ok((cursor, parsed_webp_result));
 }
 
 

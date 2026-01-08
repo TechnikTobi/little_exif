@@ -1,4 +1,4 @@
-// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2025-2026 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::io::Read;
@@ -499,7 +499,7 @@ ItemLocationBox
             + ((self.offset_size      as u16) << 12)
             + ((self.length_size      as u16) <<  8)
             + ((self.base_offset_size as u16) <<  4)
-            + ((self.index_size       as u16))
+            + ((self.index_size       as u16) <<  0)
             ;
 
         serialized.extend(to_u8_vec_macro!(u16, &temp, &Endian::Big).iter());

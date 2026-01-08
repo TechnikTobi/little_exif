@@ -1,4 +1,4 @@
-// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2025-2026 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::io::Read;
@@ -181,17 +181,15 @@ ItemInfoBox
     )
     -> Result<Box<dyn GenericIsoBox>, std::io::Error>
     {
-        let item_count;
-
         // See: ISO/IEC 14496-12:2015, § 8.11.6.2
-        if header.get_version() == 0
+        let item_count = if header.get_version() == 0
         {
-            item_count = read_be_u16(cursor)? as usize;
+            read_be_u16(cursor)? as usize
         }
         else
         {
-            item_count = read_be_u32(cursor)? as usize;
-        }
+            read_be_u32(cursor)? as usize
+        };
 
         let mut items = Vec::new();
         for _ in 0..item_count

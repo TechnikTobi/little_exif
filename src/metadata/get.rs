@@ -53,10 +53,10 @@ Metadata
     )
     ->  Option<&ImageFileDirectory>
     {
-        self.image_file_directories.iter().filter(|ifd| 
+        self.image_file_directories.iter().find(|ifd| 
             ifd.get_generic_ifd_nr() == generic_ifd_nr &&
             ifd.get_ifd_type()       == group
-        ).next()
+        )
     }
 
     /// Gets the maximum generic ifd number that any of the struct's IFDs has
