@@ -107,9 +107,15 @@ file_check_signature
 {
     let mut file = open_read_file(path)?;
     
-    // Check the signature
+    // Read & check the signature
     let mut signature_buffer = [0u8; 8];
-    file.read(&mut signature_buffer)?;
+    let     bytes_read       = file.read(&mut signature_buffer)?;
+
+    if bytes_read != 8
+    {
+        return io_error!(InvalidData, "Can't open PNG file - Can't read signature!");
+    }
+
     check_signature(&signature_buffer.to_vec())?;
 
     // Signature is valid - can proceed using the file as PNG file
@@ -198,9 +204,9 @@ get_next_chunk_descriptor
     let crc_struct = Crc::<u32>::new(&CRC_32_ISO_HDLC);
     let checksum = crc_struct.checksum(&crc_input);
 
-    for i in 0..4
+    for (i, crc_byte) in chunk_crc.iter().enumerate().take(4)
     {
-        if ((checksum >> (8 * (3-i))) as u8) != chunk_crc[i]
+        if ((checksum >> (8 * (3-i))) as u8) != *crc_byte
         {
             return io_error!(InvalidData, "Checksum check failed while reading PNG!");
         }
@@ -627,7 +633,8 @@ write_chunk
     let chunk_data_len = chunk_data.len() as u32;
     for i in 0..4
     {
-        cursor.write(&[(chunk_data_len >> (8 * (3-i))) as u8])?;
+        let bytes_written = cursor.write(&[(chunk_data_len >> (8 * (3-i))) as u8])?;
+        assert_eq!(bytes_written, 1);
     }
 
     // Write data of new chunk, remember that position, write remaining PNG
@@ -665,7 +672,7 @@ generic_write_metadata
     let seek_start = 0u64         // Skip ...
     + PNG_SIGNATURE.len() as u64  // PNG Signature
     + IHDR_length         as u64  // IHDR data section
-    + 12                  as u64; // rest of IHDR chunk (length, type, CRC)
+    + 12                        ; // rest of IHDR chunk (length, type, CRC)
 
     // Build data of new chunk using zlib compression (level=8 -> default)
     let zTXt_chunk_data: Vec<u8> = construct_zTXt_chunk_data(
@@ -849,8 +856,8 @@ decode_metadata_png
     for i in 0..std::cmp::min(4, pop_storage.len())
     {
         let re_encoded_byte = encode_byte(&pop_storage[pop_storage.len() -1 -i]);
-        let tens_place = u64::from_str_radix(&(re_encoded_byte[0] as char).to_string(), 10).unwrap();
-        let ones_place = u64::from_str_radix(&(re_encoded_byte[1] as char).to_string(), 10).unwrap();
+        let tens_place = (re_encoded_byte[0] as char).to_string().parse::<u64>().unwrap();
+        let ones_place = (re_encoded_byte[1] as char).to_string().parse::<u64>().unwrap();
         given_exif_len += tens_place * 10 * 10_u64.pow((2 * i).try_into().unwrap());
         given_exif_len += ones_place *  1 * 10_u64.pow((2 * i).try_into().unwrap());
     }
@@ -880,7 +887,7 @@ as_u8_vec
     }
 
     return construct_zTXt_chunk_data(
-        &vec![0x7a, 0x54, 0x58, 0x74], 
+        &[0x7a, 0x54, 0x58, 0x74], 
         &basic_png_encode_result
     );
 }

@@ -79,10 +79,16 @@ file_check_signature
 {
     let mut file = open_read_file(path)?;
     
-    // Check the signature
+    // Read & check the signature
     let mut signature_buffer = [0u8; 2];
-    file.read(&mut signature_buffer)?;
-    check_signature(&signature_buffer.to_vec())?;
+    let bytes_read = file.read(&mut signature_buffer)?;
+
+    if bytes_read != 2
+    {
+        return io_error!(InvalidData, "Can't open JPG file - Can't read signature!");
+    }
+
+    check_signature(&signature_buffer)?;
 
     // Signature is valid - can proceed using the file as JPG file
     return Ok(file);
@@ -227,7 +233,7 @@ file_clear_metadata
 pub(crate) fn
 as_u8_vec
 (
-    general_encoded_metadata: &Vec<u8>
+    general_encoded_metadata: &[u8],
 )
 -> Vec<u8>
 {

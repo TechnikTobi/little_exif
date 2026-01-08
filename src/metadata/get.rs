@@ -89,10 +89,10 @@ Metadata
     )
     ->  &mut ImageFileDirectory
     {
-        if self.image_file_directories.iter().find(|ifd| 
+        if !self.image_file_directories.iter().any(|ifd| 
             ifd.get_generic_ifd_nr() == generic_ifd_nr &&
             ifd.get_ifd_type()       == group
-        ).is_none()
+        )
         {
             self.create_ifd(group, generic_ifd_nr);
         }

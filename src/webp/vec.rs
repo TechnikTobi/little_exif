@@ -289,7 +289,15 @@ read_metadata
         {
             // Read the EXIF chunk's data into a buffer
             let mut payload_buffer = vec![0u8; chunk_size];
-            cursor.read(&mut payload_buffer)?;
+            let     bytes_read     = cursor.read(&mut payload_buffer)?;
+
+            if bytes_read != chunk_size
+            {
+                return io_error!(
+                    Other, 
+                    format!("Could not read entire EXIF chunk data! Expected {chunk_size} bytes but read {bytes_read}")
+                );
+            }
 
             // Add the 6 bytes of the EXIF_HEADER as Prefix for the generic EXIF
             // data parser that is called on the result of this read function
