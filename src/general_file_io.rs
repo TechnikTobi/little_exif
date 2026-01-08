@@ -8,20 +8,6 @@ pub(crate) const EXIF_HEADER:            [u8; 6] = [0x45, 0x78, 0x69, 0x66, 0x00
 pub(crate) const LITTLE_ENDIAN_INFO:     [u8; 4] = [0x49, 0x49, 0x2a, 0x00];
 pub(crate) const BIG_ENDIAN_INFO:        [u8; 4] = [0x4d, 0x4d, 0x00, 0x2a];
 
-macro_rules! perform_file_action {
-	( 
-		$action: expr
-	) 
-	=>
-	{
-		let file_action_result = $action;
-		if file_action_result.is_err()
-		{
-			return Err(file_action_result.err().unwrap());
-		}
-	};
-}
-
 macro_rules! io_error {
 	($kind:ident, $message:expr)
 	=>
@@ -73,5 +59,4 @@ open_write_file
 		.open(path)
 }
 
-pub(crate) use perform_file_action;
 pub(crate) use io_error;
