@@ -67,11 +67,14 @@ Metadata
 	)
 	-> u32
 	{
-		self.image_file_directories.iter()
+		if let Some(max_generic_ifd) = self.image_file_directories.iter()
 			.filter(|ifd| ifd.get_ifd_type() == ExifTagGroup::GENERIC)
 			.max_by(|ifd1, ifd2| ifd1.get_generic_ifd_nr().cmp(&ifd2.get_generic_ifd_nr()))
-			.unwrap()
-			.get_generic_ifd_nr()
+		{
+			return max_generic_ifd.get_generic_ifd_nr();
+		}
+
+		return 0;
 	}
 
 	/// Gets an image file directory that is of a specific group an is
