@@ -238,6 +238,7 @@ ImageFileDirectory
             }
 
             // We can now safely unwrap the result as it can't be an error
+            #[allow(clippy::unwrap_used)]
             let mut tag = tag_result.unwrap();
 
             // If this is an IFD offset tag, perform a recursive call
@@ -282,9 +283,14 @@ ImageFileDirectory
                     data_cursor.set_position(backup_position);
                     continue;
                 }
-                else
+                else if let Err(decode_err) = subifd_decode_result
                 {
-                    return io_error!(Other, format!("Could not decode SubIFD {:?}:\n  {}", subifd_group, subifd_decode_result.err().unwrap()));
+                    return io_error!(
+                        Other, 
+                        format!(
+                            "Could not decode SubIFD {subifd_group:?}:\n {decode_err:?}"
+                        )
+                    );
                 }
             }
 

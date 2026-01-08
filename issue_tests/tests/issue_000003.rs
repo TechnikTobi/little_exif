@@ -54,7 +54,7 @@ read_exif_data_fails()
 }
 
 #[test]
-#[should_panic (expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: \"Could not decode SubIFD GPS:\\n  Not enough data to decode IFD! Required: 6150 Available: 124\" }")]
+#[should_panic (expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: \"Could not decode SubIFD GPS:\\n Custom { kind: Other, error: \\\"Not enough data to decode IFD! Required: 6150 Available: 124\\\" }\" }")]
 fn
 read_exif_data_current_still_fails()
 {
