@@ -1,4 +1,4 @@
-// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2024-2026 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::io::Read;
@@ -216,7 +216,14 @@ read_null_terminated_string
         character_buffer = read_1_bytes(cursor)?;
     }
 
-    return Ok(String::from_utf8(string_buffer).unwrap());
+    return String::from_utf8(string_buffer).map_err(
+        |_e| 
+        std::io::Error::new
+        (
+            std::io::ErrorKind::InvalidData,
+            "Could not convert byte data to UTF-8 string!"
+        )
+    );
 }
 
 

@@ -1,4 +1,4 @@
-// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2025-2026 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::io::Cursor;
@@ -84,16 +84,9 @@ HeifContainer
     {
         let mut boxes = Vec::new();
 
-        loop 
+        while let Ok(next_box) = read_next_box(cursor)
         {
-            if let Ok(next_box) = read_next_box(cursor)
-            {
-                boxes.push(next_box);
-            }
-            else
-            {
-                break;
-            }
+            boxes.push(next_box);
         }
 
         return Ok(Self { boxes })
@@ -571,7 +564,7 @@ HeifContainer
                 cursor.get_mut().extend(&serialized);
             }
 
-            written_bytes = written_bytes + serialized.len();
+            written_bytes += serialized.len();
         }
 
         return Ok(());

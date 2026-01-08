@@ -1,10 +1,9 @@
-// Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2024-2026 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 // Based on: https://github.com/google/audio-to-tactile/blob/main/src/dsp/number_util.c
 
 use std::u32;
-use std::convert::Into;
 
 const MAX_TERM_COUNT:        usize = 42;
 const CONVERGENCE_TOLERANCE: f64   = 1e-9;
@@ -195,17 +194,17 @@ f64_to_rational64u
 	};
 }
 
-impl Into<uR64> for f64 { fn into (self) -> uR64 { f64_to_rational64u(self) } }
-impl Into<iR64> for f64 { fn into (self) -> iR64 { f64_to_rational64s(self) } }
+impl From<f64> for uR64 { fn from (val: f64) -> Self { f64_to_rational64u(val) } }
+impl From<f64> for iR64 { fn from (val: f64) -> Self { f64_to_rational64s(val) } }
 
-impl Into<uR64> for u32 { fn into (self) -> uR64 { f64_to_rational64u(self as f64) } }
-impl Into<iR64> for u32 { fn into (self) -> iR64 { f64_to_rational64s(self as f64) } }
-impl Into<iR64> for i32 { fn into (self) -> iR64 { f64_to_rational64s(self as f64) } }
+impl From<u32> for uR64 { fn from (val: u32) -> Self { f64_to_rational64u(val as f64) } }
+impl From<u32> for iR64 { fn from (val: u32) -> Self { f64_to_rational64s(val as f64) } }
+impl From<i32> for iR64 { fn from (val: i32) -> Self { f64_to_rational64s(val as f64) } }
 
 
-impl Into<f64> for uR64 { fn into (self) -> f64 { rational64u_to_f64(&self) } }
-impl Into<f64> for iR64 { fn into (self) -> f64 { rational64s_to_f64(&self) } }
+impl From<uR64> for f64 { fn from (val: uR64) -> Self { rational64u_to_f64(&val) } }
+impl From<iR64> for f64 { fn from (val: iR64) -> Self { rational64s_to_f64(&val) } }
 
-impl Into<u32> for uR64 { fn into (self) -> u32 { rational64u_to_f64(&self) as u32 } }
-impl Into<u32> for iR64 { fn into (self) -> u32 { rational64s_to_f64(&self) as u32 } }
-impl Into<i32> for iR64 { fn into (self) -> i32 { rational64s_to_f64(&self) as i32 } }
+impl From<uR64> for u32 { fn from (val: uR64) -> Self { rational64u_to_f64(&val) as u32 } }
+impl From<iR64> for u32 { fn from (val: iR64) -> Self { rational64s_to_f64(&val) as u32 } }
+impl From<iR64> for i32 { fn from (val: iR64) -> Self { rational64s_to_f64(&val) as i32 } }
