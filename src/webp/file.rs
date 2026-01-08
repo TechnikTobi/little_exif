@@ -571,19 +571,22 @@ clear_metadata
     // Check the file signature, parse it, check that it has a VP8X chunk and
     // the EXIF flag is set there
     let exif_check_result = check_exif_in_file(path);
-    if exif_check_result.is_err()
+    if let Err(check_error) = exif_check_result
     {
-        match exif_check_result.as_ref().err().unwrap().to_string().as_str()
+        match check_error.to_string().as_str()
         {
             "No EXIF chunk according to VP8X flags!"
                 => return Ok(()),
             "Expected first chunk of WebP file to be of type 'VP8X' but instead got VP8L!"
                 => return Ok(()),
             _
-                => return Err(exif_check_result.err().unwrap())
+                => return Err(check_error)
         }
     }
 
+    // At this point we know that the result can't be an error, otherwise
+    // we would have returned already.
+    #[allow(clippy::unwrap_used)]
     let (mut file, parse_webp_result) = exif_check_result.unwrap();
 
     // Compute a delta of how much the file size information has to change

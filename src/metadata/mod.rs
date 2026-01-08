@@ -98,18 +98,24 @@ Metadata
                 data.sort_data();
                 return Ok(data);
             }
-            else
+            else if let Err(decode_error) = decoding_result
             {
-                let decode_error = decoding_result.err().unwrap();
                 error!("Error during decoding (1): {decode_error}");
                 return Err(decode_error);
             }
+            else
+            {
+                panic!("Unreachable code reached in Metadata::general_decoding_wrapper (1)");
+            }
+        }
+        else if let Err(decode_error) = raw_pre_decode_general
+        {
+            error!("Error during decoding (2): {decode_error:?}");
+            return Err(decode_error);
         }
         else
         {
-            let decode_error = raw_pre_decode_general.err().unwrap();
-            error!("Error during decoding (2): {decode_error:?}");
-            return Err(decode_error);
+            panic!("Unreachable code reached in Metadata::general_decoding_wrapper (2)");
         }
     }
 
@@ -322,10 +328,9 @@ Metadata
             {
                 ifd_offset_option = new_ifd_offset_option;
             }
-            else
+            else if let Err(decode_error) = decode_result
             {
-                let error = decode_result.err().unwrap();
-                return Err(error);
+                return Err(decode_error);
             }
 
             generic_ifd_nr += 1;
