@@ -48,14 +48,13 @@ MetaBox
     )
     -> &ItemInfoBox
     {
-        return match self.other_boxes.iter()
-            .find(|b| b.get_header().get_box_type() == BoxType::iinf)
-            .unwrap()
-            .as_any()
-            .downcast_ref::<ItemInfoBox>() {
+        match self.other_boxes.iter().find(|b| b.get_header().get_box_type() == BoxType::iinf) {
+            Some(b) => match b.as_any().downcast_ref::<ItemInfoBox>() {
                 Some(unboxed) => unboxed,
-                None          => panic!("Can't unbox ItemInfoBox!")
-            };
+                None => panic!("Found iinf box but could not downcast to ItemInfoBox"),
+            },
+            None => panic!("No iinf box found in MetaBox"),
+        }
     }
 
     pub(crate) fn
@@ -65,14 +64,13 @@ MetaBox
     )
     -> &ItemLocationBox
     {
-        return match self.other_boxes.iter()
-            .find(|b| b.get_header().get_box_type() == BoxType::iloc)
-            .unwrap()
-            .as_any()
-            .downcast_ref::<ItemLocationBox>() {
+        match self.other_boxes.iter().find(|b| b.get_header().get_box_type() == BoxType::iloc) {
+            Some(b) => match b.as_any().downcast_ref::<ItemLocationBox>() {
                 Some(unboxed) => unboxed,
-                None          => panic!("Can't unbox ItemLocationBox!")
-            };
+                None => panic!("Found iloc box but could not downcast to ItemLocationBox"),
+            },
+            None => panic!("No iloc box found in MetaBox"),
+        }
     }
 
     pub(crate) fn
@@ -82,14 +80,13 @@ MetaBox
     )
     -> &mut ItemLocationBox
     {
-        return match self.other_boxes.iter_mut()
-            .find(|b| b.get_header().get_box_type() == BoxType::iloc)
-            .unwrap()
-            .as_any_mut()
-            .downcast_mut::<ItemLocationBox>() {
+        match self.other_boxes.iter_mut().find(|b| b.get_header().get_box_type() == BoxType::iloc) {
+            Some(b) => match b.as_any_mut().downcast_mut::<ItemLocationBox>() {
                 Some(unboxed) => unboxed,
-                None          => panic!("Can't unbox ItemLocationBox!")
-            };
+                None => panic!("Found iloc box but could not downcast to ItemLocationBox (mut)"),
+            },
+            None => panic!("No iloc box found in MetaBox"),
+        }
     }
 
     pub(crate) fn
@@ -123,8 +120,8 @@ MetaBox
         let index = self.other_boxes
             .iter()
             .position(|x| x.get_header().get_box_type() == BoxType::iinf)
-            .unwrap();
-        
+            .expect("Could not find iinf box to insert iref before");
+         
         self.other_boxes.insert(index, Box::new(new_iref_box));
     }
 }

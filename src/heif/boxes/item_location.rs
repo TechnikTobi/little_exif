@@ -6,6 +6,7 @@ use std::io::Seek;
 
 use crate::debug_println;
 use crate::endian::Endian;
+use crate::general_file_io::io_error;
 use crate::u8conversion::U8conversion;
 use crate::u8conversion::to_u8_vec_macro;
 use crate::util::read_be_u16;
@@ -128,7 +129,7 @@ ItemLocationEntryExtentEntry
             {
                 4 => Some(read_be_u32(cursor)? as u64),
                 8 => Some(read_be_u64(cursor)?),
-                _ => panic!("Invalid index_size!")
+                _ => return io_error!(Other, format!("Invalid index_size: {}!", index_size))
             }
         }
         else
@@ -141,7 +142,7 @@ ItemLocationEntryExtentEntry
             0 => 0,
             4 => read_be_u32(cursor)? as u64,
             8 => read_be_u64(cursor)?,
-            _ => panic!("Invalid offset_size!")
+            _ => return io_error!(Other, format!("Invalid offset_size: {}!", offset_size))
         };
 
         let extent_length = match length_size
@@ -149,7 +150,7 @@ ItemLocationEntryExtentEntry
             0 => 0,
             4 => read_be_u32(cursor)? as u64,
             8 => read_be_u64(cursor)?,
-            _ => panic!("Invalid length_size!")
+            _ => return io_error!(Other, format!("Invalid length_size: {}!", length_size))
         };
 
         return Ok(Self{extent_index, extent_offset, extent_length});
@@ -176,7 +177,7 @@ ItemLocationEntry
         {
             0 | 1 => read_be_u16(cursor)? as u32,
             2     => read_be_u32(cursor)?,
-            _     => panic!("Invalid version for ItemLocationEntry decode!")
+            _     => return io_error!(Other, "Invalid version for ItemLocationEntry decode!".to_string())
         };
 
         let reserved_and_construction_method = if 
@@ -189,7 +190,7 @@ ItemLocationEntry
             0 => 0,
             4 => read_be_u32(cursor)? as u64,
             8 => read_be_u64(cursor)?,
-            _ => panic!("Invalid base_offset_size!")
+            _ => return io_error!(Other, "Invalid base_offset_size!".to_string())
         };
 
         let extent_count = read_be_u16(cursor)?;
@@ -320,7 +321,7 @@ ItemLocationBox
         {
             0 | 1 => read_be_u16(cursor)? as u32,
             2     => read_be_u32(cursor)?,
-            _     => panic!("Invalid version for ItemLocationBox decode!")
+            _     => return io_error!(Other, "Invalid version for ItemLocationBox decode!".to_string())
         };
 
         let mut items = Vec::new();
@@ -355,9 +356,9 @@ ItemLocationBox
     )
     -> &ItemLocationEntry
     {
-        return self.items.iter()
+        self.items.iter()
             .find(|item| item.item_id == item_id as u32)
-            .unwrap();
+            .expect("ItemLocationEntry not found for given item_id")
     }
 
     // Returns the ID of the new entry and by how many bytes this box got longer
@@ -406,7 +407,7 @@ ItemLocationBox
         self.header.set_box_size(new_box_size);
 
         return (
-            self.items.last_mut().unwrap().item_id,
+            self.items.last_mut().expect("No items present after insertion").item_id,
             new_box_size - old_box_size
         );
     }
@@ -546,8 +547,14 @@ ItemLocationBox
                 {
                     match self.index_size
                     {
-                        4 => serialized.extend(to_u8_vec_macro!(u32, &(extent.extent_index.unwrap() as u32), &Endian::Big).iter()),
-                        8 => serialized.extend(to_u8_vec_macro!(u64, & extent.extent_index.unwrap(),         &Endian::Big).iter()),
+                        4 => {
+                            let idx: u32 = extent.extent_index.expect("Extent index missing") as u32;
+                            serialized.extend(to_u8_vec_macro!(u32, &idx, &Endian::Big).iter());
+                        },
+                        8 => {
+                            let idx: u64 = extent.extent_index.expect("Extent index missing");
+                            serialized.extend(to_u8_vec_macro!(u64, &idx, &Endian::Big).iter());
+                        },
                         _ => panic!("Invalid index_size!")
                     }
                 }

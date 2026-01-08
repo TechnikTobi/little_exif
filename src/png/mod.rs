@@ -162,9 +162,10 @@ generic_parse_png
 		let chunk_descriptor = get_next_chunk_descriptor(cursor)?;
 		chunks.push(chunk_descriptor);
 
-		if chunks.last().unwrap().as_string() == "IEND"
-		{
-			break;
+		if let Some(last) = chunks.last() {
+			if last.as_string() == "IEND" {
+				break;
+			}
 		}
 	}
 
@@ -212,14 +213,12 @@ get_next_chunk_descriptor
 		&chunk_name.clone(),
 		chunk_length
 	);
-	if let Ok(png_chunk) = png_chunk_result
-	{
-		return Ok(png_chunk);
-	}
-	else
-	{
-		warn!("Unknown PNG chunk name: {}", chunk_name);
-		return Ok(png_chunk_result.err().unwrap());
+	match png_chunk_result {
+		Ok(png_chunk) => return Ok(png_chunk),
+		Err(e) => {
+			warn!("Unknown PNG chunk name: {}", chunk_name);
+			return Ok(e);
+		}
 	}
 }
 
@@ -237,7 +236,7 @@ read_metadata
 	let parse_png_result = vec_parse_png(file_buffer)?;
 
 	// Parsed PNG is Ok to use - Open the file and go through the chunks
-	let mut cursor = check_signature(file_buffer).unwrap();
+	let mut cursor = check_signature(file_buffer)?;
 
 	return generic_read_metadata(&mut cursor, &parse_png_result);
 }
@@ -253,7 +252,7 @@ file_read_metadata
 	let parse_png_result = file_parse_png(path)?;
 
 	// Parsed PNG is Ok to use - Open the file and go through the chunks
-	let mut file = file_check_signature(path).unwrap();
+	let mut file = file_check_signature(path)?;
 
 	return generic_read_metadata(&mut file, &parse_png_result);
 }
@@ -328,7 +327,7 @@ generic_read_metadata
 					&chunk_data
 				)?;
 				
-				return Ok(decode_metadata_png(&decompressed_data).unwrap());
+                return decode_metadata_png(&decompressed_data);
 			}
 
 			_ => {
@@ -449,8 +448,6 @@ clear_metadata
 					continue;
 				}
 
-				// If this is not the correct zTXt/iTXt chunk, 
-				// ignore it, skip its CRC and continue with next chunk
 				if !has_raw_profile_type_exif
 				{
 					cursor.seek(SeekFrom::Current(4))?;
@@ -459,8 +456,6 @@ clear_metadata
 			},
 
 			_ => {
-				// In any other case, skip this chunk and continue with the 
-				// next one after adjusting the cursor
 				cursor.seek(std::io::SeekFrom::Current(12 + chunk.length() as i64))?;
 				continue;
 			}
@@ -523,10 +518,11 @@ clear_exif_from_xmp_metadata
 	cursor.seek(SeekFrom::Current(-8))?;
 
 	// Clear the EXIF from the XMP data
-	let clean_xmp_data = remove_exif_from_xmp(
-		// &chunk_data[XML_COM_ADOBE_XMP.len()..]
-		&get_data_from_text_chunk(chunk_name.as_str(), chunk_data)?
-	).unwrap();
+	let text_chunk_data = get_data_from_text_chunk(chunk_name.as_str(), chunk_data)?;
+    let clean_xmp_data = match remove_exif_from_xmp(&text_chunk_data) {
+        Ok(v) => v,
+        Err(e) => return io_error!(Other, format!("Could not remove EXIF from XMP: {}", e)),
+    };
 
 	// Construct new chunk data field
 	let new_chunk_data = construct_similar_with_new_data(
@@ -751,21 +747,18 @@ decode_metadata_png
 			continue;
 		}
 
-		if other_byte.is_none()
-		{
+		if other_byte.is_none() {
 			other_byte = Some(*byte);
 			continue;
 		}
 
-		let value_string = "".to_owned()
-			+ &(other_byte.unwrap() as char).to_string()
-			+ &(*byte as char).to_string();
-			
-		if let Ok(value) = u8::from_str_radix(value_string.trim(), 16)
-		{
-			exif_all.push_back(value);
+		if let Some(ob) = other_byte {
+			let value_string = format!("{}{}", ob as char, *byte as char);
+			if let Ok(value) = u8::from_str_radix(value_string.trim(), 16) {
+				exif_all.push_back(value);
+			}
 		}
-		
+
 		other_byte = None;
 	}
 
@@ -832,7 +825,11 @@ decode_metadata_png
 			break;
 		}
 
-		pop_storage.push(exif_all.pop_front().unwrap());
+		if let Some(v) = exif_all.pop_front() {
+			pop_storage.push(v);
+		} else {
+			return io_error!(Other, "Mangled EXIF data encountered!");
+		}
 	}
 
 	// The exif header has been found
@@ -852,13 +849,20 @@ decode_metadata_png
 	for i in 0..std::cmp::min(4, pop_storage.len())
 	{
 		let re_encoded_byte = encode_byte(&pop_storage[pop_storage.len() -1 -i]);
-		let tens_place = (re_encoded_byte[0] as char).to_string().parse::<u64>().unwrap();
-		let ones_place = (re_encoded_byte[1] as char).to_string().parse::<u64>().unwrap();
-		given_exif_len += tens_place * 10 * 10_u64.pow((2 * i).try_into().unwrap());
-		given_exif_len += ones_place *  1 * 10_u64.pow((2 * i).try_into().unwrap());
+		let tens_place = match (re_encoded_byte[0] as char).to_string().parse::<u64>() {
+			Ok(v) => v,
+			Err(_) => return io_error!(Other, "Mangled EXIF size info"),
+		};
+		let ones_place = match (re_encoded_byte[1] as char).to_string().parse::<u64>() {
+			Ok(v) => v,
+			Err(_) => return io_error!(Other, "Mangled EXIF size info"),
+		};
+		// (2*i) is small and fits into u32 safely
+		given_exif_len += tens_place * 10 * 10_u64.pow((2 * i) as u32);
+		given_exif_len += ones_place *  1 * 10_u64.pow((2 * i) as u32);
 	}
 
-	assert!(given_exif_len == exif_all.len().try_into().unwrap());
+	assert!(given_exif_len == exif_all.len() as u64);
 	// End optional part
 
 	return Ok(Vec::from(exif_all));

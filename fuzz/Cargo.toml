@@ -1,0 +1,27 @@
+[package]
+name = "little_exif-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+# Installation
+# cargo install cargo-fuzz
+
+# Running
+# cargo +nightly fuzz run read_exif --release
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.little_exif]
+path = ".."
+
+[[bin]]
+name = "read_exif"
+path = "fuzz_targets/read_exif.rs"
+test = false
+doc = false
+bench = false

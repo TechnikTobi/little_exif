@@ -5,6 +5,7 @@ use std::io::Read;
 use std::io::Seek;
 
 use crate::general_file_io::io_error;
+use crate::io_error_plain;
 
 /// Reads in the next 1 bytes, starting at the current position of the cursor.
 /// The function call advances the cursor by 1 bytes.
@@ -216,7 +217,7 @@ read_null_terminated_string
         character_buffer = read_1_bytes(cursor)?;
     }
 
-    return Ok(String::from_utf8(string_buffer).unwrap());
+    return String::from_utf8(string_buffer).map_err(|e| io_error_plain!(Other, format!("Could not decode utf-8 string: {:?}", e)));
 }
 
 

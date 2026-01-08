@@ -6,7 +6,7 @@ use crate::exif_tag_format::RATIONAL64U;
 use crate::rational::*;
 use crate::general_file_io::io_error;
 use crate::ifd::ExifTagGroup;
-
+use crate::io_error_plain;
 use super::ExifTag;
 use super::ExifTagFormat;
 use super::U8conversion;
@@ -38,26 +38,34 @@ decode_tag_with_format_exceptions
 			(ExifTagFormat::INT32U, ExifTagFormat::INT16U) => {
 				let int16u_data = <INT16U as U8conversion<INT16U>>::from_u8_vec(raw_data, endian);
 				let int32u_data = int16u_data.into_iter().map(|x| x as u32).collect::<Vec<u32>>();
-				return Ok(raw_tag.set_value_to_int32u_vec(int32u_data).unwrap());
+				return raw_tag.set_value_to_int32u_vec(int32u_data).map_err(
+					|e| io_error_plain!(Other, format!("Could not decode tag {:?}: {}", raw_tag, e))
+				);
 			},
 
 			(ExifTagFormat::INT32U, ExifTagFormat::INT8U) => {
 				let int8u_data  = <INT8U as U8conversion<INT8U>>::from_u8_vec(raw_data, endian);
 				let int32u_data = int8u_data.into_iter().map(|x| x as u32).collect::<Vec<u32>>();
-				return Ok(raw_tag.set_value_to_int32u_vec(int32u_data).unwrap());
+				return raw_tag.set_value_to_int32u_vec(int32u_data).map_err(
+					|e| io_error_plain!(Other, format!("Could not decode tag {:?}: {}", raw_tag, e))
+				);
 			},
 
 			(ExifTagFormat::INT16U, ExifTagFormat::INT32U) => {
 				// Not sure how to be more cautious in this case...
 				let int32u_data = <INT32U as U8conversion<INT32U>>::from_u8_vec(raw_data, endian);
 				let int16u_data = int32u_data.into_iter().map(|x| x as u16).collect::<Vec<u16>>();
-				return Ok(raw_tag.set_value_to_int16u_vec(int16u_data).unwrap());
+				return raw_tag.set_value_to_int16u_vec(int16u_data).map_err(
+					|e| io_error_plain!(Other, format!("Could not decode tag {:?}: {}", raw_tag, e))
+				);
 			},
 
 			(ExifTagFormat::INT16U, ExifTagFormat::INT8U) => {
 				let int8u_data  = <INT8U as U8conversion<INT8U>>::from_u8_vec(raw_data, endian);
 				let int16u_data = int8u_data.into_iter().map(|x| x as u16).collect::<Vec<u16>>();
-				return Ok(raw_tag.set_value_to_int16u_vec(int16u_data).unwrap());
+				return raw_tag.set_value_to_int16u_vec(int16u_data).map_err(
+					|e| io_error_plain!(Other, format!("Could not decode tag {:?}: {}", raw_tag, e))
+				);
 			},
 
 			// See issue #74
@@ -69,7 +77,9 @@ decode_tag_with_format_exceptions
 					// Assert that the int16u data is within int8u range
 					assert_eq!(*element_u16, *element_u8 as u16);
 				}
-				return Ok(raw_tag.set_value_to_int8u_vec(int8u_data).unwrap());
+				return raw_tag.set_value_to_int8u_vec(int8u_data).map_err(
+					|e| io_error_plain!(Other, format!("Could not decode tag {:?}: {}", raw_tag, e))
+				);
 			},
 
 			(ExifTagFormat::INT8U, ExifTagFormat::STRING) => {
@@ -94,13 +104,15 @@ decode_tag_with_format_exceptions
 						_ => panic!("Problem while decoding GPSAltitudeRef. Please open a new issue for little_exif!")
 					};
 
-					return Ok(ExifTag::from_u16_with_data(
+					return ExifTag::from_u16_with_data(
 						0x0005, 
 						&ExifTagFormat::INT8U, 
 						&int8u_data, 
 						endian, 
 						group
-					).unwrap());
+					).map_err(
+						|e| io_error_plain!(Other, format!("Could not decode tag {:?}: {}", raw_tag, e))
+					);
 				}
 				else
 				{
@@ -115,7 +127,9 @@ decode_tag_with_format_exceptions
 					.into_iter().map(|x| x.into()).collect::<Vec<f64>>()
 					.into_iter().map(|x| x.into()).collect::<Vec<iR64>>();
 
-				return Ok(raw_tag.set_value_to_iR64_vec(iR64_data).unwrap());
+				return raw_tag.set_value_to_iR64_vec(iR64_data).map_err(
+					|e| io_error_plain!(Other, format!("Could not decode tag {:?}: {}", raw_tag, e))
+				);
 			}
 
 			// See issue #63
@@ -124,7 +138,9 @@ decode_tag_with_format_exceptions
 					raw_tag.as_u16()    == 0x001b            && // GPSProcessingMethod	
 					raw_tag.get_group() == ExifTagGroup::GPS
 				{
-					return Ok(raw_tag.set_value_to_undef(raw_data.clone()).unwrap());
+					return raw_tag.set_value_to_undef(raw_data.clone()).map_err(
+						|e| io_error_plain!(Other, format!("Could not decode tag {:?}: {}", raw_tag, e))
+					);
 				}
 				else
 				{
@@ -140,12 +156,14 @@ decode_tag_with_format_exceptions
 	else
 	{
 		// Format is as expected; set the data by replacing the tag
-		return Ok(ExifTag::from_u16_with_data(
+		return ExifTag::from_u16_with_data(
 			hex_tag, 
 			&format, 
 			raw_data, 
 			endian, 
 			group
-		).unwrap());
+		).map_err(
+			|e| io_error_plain!(Other, format!("Could not decode tag {:?}: {}", raw_tag, e))
+		);
 	}
 }

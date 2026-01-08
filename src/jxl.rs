@@ -180,7 +180,7 @@ file_clear_metadata
 	loop
 	{
 		let position        = file.stream_position()?;
-		let old_file_length = file.metadata().unwrap().len();
+		let old_file_length = file.metadata()?.len();
 		if position >= old_file_length { return Ok(()); }
 
 		file.read_exact(&mut length_buffer)?;
@@ -288,7 +288,7 @@ file_read_metadata
 
 	// Read first 12 bytes and check that we have a ISO BMFF file
 	let mut first_12_bytes = [0u8; 12];
-	file.read(&mut first_12_bytes).unwrap();
+	file.read_exact(&mut first_12_bytes)?;
 	check_signature(&first_12_bytes)?;
 
 	return generic_read_metadata(&mut file);

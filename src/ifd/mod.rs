@@ -4,7 +4,6 @@
 pub mod get;
 pub mod set;
 
-use core::panic;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
@@ -222,18 +221,24 @@ ImageFileDirectory
 				// Note: `from_u16_with_data` can NOT be called initially due
 				// to some possible conversion of data needed, e.g. INT16U to
 				// INT32U, which is not accounted for yet at this stage
-				tags.push(ExifTag::from_u16_with_data(
-					hex_tag, 
+				match ExifTag::from_u16_with_data(
+					hex_tag,
 					&format, 
 					&raw_data, 
 					endian, 
 					group
-				).unwrap());
+				) {
+					Ok(tag) => tags.push(tag),
+					Err(e) => return io_error!(Other, format!("Could not construct unknown tag 0x{:04x}: {}", hex_tag, e))
+				}
 				continue;
 			}
 
 			// We can now safely unwrap the result as it can't be an error
-			let mut tag = tag_result.unwrap();
+			let mut tag = match tag_result {
+				Ok(t) => t,
+				Err(e) => return io_error!(Other, e)
+			};
 
 			// If this is an IFD offset tag, perform a recursive call
 			if let TagType::IFD_OFFSET(subifd_group) = tag.get_tag_type()
@@ -279,7 +284,11 @@ ImageFileDirectory
 				}
 				else
 				{
-					return io_error!(Other, format!("Could not decode SubIFD {:?}:\n  {}", subifd_group, subifd_decode_result.err().unwrap()));
+					if let Err(e) = subifd_decode_result {
+						return io_error!(Other, format!("Could not decode SubIFD {:?}:\n  {}", subifd_group, e));
+					} else {
+						return io_error!(Other, format!("Could not decode SubIFD {:?}: unknown error", subifd_group));
+					}
 				}
 			}
 
@@ -336,82 +345,84 @@ ImageFileDirectory
 		{
 			// 0 -> offsets
 			// 1 -> byte counts
-			if let 
+			if let (Some(ref t0), Some(ref t1)) = (&strip_tags.0, &strip_tags.1) {
+				if let
 				(
 					TagType::DATA_OFFSET(offsets),
 					TagType::DATA_OFFSET(byte_counts)
 				)
 				= 
 				(
-					strip_tags.0.unwrap().get_tag_type(),
-					strip_tags.1.unwrap().get_tag_type()
+					t0.get_tag_type(),
+					t1.get_tag_type()
 				)
-			{
-				let backup_position = data_cursor.position();
-
-				let mut strip_data = Vec::new();
-
-				// Gather the data from the offsets
-				for (offset, byte_count) in offsets.iter().zip(byte_counts.iter())
 				{
-					data_cursor.set_position(data_begin_position);
-					data_cursor.seek(std::io::SeekFrom::Current(*offset as i64))?;
+					let backup_position = data_cursor.position();
 
-					let mut data_buffer = vec![0u8; *byte_count as usize];
-					data_cursor.read_exact(&mut data_buffer)?;
-					strip_data.push(data_buffer);
+					let mut strip_data = Vec::new();
+
+					// Gather the data from the offsets
+					for (offset, byte_count) in offsets.iter().zip(byte_counts.iter())
+					{
+						data_cursor.set_position(data_begin_position);
+						data_cursor.seek(std::io::SeekFrom::Current(*offset as i64))?;
+
+						let mut data_buffer = vec![0u8; *byte_count as usize];
+						data_cursor.read_exact(&mut data_buffer)?;
+						strip_data.push(data_buffer);
+					}
+
+					// Push StripOffset tag to tags vector
+					tags.push(ExifTag::StripOffsets(Vec::new(), strip_data));
+
+					// Push StripByteCounts tag to tags vector
+					tags.push(ExifTag::StripByteCounts(byte_counts));
+
+					// Restore backup position
+					data_cursor.set_position(backup_position);
 				}
-
-				// Push StripOffset tag to tags vector
-				tags.push(ExifTag::StripOffsets(Vec::new(), strip_data));
-
-				// Push StripByteCounts tag to tags vector
-				tags.push(ExifTag::StripByteCounts(byte_counts));
-
-				// Restore backup position
-				data_cursor.set_position(backup_position);
 			}
 		}
 
 		if thumbnail_info.0.is_some() && thumbnail_info.1.is_some()
 		{
-			// 0 -> offset
-			// 1 -> length
-			if let
+			if let (Some(ref t0), Some(ref t1)) = (&thumbnail_info.0, &thumbnail_info.1) {
+				if let
 				(
 					TagType::DATA_OFFSET(offset),
 					TagType::DATA_OFFSET(length)
 				)
 				=
 				(
-					thumbnail_info.0.unwrap().get_tag_type(),
-					thumbnail_info.1.unwrap().get_tag_type()
+					t0.get_tag_type(),
+					t1.get_tag_type()
 				)
-			{
-				let backup_position = data_cursor.position();
-
-				if offset.len() == 1 && length.len() == 1
 				{
-					let mut thumbnail_data = vec![0u8; length[0] as usize];
+					let backup_position = data_cursor.position();
 
-					// Gather the data at the offset
-					data_cursor.set_position(data_begin_position);
-					data_cursor.seek(std::io::SeekFrom::Current(offset[0] as i64))?;
-					data_cursor.read_exact(&mut thumbnail_data)?;
+					if offset.len() == 1 && length.len() == 1
+					{
+						let mut thumbnail_data = vec![0u8; length[0] as usize];
 
-					// Push ThumbnailOffset tag to tags vector
-					tags.push(ExifTag::ThumbnailOffset(Vec::new(), thumbnail_data));
+						// Gather the data at the offset
+						data_cursor.set_position(data_begin_position);
+						data_cursor.seek(std::io::SeekFrom::Current(offset[0] as i64))?;
+						data_cursor.read_exact(&mut thumbnail_data)?;
 
-					// Also push ThumbnailLength tag to tags vector
-					tags.push(ExifTag::ThumbnailLength(length));
+						// Push ThumbnailOffset tag to tags vector
+						tags.push(ExifTag::ThumbnailOffset(Vec::new(), thumbnail_data));
+
+						// Also push ThumbnailLength tag to tags vector
+						tags.push(ExifTag::ThumbnailLength(length));
+					}
+					else
+					{
+						warn!("Can't decode thumbnail! The ThumbnailOffset and ThumbnailLength tags are expected to contain exactly 1 INT32U value. However, they have {} and {} values.", offset.len(), length.len());
+					}
+
+					// Restore backup position
+					data_cursor.set_position(backup_position);
 				}
-				else
-				{
-					warn!("Can't decode thumbnail! The ThumbnailOffset and ThumbnailLength tags are expected to contain exactly 1 INT32U value. However, they have {} and {} values.", offset.len(), length.len());
-				}
-
-				// Restore backup position
-				data_cursor.set_position(backup_position);
 			}
 		}
 
@@ -468,14 +479,15 @@ ImageFileDirectory
 
 		// Store all relevant tags (IFD tags + offset tags) in a temporary 
 		// location and sort them there
-		let all_relevant_tags = self.tags.iter().chain(ifds_with_offset_info_only
-			.iter()
-			.find(|ifd|
-				ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
-				ifd.get_ifd_type()       == self.get_ifd_type()
-			)
-			.unwrap().get_tags()
-			.iter()).cloned().collect::<Vec<ExifTag>>();
+		let mut all_relevant_tags = self.tags.clone();
+		if let Some(found_ifd) = ifds_with_offset_info_only
+		 .iter()
+		 .find(|ifd|
+			 ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
+			 ifd.get_ifd_type()       == self.get_ifd_type()
+		 ) {
+		 all_relevant_tags.extend(found_ifd.get_tags().iter().cloned());
+		}
 
 		// Start writing this IFD by adding the number of entries
 		let count_entries = all_relevant_tags.iter().filter(
@@ -560,29 +572,27 @@ ImageFileDirectory
 					if let Some(group) = Self::get_ifd_type_for_offset_tag(tag)
 					{
 						// Find that IFD in the parent struct and encode that
-						if let Ok((_, subifd_offset)) = data.get_ifds()
-							.iter()
-							.find(|ifd|
-								ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
-								ifd.get_ifd_type()       == group
-							)
-							.unwrap().encode_ifd(
-								data, 
-								ifds_with_offset_info_only, 
-								&mut ifd_offset_area, 
-								current_offset
-							)
-						{
-							subifd_offset
-						}
-						else
-						{
-							panic!("Could not find IFD in parent struct!");
+						match data.get_ifds().iter().find(|ifd|
+							ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
+							ifd.get_ifd_type()       == group
+						) {
+							Some(found_ifd) => {
+								match found_ifd.encode_ifd(
+									data,
+									ifds_with_offset_info_only,
+									&mut ifd_offset_area,
+									current_offset
+								) {
+									Ok((_, subifd_offset)) => subifd_offset,
+									Err(e) => return io_error!(Other, format!("Could not encode SubIFD {:?}: {}", group, e)),
+								}
+							}
+							None => return io_error!(Other, format!("Could not find IFD in parent struct!")),
 						}
 					}
 					else
 					{
-						panic!("Could not determine type of SubIFD!");
+						return io_error!(Other, format!("Could not determine type of SubIFD!"));
 					}
 				}
 			};
