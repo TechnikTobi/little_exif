@@ -5,7 +5,7 @@
 #![allow(clippy::upper_case_acronyms)]
 #![allow(clippy::identity_op)]
 #![allow(clippy::redundant_field_names)]
-// #![warn(clippy::unwrap_used)]
+#![warn(clippy::unwrap_used)]
 
 //! A small crate for reading and writing (some) EXIF data, written entirely in Rust. Currently supports
 //! - JPEG / JPG
