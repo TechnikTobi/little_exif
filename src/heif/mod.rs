@@ -1,4 +1,4 @@
-// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2025-2026 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 /// Note: While the standard 14496-12 (which defines the base ISO BMFF stuff
@@ -35,7 +35,7 @@ generic_read_metadata
 -> Result<Vec<u8>, std::io::Error>
 {
     let container = HeifContainer::construct_from_cursor_unboxed(cursor)?;
-    return Ok(container.get_exif_data(cursor)?);
+    return container.get_exif_data(cursor);
 }
 
 pub(crate) fn

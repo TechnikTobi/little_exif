@@ -1,4 +1,4 @@
-// Copyright © 2024 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2024-2026 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use crate::endian::Endian;
@@ -98,7 +98,7 @@ decode_tag_with_format_exceptions
 						0x0005, 
 						&ExifTagFormat::INT8U, 
 						&int8u_data, 
-						&endian, 
+						endian, 
 						group
 					).unwrap());
 				}
@@ -143,8 +143,8 @@ decode_tag_with_format_exceptions
 		return Ok(ExifTag::from_u16_with_data(
 			hex_tag, 
 			&format, 
-			&raw_data, 
-			&endian, 
+			raw_data, 
+			endian, 
 			group
 		).unwrap());
 	}

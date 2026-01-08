@@ -1,4 +1,4 @@
-// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2024-2026 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::fs::File;
@@ -288,7 +288,7 @@ file_read_metadata
 
 	// Read first 12 bytes and check that we have a ISO BMFF file
 	let mut first_12_bytes = [0u8; 12];
-	file.read(&mut first_12_bytes).unwrap();
+	file.read(&mut first_12_bytes)?;
 	check_signature(&first_12_bytes.to_vec())?;
 
 	return generic_read_metadata(&mut file);

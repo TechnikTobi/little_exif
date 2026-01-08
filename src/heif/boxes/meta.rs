@@ -1,4 +1,4 @@
-// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2025-2026 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::io::Cursor;
@@ -25,17 +25,17 @@ use super::read_box_based_on_header;
 pub struct 
 MetaBox
 {
-    header:           BoxHeader,
-    handler_box:      HandlerBox,
-    // primary_item_box: Option<IsoBox>, // pitm
-    // data_info_box:    Option<IsoBox>, // dinf
-    // item_loc_box:     Option<IsoBox>, // iloc
-    // item_protect_box: Option<IsoBox>, // ipro
-    // item_info_box:    Option<IsoBox>, // iinf
-    // ipmp_control_box: Option<IsoBox>, // ipmc
-    // item_ref_box:     Option<IsoBox>, // iref
-    // item_data_box:    Option<IsoBox>, // idat
-    pub(crate) other_boxes:      Vec<Box<dyn GenericIsoBox>>,
+    header:                 BoxHeader,
+    handler_box:            HandlerBox,
+    // primary_item_box:    Option<IsoBox>,              // pitm
+    // data_info_box:       Option<IsoBox>,              // dinf
+    // item_loc_box:        Option<IsoBox>,              // iloc
+    // item_protect_box:    Option<IsoBox>,              // ipro
+    // item_info_box:       Option<IsoBox>,              // iinf
+    // ipmp_control_box:    Option<IsoBox>,              // ipmc
+    // item_ref_box:        Option<IsoBox>,              // iref
+    // item_data_box:       Option<IsoBox>,              // idat
+    pub(crate) other_boxes: Vec<Box<dyn GenericIsoBox>>,
 }
 
 impl
@@ -217,15 +217,15 @@ HandlerBox
             - 12                       // reserved
             ;
 
-        let mut name_buffer = vec![0u8; number_of_bytes_that_form_the_name];
-        cursor.read_exact(&mut name_buffer)?;
+        let mut name = vec![0u8; number_of_bytes_that_form_the_name];
+        cursor.read_exact(&mut name)?;
 
         return Ok(HandlerBox { 
-            header:       header, 
-            pre_defined:  pre_defined, 
-            handler_type: handler_type, 
-            reserved:     reserved, 
-            name:         name_buffer 
+            header, 
+            pre_defined,
+            handler_type,
+            reserved,
+            name, 
         });
     }
 }
