@@ -47,3 +47,4 @@ little_exif_0_6_16_beta_1 = { git = "https://github.com/TechnikTobi/little_exif.
 little_exif_0_6_18 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.18" }
 little_exif_0_6_19 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.19" }
 little_exif_0_6_20 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.20" }
+little_exif_0_6_21 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.21" }
