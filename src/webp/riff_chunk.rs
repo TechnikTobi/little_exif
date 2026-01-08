@@ -24,8 +24,8 @@ RiffChunkDescriptor
 	{
 		RiffChunkDescriptor
 		{
-			fourCC: fourCC,
-			size:   size
+			fourCC,
+			size
 		}
 	}
 
@@ -74,7 +74,7 @@ RiffChunk
 		RiffChunk
 		{
 			descriptor: RiffChunkDescriptor::new(fourCC, size),
-			payload:    payload
+			payload
 		}
 	}
 

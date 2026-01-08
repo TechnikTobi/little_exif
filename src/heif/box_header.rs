@@ -183,7 +183,7 @@ BoxHeader
     set_box_type_via_string
     (
         &mut self,
-        new_type: String
+        new_type: &str
     )
     {
         self.box_type = BoxType::from_4_bytes(

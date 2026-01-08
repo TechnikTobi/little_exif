@@ -19,7 +19,7 @@ use crate::u8conversion::U8conversion;
 fn
 check_riff_signature
 (
-	file_buffer: &Vec<u8>
+	file_buffer: &[u8]
 )
 -> Result<(), std::io::Error>
 {
@@ -31,7 +31,7 @@ check_riff_signature
 	{
 		return io_error!(
 			InvalidData, 
-			format!("Can't open WebP file - Expected RIFF signature but found {}!", from_u8_vec_macro!(String, &file_buffer[0..4].to_vec(), &Endian::Big))
+			format!("Can't open WebP file - Expected RIFF signature but found {}!", from_u8_vec_macro!(String, &file_buffer[0..4], &Endian::Big))
 		);
 	}
 
@@ -41,7 +41,7 @@ check_riff_signature
 fn
 check_webp_signature
 (
-	file_buffer: &Vec<u8>
+	file_buffer: &[u8]
 )
 -> Result<(), std::io::Error>
 {
@@ -52,7 +52,7 @@ check_webp_signature
 	{
 		return io_error!(
 			InvalidData, 
-			format!("Can't open WebP file - Expected WEBP signature but found {}!", from_u8_vec_macro!(String, &file_buffer[8..12].to_vec(), &Endian::Big))
+			format!("Can't open WebP file - Expected WEBP signature but found {}!", from_u8_vec_macro!(String, &file_buffer[8..12], &Endian::Big))
 		);
 	}
 
@@ -62,14 +62,14 @@ check_webp_signature
 fn
 check_byte_count
 (
-	file_buffer: &Vec<u8>,
+	file_buffer: &[u8],
 	opt_file: Option<&File>
 )
 -> Result<(), std::io::Error>
 {
 	let byte_count = from_u8_vec_macro!(
 		u32, 
-		&file_buffer[4..8].to_vec(), 
+		&file_buffer[4..8],
 		&Endian::Little
 	) + 8;
 
@@ -94,7 +94,7 @@ check_byte_count
 fn
 encode_metadata_webp
 (
-	exif_vec: &Vec<u8>
+	exif_vec: &[u8]
 )
 -> Vec<u8>
 {
@@ -128,7 +128,7 @@ encode_metadata_webp
 pub(crate) fn
 as_u8_vec
 (
-	general_encoded_metadata: &Vec<u8>
+	general_encoded_metadata: &[u8]
 )
 -> Vec<u8>
 {

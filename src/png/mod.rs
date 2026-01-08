@@ -66,8 +66,8 @@ pub(crate) const XML_COM_ADOBE_XMP: [u8; 17] = [
 fn encode_byte(byte: &u8) -> [u8; 2] 
 {
 	[
-		byte / 16 + (if byte / 16 < 10 {'0' as u8} else {'a' as u8 - 10}),
-		byte % 16 + (if byte % 16 < 10 {'0' as u8} else {'a' as u8 - 10}) 
+		byte / 16 + (if byte / 16 < 10 {b'0'} else {b'a' - 10}),
+		byte % 16 + (if byte % 16 < 10 {b'0'} else {b'a' - 10}) 
 	]
 }
 
@@ -162,7 +162,7 @@ generic_parse_png
 		let chunk_descriptor = get_next_chunk_descriptor(cursor)?;
 		chunks.push(chunk_descriptor);
 
-		if chunks.last().unwrap().as_string() == "IEND".to_string()
+		if chunks.last().unwrap().as_string() == "IEND"
 		{
 			break;
 		}
@@ -192,11 +192,11 @@ get_next_chunk_descriptor
 
 	// Compute CRC on chunk
 	let mut crc_input = Vec::new();
-	crc_input.extend(chunk_name.bytes().into_iter());
+	crc_input.extend(chunk_name.bytes());
 	crc_input.extend(chunk_data.iter());
 
 	let crc_struct = Crc::<u32>::new(&CRC_32_ISO_HDLC);
-	let checksum = crc_struct.checksum(&crc_input) as u32;
+	let checksum = crc_struct.checksum(&crc_input);
 
 	for i in 0..4
 	{
@@ -384,7 +384,7 @@ clear_metadata
 -> Result<(), std::io::Error>
 {
 	// Parse the PNG - if this fails, the clear operation fails as well
-	let parse_png_result = vec_parse_png(&file_buffer)?;
+	let parse_png_result = vec_parse_png(file_buffer)?;
 
 	// Parsed PNG is Ok to use - Open the file and go through the chunks
 	let mut cursor = Cursor::new(file_buffer);
@@ -525,7 +525,7 @@ clear_exif_from_xmp_metadata
 	// Clear the EXIF from the XMP data
 	let clean_xmp_data = remove_exif_from_xmp(
 		// &chunk_data[XML_COM_ADOBE_XMP.len()..]
-		&get_data_from_text_chunk(chunk_name.as_str(), &chunk_data)?
+		&get_data_from_text_chunk(chunk_name.as_str(), chunk_data)?
 	).unwrap();
 
 	// Construct new chunk data field
@@ -608,7 +608,7 @@ write_chunk
 
 	// Compute CRC and append it to the data vector
 	let crc_struct = Crc::<u32>::new(&CRC_32_ISO_HDLC);
-	let checksum = crc_struct.checksum(&data) as u32;
+	let checksum = crc_struct.checksum(&data);
 	for i in 0..4
 	{
 		data.push( (checksum >> (8 * (3-i))) as u8);		
@@ -665,11 +665,11 @@ generic_write_metadata
 	let seek_start = 0u64         // Skip ...
 	+ PNG_SIGNATURE.len() as u64  // PNG Signature
 	+ IHDR_length         as u64  // IHDR data section
-	+ 12                  as u64; // rest of IHDR chunk (length, type, CRC)
+	+ 12_u64; // rest of IHDR chunk (length, type, CRC)
 
 	// Build data of new chunk using zlib compression (level=8 -> default)
 	let zTXt_chunk_data: Vec<u8> = construct_zTXt_chunk_data(
-		Vec::new(),
+		&[],
 		&encoded_metadata
 	);
 
@@ -694,7 +694,7 @@ encode_metadata_png
 	let ssss = (
 		EXIF_HEADER.len() as u32 
 		+ exif_vec.len()  as u32 
-		+ 1               as u32
+		+ 1_u32
 	).to_string();
 
 	// Construct final vector with the bytes as they will be sent to the encoder
@@ -746,7 +746,7 @@ decode_metadata_png
 	for byte in encoded_data
 	{
 		// Ignore newline characters
-		if *byte == '\n' as u8
+		if *byte == b'\n'
 		{
 			continue;
 		}
@@ -841,7 +841,7 @@ decode_metadata_png
 	//    that will now get extracted
 	// Consider this part optional as it might be removed in the future and
 	// isn't strictly necessary and just for validating the data we get
-	assert!(pop_storage.len() > 0);
+	assert!(!pop_storage.is_empty());
 
 	// Using the encode_byte function re-encode the bytes regarding the size
 	// information and construct its value using decimal based shifting
@@ -852,10 +852,10 @@ decode_metadata_png
 	for i in 0..std::cmp::min(4, pop_storage.len())
 	{
 		let re_encoded_byte = encode_byte(&pop_storage[pop_storage.len() -1 -i]);
-		let tens_place = u64::from_str_radix(&(re_encoded_byte[0] as char).to_string(), 10).unwrap();
-		let ones_place = u64::from_str_radix(&(re_encoded_byte[1] as char).to_string(), 10).unwrap();
-		given_exif_len = given_exif_len + tens_place * 10 * 10_u64.pow((2 * i).try_into().unwrap());
-		given_exif_len = given_exif_len + ones_place *  1 * 10_u64.pow((2 * i).try_into().unwrap());
+		let tens_place = (re_encoded_byte[0] as char).to_string().parse::<u64>().unwrap();
+		let ones_place = (re_encoded_byte[1] as char).to_string().parse::<u64>().unwrap();
+		given_exif_len += tens_place * 10 * 10_u64.pow((2 * i).try_into().unwrap());
+		given_exif_len += ones_place *  1 * 10_u64.pow((2 * i).try_into().unwrap());
 	}
 
 	assert!(given_exif_len == exif_all.len().try_into().unwrap());
@@ -883,7 +883,7 @@ as_u8_vec
 	}
 
 	return construct_zTXt_chunk_data(
-		vec![0x7a, 0x54, 0x58, 0x74], 
+		&[0x7a, 0x54, 0x58, 0x74],
 		&basic_png_encode_result
 	);
 }
@@ -894,8 +894,8 @@ as_u8_vec
 fn
 construct_zTXt_chunk_data
 (
-	prefix:                   Vec<u8>,
-	basic_png_encode_result: &Vec<u8>
+	prefix:                  &[u8],
+	basic_png_encode_result: &[u8]
 )
 -> Vec<u8>
 {

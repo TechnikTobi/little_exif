@@ -7,7 +7,6 @@ pub mod edit;
 pub mod get;
 pub mod set;
 
-use core::panic;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
@@ -88,28 +87,27 @@ Metadata
 	)
 	-> Result<Metadata, std::io::Error>
 	{
-		if let Ok(pre_decode_general) = raw_pre_decode_general
-		{
-			let mut pre_decode_cursor = Cursor::new(&pre_decode_general);
-			let     decoding_result   = Self::decode(&mut pre_decode_cursor);
-			if let Ok((endian, image_file_directories)) = decoding_result
-			{
-				let mut data = Metadata { endian, image_file_directories };
-				data.sort_data();
-				return Ok(data);
+
+		match raw_pre_decode_general {
+			Ok(pre_decode_general) =>
+				{
+					let mut pre_decode_cursor = Cursor::new(&pre_decode_general);
+					match Self::decode(&mut pre_decode_cursor) {
+						Ok((endian, image_file_directories)) => {
+							let mut data = Metadata { endian, image_file_directories };
+							data.sort_data();
+							return Ok(data);
+						}
+						Err(error) => {
+							error!("Error during decoding (1): {error:?}");
+							return Err(error);
+						}
+					}
+				}
+			Err(error) => {
+				error!("Error during decoding (2): {error:?}");
+				return Err(error);
 			}
-			else
-			{
-				let decode_error = decoding_result.err().unwrap();
-				error!("Error during decoding (1): {decode_error}");
-				return Err(decode_error);
-			}
-		}
-		else
-		{
-			let decode_error = raw_pre_decode_general.err().unwrap();
-			error!("Error during decoding (2): {decode_error:?}");
-			return Err(decode_error);
 		}
 	}
 
@@ -125,7 +123,7 @@ Metadata
 		// Prepare offset information
 		let mut ifds_with_offset_info_only: Vec<ImageFileDirectory> = Vec::new();
 
-		for ifd in self.image_file_directories.iter()
+		for ifd in &self.image_file_directories
 		{
 			ifds_with_offset_info_only.push(
 				ImageFileDirectory::new_with_tags(
@@ -136,7 +134,7 @@ Metadata
 			);
 		}
 
-		for ifd in self.image_file_directories.iter()
+		for ifd in &self.image_file_directories
 		{
 			if let Some((parent_ifd_group, offset_tag)) = ifd.get_offset_tag_for_parent_ifd()
 			{
@@ -187,9 +185,11 @@ Metadata
 
 			assert!(filter_result.len() <= 1);
 
-			if filter_result.is_empty() { continue; }
+			let Some(first_result) = filter_result.last() else {
+				continue;
+			};
 
-			if let Ok((next_link_section, link_vec)) = filter_result.last().unwrap().encode_ifd(
+			if let Ok((next_link_section, link_vec)) = first_result.encode_ifd(
 				self, 
 				&mut ifds_with_offset_info_only, 
 				&mut encode_vec, 
@@ -224,10 +224,7 @@ Metadata
 			}
 			else
 			{
-				if a.get_ifd_type() == b.get_ifd_type()
-				{
-					panic!("Should not have two different IFDs with same group & number!");
-				}
+				assert!(a.get_ifd_type() != b.get_ifd_type(), "Should not have two different IFDs with same group & number!");
 				if a.get_ifd_type() < b.get_ifd_type()
 				{
 					std::cmp::Ordering::Less
@@ -299,7 +296,7 @@ Metadata
 		// Get offset to IFD0
 		let mut ifd0_offset_buffer = vec![0u8; 4];
 		data_cursor.read_exact(&mut ifd0_offset_buffer)?;
-		let mut ifd_offset_option = Some(from_u8_vec_macro!(u32, &ifd0_offset_buffer.to_vec(), &endian));
+		let mut ifd_offset_option = Some(from_u8_vec_macro!(u32, &ifd0_offset_buffer.clone(), &endian));
 
 		// Decode all the IFDs
 		let mut ifds = Vec::new();
@@ -318,14 +315,13 @@ Metadata
 				&mut ifds
 			);
 
-			if let Ok(new_ifd_offset_option) = decode_result
-			{
-				ifd_offset_option = new_ifd_offset_option;
-			}
-			else
-			{
-				let error = decode_result.err().unwrap();
-				return Err(error);
+			match decode_result {
+				Ok(new_ifd_offset_option) => {
+					ifd_offset_option = new_ifd_offset_option;
+				},
+				Err(e) => {
+					return Err(e);
+				}
 			}
 
 			generic_ifd_nr += 1;

@@ -53,10 +53,10 @@ Metadata
 	)
 	->  Option<&ImageFileDirectory>
 	{
-		self.image_file_directories.iter().filter(|ifd| 
+		self.image_file_directories.iter().find(|ifd|
 			ifd.get_generic_ifd_nr() == generic_ifd_nr &&
 			ifd.get_ifd_type()       == group
-		).next()
+		)
 	}
 
 	/// Gets the maximum generic ifd number that any of the struct's IFDs has
@@ -89,18 +89,18 @@ Metadata
 	)
 	->  &mut ImageFileDirectory
 	{
-		if self.image_file_directories.iter().filter(|ifd| 
+		if !self.image_file_directories.iter().any(|ifd|
 			ifd.get_generic_ifd_nr() == generic_ifd_nr &&
 			ifd.get_ifd_type()       == group
-		).next().is_none()
+		)
 		{
 			self.create_ifd(group, generic_ifd_nr);
 		}
 
-		return self.image_file_directories.iter_mut().filter(|ifd| 
+		return self.image_file_directories.iter_mut().find(|ifd|
 			ifd.get_generic_ifd_nr() == generic_ifd_nr &&
 			ifd.get_ifd_type()       == group
-		).next().unwrap();
+		).expect("Item should be already created above")
 	}
 }
 
@@ -125,7 +125,7 @@ impl Metadata
 		&self,
 		tag:   &ExifTag
 	)
-	-> GetTagIterator
+	-> GetTagIterator<'_>
 	{
 		return self.get_tag_by_hex(tag.as_u16(), Some(tag.get_group()));
 	}
@@ -141,7 +141,7 @@ impl Metadata
 		hex:   u16,
 		group: Option<ExifTagGroup>,
 	)
-	-> GetTagIterator
+	-> GetTagIterator<'_>
 	{
 		GetTagIterator 
 		{
@@ -149,7 +149,7 @@ impl Metadata
 			current_ifd_index: 0,
 			current_tag_index: 0,
 			tag_hex_value:     hex,
-			group:             group,
+			group,
 		}
 	}
 }

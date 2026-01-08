@@ -64,14 +64,14 @@ get_next_chunk
 
 	// Construct name of chunk and its length
 	let chunk_name = String::from_utf8(chunk_start[0..4].to_vec());
-	let mut chunk_length = from_u8_vec_macro!(u32, &chunk_start[4..8].to_vec(), &Endian::Little);
+	let mut chunk_length = from_u8_vec_macro!(u32, &chunk_start[4..8], &Endian::Little);
 
 	// Account for the possible padding byte
 	chunk_length += chunk_length % 2;
 
 	// Read RIFF chunk data
 	let mut chunk_data_buffer = vec![0u8; chunk_length as usize];
-	bytes_read = cursor.read(&mut chunk_data_buffer).unwrap();
+	bytes_read = cursor.read(&mut chunk_data_buffer)?;
 	if bytes_read != chunk_length as usize
 	{
 		return io_error!(
@@ -189,17 +189,13 @@ check_exif_in_file
 -> Result<(Cursor<&Vec<u8>>, Vec<RiffChunkDescriptor>), std::io::Error>
 {
 	// Parse the WebP file - if this fails, we surely can't read any metadata
-	let parsed_webp_result = parse_webp(file_buffer);
-	if let Err(error) = parsed_webp_result
-	{
-		return Err(error);
-	}
+	let parsed_webp_result = parse_webp(file_buffer)?;
 
 	// Next, check if this is an Extended File Format WebP file
 	// In this case, the first Chunk SHOULD have the type "VP8X"
 	// Otherwise, the file is either invalid ("VP8X" at wrong location) or a 
 	// Simple File Format WebP file which don't contain any EXIF metadata.
-	if let Some(first_chunk) = parsed_webp_result.as_ref().unwrap().first()
+	if let Some(first_chunk) = parsed_webp_result.first()
 	{
 		// Compare the chunk descriptor header.
 		if first_chunk.header().to_lowercase() != VP8X_HEADER.to_lowercase()
@@ -221,10 +217,10 @@ check_exif_in_file
 	// - RIFF + file size + WEBP -> 12 byte
 	// - VP8X header             ->  4 byte
 	// - VP8X chunk size         ->  4 byte
-	let mut cursor = check_signature(file_buffer).unwrap();
+	let mut cursor = check_signature(file_buffer)?;
 	let mut flag_buffer = vec![0u8; 4usize];
 	cursor.set_position(12u64 + 4u64 + 4u64);
-	if cursor.read(&mut flag_buffer).unwrap() != 4
+	if cursor.read(&mut flag_buffer)? != 4
 	{
 		return io_error!(Other, "Could not read flags of VP8X chunk!");
 	}
@@ -237,7 +233,7 @@ check_exif_in_file
 		return io_error!(Other, "No EXIF chunk according to VP8X flags!");
 	}
 
-	return Ok((cursor, parsed_webp_result.unwrap()));
+	return Ok((cursor, parsed_webp_result));
 }
 
 
@@ -270,12 +266,12 @@ read_metadata
 		{
 			return io_error!(Other, "Could not read chunk type while traversing WebP file!");
 		}
-		let chunk_type = String::from_u8_vec(&header_buffer.to_vec(), &Endian::Little);
+		let chunk_type = String::from_u8_vec(&header_buffer.clone(), &Endian::Little);
 
 		// Check that this is still the type that we expect from the previous
 		// parsing over the file
 		// TODO: Maybe remove this part?
-		let expected_chunk_type = parse_webp_result.iter().nth(chunk_index).unwrap().header();
+		let expected_chunk_type = parse_webp_result.get(chunk_index).unwrap().header();
 		if chunk_type != expected_chunk_type
 		{
 			return io_error!(
@@ -286,7 +282,7 @@ read_metadata
 
 		// Get the size of this chunk from the previous parsing process and skip
 		// the 4 bytes regarding the size
-		let chunk_size = parse_webp_result.iter().nth(chunk_index).unwrap().len();
+		let chunk_size = parse_webp_result.get(chunk_index).unwrap().len();
 		cursor.seek(std::io::SeekFrom::Current(4))?;
 
 		if chunk_type.to_lowercase() == EXIF_CHUNK_HEADER.to_lowercase()
@@ -366,7 +362,7 @@ convert_to_extended_format
 -> Result<(), std::io::Error>
 {
 	// Start by getting the first chunk of the WebP file
-	let mut read_cursor = Cursor::new(cursor.get_ref().as_ref());
+	let mut read_cursor: Cursor<&Vec<u8>> = Cursor::new(cursor.get_ref());
 	read_cursor.set_position(12);
 	let first_chunk_result = get_next_chunk(&mut read_cursor);
 
@@ -382,7 +378,7 @@ convert_to_extended_format
 	let (width, height) = match first_chunk.descriptor().header().as_str()
 	{
 		"VP8" 
-			=> {debug!("VP8 !"); todo!()},
+			=> {debug!("VP8 !"); io_error!(Other, "Conversion from Simple File Format with 'VP8' chunk to Extended File Format not yet implemented!")},
 		"VP8L"
 			=> get_dimension_info_from_vp8l_chunk(first_chunk.payload()),
 		_ 
@@ -416,7 +412,7 @@ convert_to_extended_format
 fn
 get_dimension_info_from_vp8l_chunk
 (
-	payload: &Vec<u8>
+	payload: &[u8]
 )
 -> Result<(u32, u32), std::io::Error>
 {
@@ -503,21 +499,23 @@ clear_metadata
 {
 	// Check the file signature, parse it, check that it has a VP8X chunk and
 	// the EXIF flag is set there
-	let exif_check_result = check_exif_in_file(file_buffer);
-	if exif_check_result.is_err()
-	{
-		match exif_check_result.as_ref().err().unwrap().to_string().as_str()
-		{
-			"No EXIF chunk according to VP8X flags!"
-				=> return Ok(()),
-			"Expected first chunk of WebP file to be of type 'VP8X' but instead got VP8L!"
-				=> return Ok(()),
-			_
-				=> return Err(exif_check_result.err().unwrap())
+
+	let parse_webp_result;
+	match check_exif_in_file(file_buffer) {
+		Ok((_, parse_webp_res)) => parse_webp_result = parse_webp_res,
+		Err(e) => {
+			return match e.to_string().as_str()
+			{
+				"No EXIF chunk according to VP8X flags!"
+				=> Ok(()),
+				"Expected first chunk of WebP file to be of type 'VP8X' but instead got VP8L!"
+				=> Ok(()),
+				_
+				=> Err(e)
+			}
 		}
 	}
 
-	let (_, parse_webp_result) = exif_check_result.unwrap();
 	let mut cursor = Cursor::new(file_buffer);
 
 	// Compute a delta of how much the file size information has to change
@@ -597,7 +595,7 @@ write_metadata
 		"ANIM"
 	];
 
-	let mut read_cursor = Cursor::new(file_buffer.as_ref());
+	let mut read_cursor: Cursor<&Vec<u8>> = Cursor::new(file_buffer);
 
 	loop
 	{

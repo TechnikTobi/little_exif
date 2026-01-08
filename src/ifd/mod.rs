@@ -77,7 +77,7 @@ ImageFileDirectory
 	)
 	-> Self
 	{
-		ImageFileDirectory { tags: tags, ifd_type: group, belongs_to_generic_ifd_nr: nr }
+		ImageFileDirectory { tags, ifd_type: group, belongs_to_generic_ifd_nr: nr }
 	}
 
 	/// Sorts the tags according to their hex value
@@ -89,10 +89,7 @@ ImageFileDirectory
 		&mut self
 	)
 	{
-		self.tags.sort_by(
-			|a, b|
-			a.as_u16().cmp(&b.as_u16())
-		);
+		self.tags.sort_by_key(|a| a.as_u16());
 	}
 
 	/// If everything goes Ok and there is enough data to unpack, this returns
@@ -124,7 +121,7 @@ ImageFileDirectory
 		// The first two bytes give us the number of entries in this IFD
 		let mut number_of_entries_buffer = vec![0u8; 2];
 		data_cursor.read_exact(&mut number_of_entries_buffer)?;
-		let number_of_entries = from_u8_vec_macro!(u16, &number_of_entries_buffer.to_vec(), endian);
+		let number_of_entries = from_u8_vec_macro!(u16, &number_of_entries_buffer.clone(), endian);
 
 		// Check that there is enough data to unpack
 		let required = 0
@@ -164,9 +161,9 @@ ImageFileDirectory
 			data_cursor.read_exact(&mut entry_buffer)?;
 
 			// Decode the first 8 bytes with the tag, format and component number
-			let hex_tag              = from_u8_vec_macro!(u16, &entry_buffer[0..2].to_vec(), endian);
-			let hex_format           = from_u8_vec_macro!(u16, &entry_buffer[2..4].to_vec(), endian);
-			let hex_component_number = from_u8_vec_macro!(u32, &entry_buffer[4..8].to_vec(), endian);
+			let hex_tag              = from_u8_vec_macro!(u16, &entry_buffer[0..2], endian);
+			let hex_format           = from_u8_vec_macro!(u16, &entry_buffer[2..4], endian);
+			let hex_component_number = from_u8_vec_macro!(u32, &entry_buffer[4..8], endian);
 
 			// Decode the format
 			// TODO: What to do in case these two differ but the given format
@@ -194,7 +191,7 @@ ImageFileDirectory
 			if byte_count > 4
 			{
 				// Compute the offset
-				let hex_offset = from_u8_vec_macro!(u32, &entry_buffer[8..12].to_vec(), endian);
+				let hex_offset = from_u8_vec_macro!(u32, &entry_buffer[8..12], endian);
 
 				// Backup current position & go to offset position
 				let backup_position = data_cursor.position();
@@ -204,7 +201,7 @@ ImageFileDirectory
 				// Read the raw data
 				let mut raw_data_buffer = vec![0u8; byte_count as usize];
 				data_cursor.read_exact(&mut raw_data_buffer)?;
-				raw_data = raw_data_buffer.to_vec();
+				raw_data = raw_data_buffer.clone();
 			
 				// Rewind the cursor to the start of the next entry
 				data_cursor.set_position(backup_position);
@@ -229,7 +226,7 @@ ImageFileDirectory
 					hex_tag, 
 					&format, 
 					&raw_data, 
-					&endian, 
+					endian, 
 					group
 				).unwrap());
 				continue;
@@ -425,7 +422,7 @@ ImageFileDirectory
 
 		// Put the current IFD into the given, referenced vector
 		insert_into.push(ImageFileDirectory { 
-			tags: tags, 
+			tags, 
 			ifd_type: *group, 
 			belongs_to_generic_ifd_nr: generic_ifd_nr
 		});
@@ -473,25 +470,24 @@ ImageFileDirectory
 		// location and sort them there
 		let all_relevant_tags = self.tags.iter().chain(ifds_with_offset_info_only
 			.iter()
-			.filter(|ifd| 
+			.find(|ifd|
 				ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
 				ifd.get_ifd_type()       == self.get_ifd_type()
 			)
-			.next().unwrap().get_tags()
+			.unwrap().get_tags()
 			.iter()).cloned().collect::<Vec<ExifTag>>();
 
 		// Start writing this IFD by adding the number of entries
 		let count_entries = all_relevant_tags.iter().filter(
-			|tag| tag.is_writable() || 
-			if let TagType::IFD_OFFSET(_)  = tag.get_tag_type() { true } else { false } ||
-			if let TagType::DATA_OFFSET(_) = tag.get_tag_type() { true } else { false }
+			|tag| tag.is_writable() ||
+				matches!(tag.get_tag_type(), TagType::DATA_OFFSET(_) | TagType::IFD_OFFSET(_))
 		).count() as u16;
 
 		encode_vec.extend(to_u8_vec_macro!(u16, &count_entries, &data.get_endian()).iter());
 
 		// Remember the current offset as this is needed to address this IFD
 		// and link to it from other IFDs
-		let ifd_offset     = current_offset.clone();
+		let ifd_offset     = *current_offset;
 		let ifd_offset_vec = to_u8_vec_macro!(u32, &ifd_offset, &data.get_endian());
 
 		// Advance offset address to the point after the entries and provide
@@ -566,11 +562,11 @@ ImageFileDirectory
 						// Find that IFD in the parent struct and encode that
 						if let Ok((_, subifd_offset)) = data.get_ifds()
 							.iter()
-							.filter(|ifd| 
+							.find(|ifd|
 								ifd.get_generic_ifd_nr() == self.get_generic_ifd_nr() &&
 								ifd.get_ifd_type()       == group
 							)
-							.next().unwrap().encode_ifd(
+							.unwrap().encode_ifd(
 								data, 
 								ifds_with_offset_info_only, 
 								&mut ifd_offset_area, 

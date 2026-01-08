@@ -40,7 +40,7 @@ IsoBox
             let mut buffer = Vec::new();
             cursor.read_to_end(&mut buffer)?;
             return Ok(IsoBox {
-                header: header,
+                header,
                 data:   buffer
             });
         }
@@ -51,7 +51,7 @@ IsoBox
         cursor.read_exact(&mut buffer)?;
 
         return Ok(IsoBox {
-            header: header,
+            header,
             data:   buffer
         });
     }

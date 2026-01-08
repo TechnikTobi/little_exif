@@ -204,9 +204,9 @@ ItemInfoBox
         }
 
         return Ok(Box::new(ItemInfoBox { 
-            header:     header,
-            item_count: item_count, 
-            items:      items 
+            header,
+            item_count, 
+            items 
         }));
     }
 }

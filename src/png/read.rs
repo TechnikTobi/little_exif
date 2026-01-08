@@ -35,7 +35,7 @@ read_chunk_name
 -> Result<String, std::io::Error>
 {
 	let field = read_4_bytes(cursor)?;
-	let name  = String::from_utf8((&field).to_vec()).unwrap_or_default();
+	let name  = String::from_utf8(field.to_vec()).unwrap_or_default();
 	return Ok(name);
 }
 

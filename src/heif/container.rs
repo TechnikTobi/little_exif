@@ -84,16 +84,9 @@ HeifContainer
     {
         let mut boxes = Vec::new();
 
-        loop 
+        while let Ok(next_box) = read_next_box(cursor)
         {
-            if let Ok(next_box) = read_next_box(cursor)
-            {
-                boxes.push(next_box);
-            }
-            else
-            {
-                break;
-            }
+            boxes.push(next_box);
         }
 
         return Ok(Self { boxes })
@@ -164,10 +157,7 @@ HeifContainer
             .get_item_location_entry(exif_item_id);
         let exif_extents = &exif_item.extents;
 
-        if exif_extents.len() != 1
-        {
-            panic!("Expected exactly one EXIF extent info entry! Please create a new ticket at https://github.com/TechnikTobi/little_exif with an example image file");
-        }
+        assert!(exif_extents.len() == 1, "Expected exactly one EXIF extent info entry! Please create a new ticket at https://github.com/TechnikTobi/little_exif with an example image file");
 
         match exif_item.get_construction_method()
         {
@@ -360,7 +350,7 @@ HeifContainer
             let mut iinf_opt = None;
             let mut iref_opt = None;
 
-            for other_box in self.get_meta_box_mut().other_boxes.iter_mut()
+            for other_box in &mut self.get_meta_box_mut().other_boxes
             {
                 if other_box.get_header().get_box_type() == BoxType::iloc
                 {
@@ -404,7 +394,7 @@ HeifContainer
                 "Exif"
             );
             let               iref_size_delta  = iref.create_new_single_item_reference_box(
-                "cdsc".to_string(), // TODO: Check if this is always this type?
+                "cdsc",             // TODO: Check if this is always this type?
                 new_iloc_id, 
                 vec![1]             // TODO: Check if this is always item #1?
             );
@@ -439,7 +429,7 @@ HeifContainer
             metadata
         )?;
 
-        for item in self.get_meta_box_mut().get_item_location_box_mut().items.iter_mut()
+        for item in &mut self.get_meta_box_mut().get_item_location_box_mut().items
         {
             // First, check if any extent of this item has the same offset as
             // the old exif data area. In that case, there must be only one
@@ -449,10 +439,7 @@ HeifContainer
                     item.base_offset + extent.extent_offset == old_exif_pos
                 })
             {
-                if item.extents.len() != 1
-                {
-                    panic!("Expect to have exactly one extent info for EXIF!");
-                }
+                assert!(item.extents.len() == 1, "Expect to have exactly one extent info for EXIF!");
 
                 // In case of the EXIF extent information we need to update
                 // the length information, not the offset!
@@ -506,7 +493,7 @@ HeifContainer
 
             // At this point we have no option left but to modify all 
             // individual extent offsets
-            for extent in item.extents.iter_mut()
+            for extent in &mut item.extents
             {
                 let complete_offset = item.base_offset + extent.extent_offset;
 
@@ -571,7 +558,7 @@ HeifContainer
                 cursor.get_mut().extend(&serialized);
             }
 
-            written_bytes = written_bytes + serialized.len();
+            written_bytes += serialized.len();
         }
 
         return Ok(());

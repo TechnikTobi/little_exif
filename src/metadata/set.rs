@@ -30,7 +30,8 @@ Metadata
 	/// associated group. If, for whatever reason, this tag appears in multiple 
 	/// IFDs, all instances will be removed, assuming the groups match. 
 	/// The count of calls on `remove_tag` gets returned. If this is zero,
-	/// no removals were performed. 
+	/// no removals were performed.
+	#[allow(clippy::needless_pass_by_value)]
 	pub fn
 	remove_tag
 	(

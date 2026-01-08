@@ -50,3 +50,27 @@ path = "tests/main.rs"
 [workspace]
 members = [".", "issue_tests", "heif_conformance_tests"]
 resolver = "3"
+
+[lints.clippy]
+modulo_one = "allow" # used in macros
+from_over_into = "allow"
+identity_op = "allow"
+upper_case_acronyms = "allow" # IDAT etc. are uppercase by convention
+collapsible_else_if = "allow"
+new_without_default = "allow"
+doc_lazy_continuation = "allow"
+same_item_push = "allow"
+needless_late_init = "allow"
+empty_line_after_doc_comments = "allow"
+
+unused_io_amount = "allow" # TODO
+needless_range_loop = "allow" # TODO
+match_same_arms = "allow" # TODO
+
+match_wildcard_for_single_variants = "warn"
+
+# Nice to have warnings
+#unnecessary_wraps = "warn" # this can be fixed after fixing unwrap results
+#expect_used = "warn" # This is should will require to change public API
+#unwrap_used = "warn"
+#wildcard_imports = "warn"

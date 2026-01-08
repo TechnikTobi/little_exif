@@ -1,0 +1,3 @@
+msrv = "1.65.0"
+allow-indexing-slicing-in-tests = true
+allow-unwrap-in-tests = true

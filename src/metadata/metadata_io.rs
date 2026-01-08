@@ -78,7 +78,7 @@ Metadata
                 => tiff::vec::read_metadata(file_buffer),
             FileExtension::WEBP
                 => webp::vec::read_metadata(file_buffer),
-            _
+            FileExtension::NAKED_JXL
                 => return io_error!(
                     Other, 
                     format!(
@@ -112,7 +112,7 @@ Metadata
         // First, try to get the type based on the file extension
         let extension_based_file_type_result = get_file_type(path);
 
-        let mut extension_based_file_type = match extension_based_file_type_result 
+        let extension_based_file_type_opt = match extension_based_file_type_result
         {
             Ok(result) => Some(result),
             Err(error) => match error.kind() 
@@ -126,25 +126,25 @@ Metadata
         let mut file = open_read_file(path)?;
         let content_based_file_type = FileExtension::auto_detect(&mut file);
 
-        if extension_based_file_type.is_none()
+        let mut extension_based_file_type: FileExtension;
+        if let Some(extension_based) = extension_based_file_type_opt {
+            extension_based_file_type = extension_based;
+        }
+        else
         {
-            if content_based_file_type.is_none()
-            {
+            if let Some(content_based_file_type) = content_based_file_type {
+                extension_based_file_type = content_based_file_type;
+            } else {
                 return io_error!(
                     Other,
                     "Could not determine file type when reading file!"
                 );
             }
-
-            extension_based_file_type = content_based_file_type;
         }
 
-        if content_based_file_type.is_some()
+        if let Some(content_based_file_type) = content_based_file_type
         {
-            if 
-                extension_based_file_type.unwrap() 
-                != 
-                content_based_file_type.unwrap()
+            if extension_based_file_type != content_based_file_type
             {
                 warn!("File extension and file content yield different file type, content takes precedence");
                 extension_based_file_type = content_based_file_type;
@@ -155,7 +155,7 @@ Metadata
             warn!("Could not determine file type based on content, fall back on file extension");
         }
 
-        let file_type = extension_based_file_type.unwrap();
+        let file_type = extension_based_file_type;
 
         // Call the file specific decoders as a starting point for obtaining
         // the raw EXIF data that gets further processed
@@ -173,7 +173,7 @@ Metadata
                 => tiff::file::read_metadata(path),
             FileExtension::WEBP 
                 => webp::file::read_metadata(path),
-            _
+            FileExtension::NAKED_JXL
                 => return io_error!(
                     Other, 
                     format!(
@@ -209,7 +209,7 @@ Metadata
                 => tiff::vec::clear_metadata(file_buffer),
             FileExtension::WEBP
                 => webp::vec::clear_metadata(file_buffer),
-            _
+            FileExtension::NAKED_JXL
                 => return io_error!(
                     Other, 
                     format!(
@@ -358,7 +358,7 @@ Metadata
                 => tiff::file::clear_metadata(path),
             FileExtension::WEBP 
                 => webp::file::clear_metadata(path),
-            _
+            FileExtension::NAKED_JXL
                 => return io_error!(
                     Other, 
                     format!(
@@ -398,7 +398,13 @@ Metadata
             FileExtension::HEIF 
                 => heif::as_u8_vec(&general_encoded_metadata),
             _ => {
-                unimplemented!()
+                io_error!(
+                    Other,
+                    format!(
+                        "Function 'as_u8_vec' not yet implemented for {:?}",
+                        for_file_type
+                    )
+                )?
             }
         })
     }
@@ -429,7 +435,7 @@ Metadata
                 => tiff::vec::write_metadata(file_buffer, self),
             FileExtension::WEBP
                 => webp::vec::write_metadata(file_buffer, self),
-            _
+            FileExtension::NAKED_JXL
                 => return io_error!(
                     Other, 
                     format!(
@@ -470,7 +476,7 @@ Metadata
                 => tiff::file::write_metadata(path, self),
             FileExtension::WEBP 
                 => webp::file::write_metadata(path, self),
-            _
+            FileExtension::NAKED_JXL
                 => return io_error!(
                     Other, 
                     format!(

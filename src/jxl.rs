@@ -56,7 +56,7 @@ impl IsoBmffBoxType {
 fn
 starts_with_iso_bmff_signature
 (
-	file_buffer: &Vec<u8>
+	file_buffer: &[u8]
 )
 -> bool
 {
@@ -76,7 +76,7 @@ starts_with_iso_bmff_signature
 fn
 starts_with_jxl_signature
 (
-	file_buffer: &Vec<u8>
+	file_buffer: &[u8]
 )
 -> bool
 {
@@ -89,7 +89,7 @@ starts_with_jxl_signature
 fn
 check_signature
 (
-	file_buffer: &Vec<u8>
+	file_buffer: &[u8]
 )
 -> Result<(), std::io::Error>
 {
@@ -118,7 +118,7 @@ file_check_signature
 	let mut signature_buffer = [0u8; 12];
 	let bytes_read = file.read(&mut signature_buffer)?;
 	assert_eq!(bytes_read, 12);
-	check_signature(&signature_buffer.to_vec())?;
+	check_signature(&signature_buffer)?;
 
 	return Ok(file);
 }
@@ -186,7 +186,7 @@ file_clear_metadata
 		file.read_exact(&mut length_buffer)?;
 		file.read_exact(&mut type_buffer)?;
 
-		let length = from_u8_vec_macro!(u32, &length_buffer.to_vec(), &Endian::Big) as usize;
+		let length = from_u8_vec_macro!(u32, &length_buffer, &Endian::Big) as usize;
 
 		if box_contains_exif(&mut file, type_buffer)?
 		{
@@ -289,7 +289,7 @@ file_read_metadata
 	// Read first 12 bytes and check that we have a ISO BMFF file
 	let mut first_12_bytes = [0u8; 12];
 	file.read(&mut first_12_bytes).unwrap();
-	check_signature(&first_12_bytes.to_vec())?;
+	check_signature(&first_12_bytes)?;
 
 	return generic_read_metadata(&mut file);
 }
@@ -309,7 +309,7 @@ generic_read_metadata
 		// and box type)
 		let mut length_buffer = [0u8; 4];
 		cursor.read_exact(&mut length_buffer)?;
-		let length = from_u8_vec_macro!(u32, &length_buffer.to_vec(), &Endian::Big) - 8;
+		let length = from_u8_vec_macro!(u32, &length_buffer, &Endian::Big) - 8;
 
 		// Next, read the box type
 		let mut type_buffer = [0u8; 4];
@@ -350,7 +350,7 @@ generic_read_metadata
 						&mut decompressed_exif_buffer
 					) 
 					{
-						Ok(_)  => (),
+						Ok(())  => (),
 						Err(e) => return Err(e)
 					};
 
@@ -375,7 +375,7 @@ generic_read_metadata
 fn
 encode_metadata_jxl
 (
-	exif_vec: &Vec<u8>
+	exif_vec: &[u8]
 )
 -> Vec<u8>
 {
@@ -413,7 +413,7 @@ find_insert_position
 		// and box type)
 		let mut length_buffer = [0u8; 4];
 		cursor.read_exact(&mut length_buffer)?;
-		let length = from_u8_vec_macro!(u32, &length_buffer.to_vec(), &Endian::Big) - 8;
+		let length = from_u8_vec_macro!(u32, &length_buffer, &Endian::Big) - 8;
 
 		// Next, read the box type
 		let mut type_buffer = [0u8; 4];

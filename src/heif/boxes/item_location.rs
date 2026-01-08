@@ -418,7 +418,7 @@ ItemLocationBox
         value: i64
     )
     {
-        for item in self.items.iter_mut()
+        for item in &mut self.items
         {
             if item.get_construction_method() == ItemConstructionMethod::IDAT
             {
@@ -447,7 +447,7 @@ ItemLocationBox
             // This may be problematic in case the offset points to a location
             // before the iloc or iinf boxes, so changing their length won't
             // affect that offset value
-            for extent in item.extents.iter_mut()
+            for extent in &mut item.extents
             {
                 extent.extent_offset = (extent.extent_offset as i64 + value) as u64;
             }
@@ -495,6 +495,7 @@ ItemLocationBox
         // let (offset_size,        length_size,              base_offset_size) =
         //     ((temp >> 12) as u8, (temp >> 8 & 0x0f) as u8, (temp >> 4 & 0x0f) as u8);
 
+        #[allow(clippy::double_parens)]
         let temp = 0u16 
             + ((self.offset_size      as u16) << 12)
             + ((self.length_size      as u16) <<  8)
