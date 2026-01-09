@@ -16,7 +16,7 @@ pub type RATIONAL64S    = Vec<iR64>;
 pub type FLOAT          = Vec<f32>;
 pub type DOUBLE         = Vec<f64>;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Copy)]
 pub enum
 ExifTagFormat
 {

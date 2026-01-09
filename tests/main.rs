@@ -78,16 +78,16 @@ new_from_vec()
 fn
 from_u8_vec_to_u32_le
 (
-	data: &Vec<u8>
+	data: &[u8]
 )
 -> u32
 {
 	let mut result = 0;
 	for i in 0..std::cmp::min(4, data.len())
 	{
-		result = result + (data[i] as u32) * 256u32.pow(i as u32);
+		result += (data[i] as u32) * 256u32.pow(i as u32);
 	}
-	return result;
+	result
 }
 
 #[test]
@@ -96,10 +96,6 @@ read_from_file_webp()
 -> Result<(), std::io::Error>
 {
 	let raw_metadata = Metadata::new_from_path(Path::new("tests/read_sample.webp"));
-	if raw_metadata.is_err()
-	{
-		panic!();
-	}
 
 	let metadata = raw_metadata.unwrap();
 
@@ -130,10 +126,7 @@ read_from_file_jxl()
 -> Result<(), std::io::Error>
 {
 	let raw_metadata = Metadata::new_from_path(Path::new("tests/with_exif.jxl"));
-	if raw_metadata.is_err()
-	{
-		panic!();
-	}
+	assert!(raw_metadata.is_ok(), );
 
 	let metadata = raw_metadata.unwrap();
 
@@ -155,10 +148,7 @@ read_from_file_tiff()
 -> Result<(), std::io::Error>
 {
 	let raw_metadata = Metadata::new_from_path(Path::new("tests/read_sample.tif"));
-	if raw_metadata.is_err()
-	{
-		panic!();
-	}
+	assert!(raw_metadata.is_ok(), );
 
 	let metadata = raw_metadata.unwrap();
 
@@ -180,10 +170,7 @@ read_from_file_avif()
 -> Result<(), std::io::Error>
 {
 	let raw_metadata = Metadata::new_from_path(Path::new("tests/read_sample.avif"));
-	if raw_metadata.is_err()
-	{
-		panic!();
-	}
+	assert!(raw_metadata.is_ok(), );
 
 	let metadata = raw_metadata.unwrap();
 
@@ -215,11 +202,8 @@ read_from_vec_generic
 )
 -> Result<(), std::io::Error>
 {
-	let raw_metadata = Metadata::new_from_vec(&image_data, filetype);
-	if raw_metadata.is_err()
-	{
-		panic!();
-	}
+	let raw_metadata = Metadata::new_from_vec(image_data, filetype);
+	assert!(raw_metadata.is_ok(), );
 
 	let metadata = raw_metadata.unwrap();
 
@@ -254,7 +238,7 @@ fn
 read_from_vec_webp()
 -> Result<(), std::io::Error>
 {
-	return read_from_vec_generic(&read("tests/read_sample.webp").unwrap(), little_exif::filetype::FileExtension::WEBP);
+	read_from_vec_generic(&read("tests/read_sample.webp").unwrap(), little_exif::filetype::FileExtension::WEBP)
 }
 
 #[test]
@@ -262,7 +246,7 @@ fn
 read_from_vec_jpg()
 -> Result<(), std::io::Error>
 {
-	return read_from_vec_generic(&read("tests/read_sample.jpg").unwrap(), little_exif::filetype::FileExtension::JPEG);
+	read_from_vec_generic(&read("tests/read_sample.jpg").unwrap(), little_exif::filetype::FileExtension::JPEG)
 }
 
 #[test]
@@ -270,7 +254,7 @@ fn
 read_from_vec_jxl()
 -> Result<(), std::io::Error>
 {
-	return read_from_vec_generic(&read("tests/with_exif.jxl").unwrap(), little_exif::filetype::FileExtension::JXL);
+	read_from_vec_generic(&read("tests/with_exif.jxl").unwrap(), little_exif::filetype::FileExtension::JXL)
 }
 
 
@@ -298,7 +282,7 @@ get_test_metadata()
 	);
 	assert_eq!(metadata.into_iter().count(), 4);
 
-	return Ok(metadata);
+	Ok(metadata)
 }
 
 #[test]
@@ -313,7 +297,6 @@ as_u8_vec_png()
 			.unwrap()
 			.iter()
 			.map(|char_value| *char_value as char)
-			.into_iter()
 			.collect::<String>()
 	);
 }
@@ -331,7 +314,6 @@ as_u8_vec_png_zTXt()
 			.unwrap()
 			.iter()
 			.map(|char_value| *char_value as char)
-			.into_iter()
 			.collect::<String>()
 	);
 }
@@ -709,18 +691,12 @@ compare_write_to_generic
 	let compare_me = read(copy1_file).unwrap();
 
 	// Compare their lengths
-	if compare_me.len() != image_data.len()
-	{
-		panic!("Lengths differ! file: {} vs vec: {}", compare_me.len(), image_data.len());
-	}
+	assert!(compare_me.len() == image_data.len(), "Lengths differ! file: {} vs vec: {}", compare_me.len(), image_data.len());
 
 	// Compare their contents
 	for i in 0..compare_me.len()
 	{
-		if compare_me[i] != image_data[i]
-		{
-			panic!("Data differs! file: {} vs vec: {}", compare_me[i], image_data[i]);
-		}
+		assert!(compare_me[i] == image_data[i], "Data differs! file: {} vs vec: {}", compare_me[i], image_data[i]);
 	}
 
 	Ok(())
@@ -731,12 +707,12 @@ fn
 compare_write_to_jpg()
 -> Result<(), std::io::Error>
 {
-	return compare_write_to_generic(
+	compare_write_to_generic(
 		"tests/sample2.jpg",
 		"tests/sample2_copy1.jpg",
 		"tests/sample2_copy2.jpg",
 		little_exif::filetype::FileExtension::JPEG
-	);
+	)
 }
 
 #[test]
@@ -744,12 +720,12 @@ fn
 compare_write_to_jxl()
 -> Result<(), std::io::Error>
 {
-	return compare_write_to_generic(
+	compare_write_to_generic(
 		"tests/no_exif.jxl",
 		"tests/no_exif_copy1.jxl",
 		"tests/no_exif_copy2.jxl",
 		little_exif::filetype::FileExtension::JXL
-	);
+	)
 }
 
 #[test]
@@ -757,12 +733,12 @@ fn
 compare_write_to_png()
 -> Result<(), std::io::Error>
 {
-	return compare_write_to_generic(
+	compare_write_to_generic(
 		"tests/sample2.png",
 		"tests/sample2_copy1.png",
 		"tests/sample2_copy2.png",
 		little_exif::filetype::FileExtension::PNG { as_zTXt_chunk: false }
-	);
+	)
 }
 
 #[test]
@@ -770,12 +746,12 @@ fn
 compare_write_to_webp_lossless()
 -> Result<(), std::io::Error>
 {
-	return compare_write_to_generic(
+	compare_write_to_generic(
 		"tests/sample2_simple_lossless.webp",
 		"tests/sample2_simple_lossless_copy1.webp",
 		"tests/sample2_simple_lossless_copy2.webp",
 		little_exif::filetype::FileExtension::WEBP
-	);
+	)
 }
 
 #[test]
@@ -783,10 +759,10 @@ fn
 compare_write_to_webp_extended()
 -> Result<(), std::io::Error>
 {
-	return compare_write_to_generic(
+	compare_write_to_generic(
 		"tests/sample2_extended.webp",
 		"tests/sample2_extended_copy1.webp",
 		"tests/sample2_extended_copy2.webp",
 		little_exif::filetype::FileExtension::WEBP
-	);
+	)
 }

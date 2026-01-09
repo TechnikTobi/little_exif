@@ -7,7 +7,6 @@ pub mod edit;
 pub mod get;
 pub mod set;
 
-use core::panic;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;

@@ -14,6 +14,7 @@ use crate::endian::*;
 use crate::metadata::Metadata;
 use crate::u8conversion::*;
 use crate::general_file_io::*;
+use crate::io_error_plain;
 use super::riff_chunk::RiffChunk;
 use super::riff_chunk::RiffChunkDescriptor;
 use super::*;
