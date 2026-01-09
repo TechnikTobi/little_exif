@@ -58,8 +58,11 @@ IsoBox
         };
 
         let mut buffer: Vec<u8> = Vec::new();
-        buffer.try_reserve_exact(data_left_to_read)?; // This may cause out of memory
-        cursor.read_exact(&mut buffer)?;
+
+        // This may cause an out of memory error, but won't panic like vec![]
+        buffer.try_reserve_exact(data_left_to_read)?;
+
+        cursor.take(data_left_to_read as u64).read_to_end(&mut buffer)?;
 
         return Ok(IsoBox {
             header: header,
