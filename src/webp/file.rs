@@ -14,7 +14,6 @@ use crate::endian::*;
 use crate::metadata::Metadata;
 use crate::u8conversion::*;
 use crate::general_file_io::*;
-use crate::io_error_plain;
 use super::riff_chunk::RiffChunk;
 use super::riff_chunk::RiffChunkDescriptor;
 use super::*;
@@ -80,7 +79,7 @@ get_next_chunk
 
     // Construct name of chunk and its length
     let chunk_name = String::from_utf8(chunk_start[0..4].to_vec());
-    let mut chunk_length = from_u8_vec_macro!(u32, &chunk_start[4..8], &Endian::Little);
+    let mut chunk_length = from_u8_vec_res_macro!(u32, &chunk_start[4..8], &Endian::Little)?;
 
     // Account for the possible padding byte
     chunk_length += chunk_length % 2;
@@ -140,15 +139,8 @@ parse_webp
 )
 -> Result<Vec<RiffChunkDescriptor>, std::io::Error>
 {
-    let file_result = check_signature(path);
+    let mut file = check_signature(path)?;
     let mut chunks = Vec::new();
-
-    if let Err(e) = file_result
-    {
-        return Err(e);
-    }
-
-    let Ok(mut file) = file_result else { unreachable!() };
 
     // The amount of data we expect to read while parsing the chunks
     let expected_length = file.metadata()?.len();
@@ -386,7 +378,7 @@ update_file_size_information
         return io_error!(Other, "Could not read file size information from WebP file!");
     }
 
-    let old_file_size = from_u8_vec_macro!(u32, &file_size_buffer, &Endian::Little);
+    let old_file_size = from_u8_vec_res_macro!(u32, &file_size_buffer, &Endian::Little)?;
 
     // ...adding the delta byte count (and performing some checks)...
     if delta < 0
@@ -422,7 +414,7 @@ convert_to_extended_format
     let (width, height) = match first_chunk.descriptor().header().as_str()
     {
         "VP8" 
-            => {debug!("VP8 !"); todo!()},
+            => {debug!("VP8 !"); io_error!(Other, "Conversion from Simple File Format WebP with 'VP8 ' chunk to Extended File Format WebP not yet implemented!")},
         "VP8L"
             => get_dimension_info_from_vp8l_chunk(first_chunk.payload()),
         _ 
@@ -483,7 +475,7 @@ get_dimension_info_from_vp8l_chunk
     let width_height_info_buffer = payload[1..5].to_vec();
     
     // Convert to a single u32 number for bit-mask operations
-    let width_height_info = from_u8_vec_macro!(u32, &width_height_info_buffer, &Endian::Little);
+    let width_height_info = from_u8_vec_res_macro!(u32, &width_height_info_buffer, &Endian::Little)?;
     
     let mut width  = 0;
     let mut height = 0;

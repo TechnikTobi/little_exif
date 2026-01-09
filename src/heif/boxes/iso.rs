@@ -45,9 +45,20 @@ IsoBox
             });
         }
 
-        let data_left_to_read = header.get_box_size() - header.get_header_size();
+        let Some(data_left_to_read) = header.get_box_size().checked_sub(header.get_header_size()) else {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!(
+                    "Box size {} is smaller than header size {} for box type {:?}",
+                    header.get_box_size(),
+                    header.get_header_size(),
+                    header.get_box_type()
+                )
+            ));
+        };
 
-        let mut buffer = vec![0u8; data_left_to_read];
+        let mut buffer: Vec<u8> = Vec::new();
+        buffer.try_reserve_exact(data_left_to_read)?; // This may cause out of memory
         cursor.read_exact(&mut buffer)?;
 
         return Ok(IsoBox {

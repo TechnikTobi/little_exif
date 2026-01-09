@@ -18,7 +18,7 @@ use crate::exif_tag::TagType;
 use crate::exif_tag_format::ExifTagFormat;
 use crate::general_file_io::io_error;
 use crate::metadata::Metadata;
-use crate::u8conversion::from_u8_vec_macro;
+use crate::u8conversion::from_u8_vec_res_macro;
 use crate::u8conversion::to_u8_vec_macro;
 use crate::u8conversion::U8conversion;
 
@@ -125,7 +125,7 @@ ImageFileDirectory
         // The first two bytes give us the number of entries in this IFD
         let mut number_of_entries_buffer = vec![0u8; 2];
         data_cursor.read_exact(&mut number_of_entries_buffer)?;
-        let number_of_entries = from_u8_vec_macro!(u16, &number_of_entries_buffer.to_vec(), endian);
+        let number_of_entries = from_u8_vec_res_macro!(u16, &number_of_entries_buffer, endian)?;
 
         // Check that there is enough data to unpack
         let required = 0
@@ -165,9 +165,9 @@ ImageFileDirectory
             data_cursor.read_exact(&mut entry_buffer)?;
 
             // Decode the first 8 bytes with the tag, format and component number
-            let hex_tag              = from_u8_vec_macro!(u16, &entry_buffer[0..2], endian);
-            let hex_format           = from_u8_vec_macro!(u16, &entry_buffer[2..4], endian);
-            let hex_component_number = from_u8_vec_macro!(u32, &entry_buffer[4..8], endian);
+            let hex_tag              = from_u8_vec_res_macro!(u16, &entry_buffer[0..2], endian)?;
+            let hex_format           = from_u8_vec_res_macro!(u16, &entry_buffer[2..4], endian)?;
+            let hex_component_number = from_u8_vec_res_macro!(u32, &entry_buffer[4..8], endian)?;
 
             // Decode the format
             // TODO: What to do in case these two differ but the given format
@@ -189,13 +189,15 @@ ImageFileDirectory
             // data even if the given format in the image file is not the
             // right/default one for the currently processed tag according to 
             // the exif specification. 
-            let byte_count = format.bytes_per_component() * hex_component_number;
+            let Some(byte_count) = format.bytes_per_component().checked_mul(hex_component_number) else {
+                return io_error!(Other, format!("Byte count overflow for tag 0x{:04x}!", hex_tag));
+            };
 
             let raw_data;
             if byte_count > 4
             {
                 // Compute the offset
-                let hex_offset = from_u8_vec_macro!(u32, &entry_buffer[8..12], endian);
+                let hex_offset = from_u8_vec_res_macro!(u32, &entry_buffer[8..12], endian)?;
 
                 // Backup current position & go to offset position
                 let backup_position = data_cursor.position();
@@ -259,7 +261,7 @@ ImageFileDirectory
             if let TagType::IFD_OFFSET(subifd_group) = tag.get_tag_type()
             {
                 // Compute the offset to the SubIFD and save the current position
-                let offset          = from_u8_vec_macro!(u32, &raw_data, endian) as usize;
+                let offset          = from_u8_vec_res_macro!(u32, &raw_data, endian)? as usize;
                 let backup_position = data_cursor.position();
 
                 // Go to the SubIFD offset and decode that
@@ -470,7 +472,7 @@ ImageFileDirectory
         {
             return Ok(None);
         }
-        return Ok(Some(from_u8_vec_macro!(u32, &next_ifd_link_buffer, endian)));
+        return Ok(Some(from_u8_vec_res_macro!(u32, &next_ifd_link_buffer, endian)?));
     }
 
 
