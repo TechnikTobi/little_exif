@@ -139,7 +139,7 @@ parse_webp
 )
 -> Result<Vec<RiffChunkDescriptor>, std::io::Error>
 {
-    let mut file = check_signature(path)?;
+    let mut file   = check_signature(path)?;
     let mut chunks = Vec::new();
 
     // The amount of data we expect to read while parsing the chunks

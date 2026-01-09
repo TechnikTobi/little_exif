@@ -259,7 +259,7 @@ Metadata
         let mut first_6_bytes = vec![0u8; 6];
         data_cursor.read_exact(&mut first_6_bytes)?;
 
-        let starts_with_exif_signature =  first_6_bytes == EXIF_HEADER;
+        let starts_with_exif_signature = (first_6_bytes == EXIF_HEADER);
 
         // If those 6 bytes are *not* "Exif  " then we need to rewind as these
         // six bytes should then be the endian information and magic number
