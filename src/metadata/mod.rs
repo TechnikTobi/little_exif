@@ -89,7 +89,7 @@ Metadata
     {
         if let Ok(pre_decode_general) = raw_pre_decode_general
         {
-            let mut pre_decode_cursor = Cursor::new(&pre_decode_general);
+            let mut pre_decode_cursor = Cursor::new(pre_decode_general.as_slice());
             let     decoding_result   = Self::decode(&mut pre_decode_cursor);
             if let Ok((endian, image_file_directories)) = decoding_result
             {
@@ -248,7 +248,7 @@ Metadata
     fn
     decode
     (
-        data_cursor: &mut Cursor<&Vec<u8>>
+        data_cursor: &mut Cursor<&[u8]>
     )
     -> Result<(Endian, Vec<ImageFileDirectory>), std::io::Error>
     {

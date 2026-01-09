@@ -101,7 +101,7 @@ ImageFileDirectory
     pub(crate) fn
     decode_ifd
     (
-        data_cursor:         &mut Cursor<&Vec<u8>>,
+        data_cursor:         &mut Cursor<&[u8]>,
         data_begin_position:      u64,                                          // Stays the same for all calls to this function while decoding
         endian:              &    Endian,
         group:               &    ExifTagGroup,

@@ -45,7 +45,7 @@ fn run_for_file_types(data: &[u8]) {
     ];
 
     for file_type in file_types.iter() {
-        match Metadata::new_from_vec(&data.to_vec(), *file_type) {
+        match Metadata::new_from_vec(data, *file_type) {
             Ok(_metadata) => {
 
             }
