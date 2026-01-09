@@ -8,6 +8,7 @@ pub(crate) const EXIF_HEADER:            [u8; 6] = [0x45, 0x78, 0x69, 0x66, 0x00
 pub(crate) const LITTLE_ENDIAN_INFO:     [u8; 4] = [0x49, 0x49, 0x2a, 0x00];
 pub(crate) const BIG_ENDIAN_INFO:        [u8; 4] = [0x4d, 0x4d, 0x00, 0x2a];
 
+#[macro_export]
 macro_rules! io_error {
 	($kind:ident, $message:expr)
 	=>
