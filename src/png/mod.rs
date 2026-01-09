@@ -29,7 +29,6 @@ use crate::general_file_io::LITTLE_ENDIAN_INFO;
 use crate::general_file_io::BIG_ENDIAN_INFO;
 use crate::general_file_io::NEWLINE;
 use crate::general_file_io::SPACE;
-
 use crate::metadata::Metadata;
 
 use crate::png::chunk::PngChunk;
@@ -81,13 +80,7 @@ check_signature
 )
 -> Result<Cursor<&Vec<u8>>, std::io::Error>
 {
-    // Check the signature
-    let signature_is_valid = file_buffer[0..8].iter()
-        .zip(PNG_SIGNATURE.iter())
-        .filter(|&(read, constant)| read == constant)
-        .count() == PNG_SIGNATURE.len();
-
-    if !signature_is_valid
+    if !file_buffer.starts_with(&PNG_SIGNATURE)
     {
         return io_error!(InvalidData, "Can't open PNG file - Wrong signature!");
     }

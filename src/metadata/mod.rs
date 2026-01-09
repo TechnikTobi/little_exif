@@ -19,7 +19,7 @@ use crate::general_file_io::io_error;
 use crate::general_file_io::EXIF_HEADER;
 use crate::ifd::ExifTagGroup;
 use crate::ifd::ImageFileDirectory;
-use crate::u8conversion::from_u8_vec_macro;
+use crate::u8conversion::from_u8_vec_res_macro;
 use crate::u8conversion::U8conversion;
 
 #[derive(Clone, Debug)]
@@ -259,10 +259,7 @@ Metadata
         let mut first_6_bytes = vec![0u8; 6];
         data_cursor.read_exact(&mut first_6_bytes)?;
 
-        let starts_with_exif_signature = first_6_bytes[0..6].iter()
-            .zip(EXIF_HEADER.iter())
-            .filter(|&(read, constant)| read == constant)
-            .count() == EXIF_HEADER.len();
+        let starts_with_exif_signature = (first_6_bytes == EXIF_HEADER);
 
         // If those 6 bytes are *not* "Exif  " then we need to rewind as these
         // six bytes should then be the endian information and magic number
@@ -304,7 +301,7 @@ Metadata
         // Get offset to IFD0
         let mut ifd0_offset_buffer = vec![0u8; 4];
         data_cursor.read_exact(&mut ifd0_offset_buffer)?;
-        let mut ifd_offset_option = Some(from_u8_vec_macro!(u32, &ifd0_offset_buffer.to_vec(), &endian));
+        let mut ifd_offset_option = Some(from_u8_vec_res_macro!(u32, &ifd0_offset_buffer, &endian)?);
 
         // Decode all the IFDs
         let mut ifds = Vec::new();
@@ -323,14 +320,7 @@ Metadata
                 &mut ifds
             );
 
-            if let Ok(new_ifd_offset_option) = decode_result
-            {
-                ifd_offset_option = new_ifd_offset_option;
-            }
-            else if let Err(decode_error) = decode_result
-            {
-                return Err(decode_error);
-            }
+            ifd_offset_option = decode_result?;
 
             generic_ifd_nr += 1;
         }

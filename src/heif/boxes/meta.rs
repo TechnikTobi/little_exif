@@ -6,6 +6,7 @@ use std::io::Read;
 use std::io::Seek;
 
 use crate::endian::Endian;
+use crate::general_file_io::io_error;
 use crate::u8conversion::U8conversion;
 use crate::u8conversion::to_u8_vec_macro;
 use crate::util::read_be_u32;
@@ -140,6 +141,17 @@ MetaBox
     )
     -> Result<Box<dyn GenericIsoBox>, std::io::Error>
     {
+        if header.get_box_size() < header.get_header_size()
+        {
+            return io_error!(
+                InvalidData,
+                format!(
+                    "MetaBox has invalid size: box size {} is smaller than header size {}",
+                    header.get_box_size(),
+                    header.get_header_size()
+                )
+            );
+        }
         // Read in the remaining bytes for this box
         let     remaining_bytes = header.get_box_size() - header.get_header_size();
         let mut meta_box_bytes  = vec![0u8; remaining_bytes];
@@ -214,8 +226,17 @@ HandlerBox
             - 12                       // reserved
             ;
 
-        let mut name = vec![0u8; number_of_bytes_that_form_the_name];
-        cursor.read_exact(&mut name)?;
+
+        let mut name: Vec<u8> = Vec::new();
+
+        // This may cause an out of memory error, but won't panic like vec![]
+        name.try_reserve_exact(number_of_bytes_that_form_the_name)?;
+
+        // Can't use read_exact here because the name buffer we read into is
+        // still size 0 (only has reserved capacity!)
+        cursor
+            .take(number_of_bytes_that_form_the_name as u64)
+            .read_to_end(&mut name)?;
 
         return Ok(HandlerBox { 
             header, 

@@ -55,13 +55,7 @@ check_signature
 )
 -> Result<(), std::io::Error>
 {
-    // Check the signature
-    let signature_is_valid = file_buffer[0..2].iter()
-        .zip(JPG_SIGNATURE.iter())
-        .filter(|&(read, constant)| read == constant)
-        .count() == JPG_SIGNATURE.len();
-
-    if !signature_is_valid
+    if !file_buffer.starts_with(&JPG_SIGNATURE)
     {
         return io_error!(InvalidData, "Can't open JPG file - Wrong signature!");
     }
@@ -145,7 +139,7 @@ clear_segment
             cursor.read_exact(&mut length_buffer)?;
 
             // Decode the length to determine how much more data there is
-            let length = from_u8_vec_macro!(u16, &length_buffer, &Endian::Big);
+            let length = from_u8_vec_res_macro!(u16, &length_buffer, &Endian::Big)?;
             let remaining_length = (length - 2) as usize;
 
             if byte_buffer[0] == segment_marker                                 // Given marker, e.g. for APP1
@@ -409,7 +403,12 @@ generic_read_metadata
             cursor.read_exact(&mut length_buffer)?;
 
             // Decode the length to determine how much more data there is
-            let length = from_u8_vec_macro!(u16, &length_buffer, &Endian::Big);
+            let length = from_u8_vec_res_macro!(u16, &length_buffer, &Endian::Big)?;
+            if length < 2
+            {
+                return io_error!(InvalidData, "Mangled JPG data encountered!");
+            }
+
             let remaining_length = (length - 2) as usize;
 
             match byte_buffer[0]
