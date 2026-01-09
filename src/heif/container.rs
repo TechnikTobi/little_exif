@@ -174,11 +174,11 @@ HeifContainer
             },
 
             super::boxes::item_location::ItemConstructionMethod::IDAT => {
-                return io_error!(Other, "HEIF: item constr. method 'IDAT' currently not supported");
+                return io_error!(Other, "HEIF: item constr. method 'IDAT' currently not supported. Please create a new ticket at https://github.com/TechnikTobi/little_exif with an example image file");
             },
 
             super::boxes::item_location::ItemConstructionMethod::ITEM => {
-                return io_error!(Other, "HEIF: item constr. method 'ITEM' currently not supported");
+                return io_error!(Other, "HEIF: item constr. method 'ITEM' currently not supported. Please create a new ticket at https://github.com/TechnikTobi/little_exif with an example image file");
             },
         }
     }
