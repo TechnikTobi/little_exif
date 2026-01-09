@@ -45,10 +45,26 @@ IsoBox
             });
         }
 
-        let data_left_to_read = header.get_box_size() - header.get_header_size();
+        let Some(data_left_to_read) = header.get_box_size().checked_sub(header.get_header_size()) else {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!(
+                    "Box size {} is smaller than header size {} for box type {:?}",
+                    header.get_box_size(),
+                    header.get_header_size(),
+                    header.get_box_type()
+                )
+            ));
+        };
 
-        let mut buffer = vec![0u8; data_left_to_read];
-        cursor.read_exact(&mut buffer)?;
+        let mut buffer: Vec<u8> = Vec::new();
+
+        // This may cause an out of memory error, but won't panic like vec![]
+        buffer.try_reserve_exact(data_left_to_read)?;
+
+        // Can't use read_exact here because the name buffer we read into is
+        // still size 0 (only has reserved capacity!)
+        cursor.take(data_left_to_read as u64).read_to_end(&mut buffer)?;
 
         return Ok(IsoBox {
             header: header,

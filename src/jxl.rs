@@ -61,10 +61,7 @@ starts_with_iso_bmff_signature
 )
 -> bool
 {
-    return file_buffer[0..12].iter()
-        .zip(ISO_BMFF_JXL_SIGNATURE.iter())
-        .filter(|&(read, constant)| read == constant)
-        .count() == ISO_BMFF_JXL_SIGNATURE.len();
+    file_buffer.starts_with(&ISO_BMFF_JXL_SIGNATURE)
 }
 
 /// There are two types of JXL image files: One are simply a JXL codestream,
@@ -81,10 +78,7 @@ starts_with_jxl_signature
 )
 -> bool
 {
-    return file_buffer[0..2].iter()
-        .zip(JXL_SIGNATURE.iter())
-        .filter(|&(read, constant)| read == constant)
-        .count() == JXL_SIGNATURE.len();
+    file_buffer.starts_with(&JXL_SIGNATURE)
 }
 
 fn
@@ -149,7 +143,7 @@ clear_metadata
         // Get the first 4 bytes at the current cursor position to determine
         // the length of the current box 
         let length_buffer = file_buffer[position..position+4].to_vec();
-        let length        = from_u8_vec_macro!(u32, &length_buffer, &Endian::Big) as usize;
+        let length        = from_u8_vec_res_macro!(u32, &length_buffer, &Endian::Big)? as usize;
 
         // Next, read the box type
         let type_buffer = file_buffer[position+4..position+8].to_vec();
@@ -192,7 +186,7 @@ file_clear_metadata
         file.read_exact(&mut length_buffer)?;
         file.read_exact(&mut type_buffer)?;
 
-        let length = from_u8_vec_macro!(u32, &length_buffer, &Endian::Big) as usize;
+        let length = from_u8_vec_res_macro!(u32, &length_buffer, &Endian::Big)? as usize;
 
         if box_contains_exif(&mut file, type_buffer)?
         {
@@ -321,7 +315,12 @@ generic_read_metadata
         // and box type)
         let mut length_buffer = [0u8; 4];
         cursor.read_exact(&mut length_buffer)?;
-        let length = from_u8_vec_macro!(u32, &length_buffer, &Endian::Big) - 8;
+        let length = from_u8_vec_res_macro!(u32, &length_buffer, &Endian::Big)?.checked_sub(8).ok_or(
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Invalid box length found when reading JXL metadata!"
+            )
+        )?;
 
         // Next, read the box type
         let mut type_buffer = [0u8; 4];
@@ -425,7 +424,12 @@ find_insert_position
         // and box type)
         let mut length_buffer = [0u8; 4];
         cursor.read_exact(&mut length_buffer)?;
-        let length = from_u8_vec_macro!(u32, &length_buffer, &Endian::Big) - 8;
+        let length = from_u8_vec_res_macro!(u32, &length_buffer, &Endian::Big)?.checked_sub(8).ok_or(
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Invalid box length found when reading JXL metadata!"
+            )
+        )? as usize;
 
         // Next, read the box type
         let mut type_buffer = [0u8; 4];

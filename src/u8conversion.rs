@@ -1,6 +1,7 @@
 // Copyright © 2024-2026 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
+use std::io;
 use paste::paste;
 
 use crate::endian::Endian;
@@ -23,7 +24,22 @@ U8conversion<T>
         u8_vec: &[u8],
         endian: &Endian
     )
-    -> T;
+    -> T 
+    {
+        match Self::from_u8_vec_res(u8_vec, endian)
+        {
+            Ok(value) => value,
+            Err(_)    => panic!("from_u8_vec: Mangled EXIF data encountered!")
+        }
+    }
+
+    fn
+    from_u8_vec_res
+    (
+        u8_vec: &[u8],
+        endian: &Endian
+    )
+    -> Result<T, io::Error>;
 }
 
 macro_rules! build_u8conversion
@@ -52,23 +68,46 @@ macro_rules! build_u8conversion
             }
 
             fn
-            from_u8_vec
+            from_u8_vec_res
             (
                 u8_vec: &[u8],
                 endian: &Endian
             )
-            -> $type
+            -> Result<$type, io::Error>
             {
-                if u8_vec.len() != $number_of_bytes 
+                if u8_vec.len() != $number_of_bytes
                 {
-                    panic!("from_u8_vec: Mangled EXIF data encountered!")
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "from_u8_vec_res: Mangled EXIF data encountered!"
+                    ));
                 }
 
-                match *endian
+                let res = match *endian
                 {
-                    Endian::Little => <paste!{[<$type>]}>::from_le_bytes(u8_vec[0..$number_of_bytes].try_into().unwrap()),
-                    Endian::Big    => <paste!{[<$type>]}>::from_be_bytes(u8_vec[0..$number_of_bytes].try_into().unwrap()),
-                }
+                    Endian::Little => {
+                        <paste!{[<$type>]}>::from_le_bytes(
+                            u8_vec[0..$number_of_bytes]
+                                .try_into()
+                                .map_err(|_| io::Error::new(
+                                    io::ErrorKind::InvalidData,
+                                    "from_u8_vec_res: Mangled EXIF data encountered!"
+                                ))?
+                        )
+                    },
+                    Endian::Big => {
+                        <paste!{[<$type>]}>::from_be_bytes(
+                            u8_vec[0..$number_of_bytes]
+                                .try_into()
+                                .map_err(|_| io::Error::new(
+                                    io::ErrorKind::InvalidData,
+                                    "from_u8_vec_res: Mangled EXIF data encountered!"
+                                ))?
+                        )
+                    },
+                };
+
+                Ok(res)
             }
         }
     }
@@ -103,17 +142,17 @@ impl U8conversion<String> for String
     }
 
     fn
-    from_u8_vec
+    from_u8_vec_res
     (
         u8_vec: &[u8],
         _endian: &Endian
     )
-    -> String
+    -> Result<String, io::Error>
     {
         if let Ok(utf8_decode_result) = String::from_utf8(u8_vec.to_owned())
         {
             // Drop null characters at the end
-            return utf8_decode_result.trim_end_matches('\0').to_string();
+            return Ok(utf8_decode_result.trim_end_matches('\0').to_string());
         }
 
         let mut result = String::new();
@@ -126,7 +165,7 @@ impl U8conversion<String> for String
             }
         }
 
-        return result;
+        Ok(result)
     }
 }
 
@@ -146,22 +185,22 @@ impl U8conversion<uR64> for uR64
     }
 
     fn
-    from_u8_vec
+    from_u8_vec_res
     (
         u8_vec: &[u8],
         endian: &Endian
     )
-    -> uR64
+    -> Result<uR64, io::Error>
     {
         if u8_vec.len() != 8
         {
-            panic!("from_u8_vec (r64u): Mangled EXIF data encountered!")
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "from_u8_vec_res: Mangled EXIF data encountered!"));
         }
 
-        let nominator   = from_u8_vec_macro!(u32, &u8_vec[0..4], endian);
-        let denominator = from_u8_vec_macro!(u32, &u8_vec[4..8], endian);
+        let nominator   = from_u8_vec_res_macro!(u32, &u8_vec[0..4], endian)?;
+        let denominator = from_u8_vec_res_macro!(u32, &u8_vec[4..8], endian)?;
 
-        return uR64 { nominator, denominator };
+        Ok(uR64 { nominator, denominator })
     }
 }
 
@@ -181,22 +220,22 @@ impl U8conversion<iR64> for iR64
     }
 
     fn
-    from_u8_vec
+    from_u8_vec_res
     (
         u8_vec: &[u8],
         endian: &Endian
     )
-    -> iR64
+    -> Result<iR64, io::Error>
     {
         if u8_vec.len() != 8
         {
-            panic!("from_u8_vec (r64u): Mangled EXIF data encountered!")
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "from_u8_vec_res: Mangled EXIF data encountered!"));
         }
 
-        let nominator   = from_u8_vec_macro!(i32, &u8_vec[0..4], endian);
-        let denominator = from_u8_vec_macro!(i32, &u8_vec[4..8], endian);
+        let nominator   = from_u8_vec_res_macro!(i32, &u8_vec[0..4], endian)?;
+        let denominator = from_u8_vec_res_macro!(i32, &u8_vec[4..8], endian)?;
 
-        return iR64 { nominator, denominator };
+        Ok(iR64 { nominator, denominator })
     }
 }
 
@@ -229,12 +268,12 @@ macro_rules! build_vec_u8conversion
             }
 
             fn
-            from_u8_vec
+            from_u8_vec_res
             (
                 u8_vec: &[u8],
                 endian: &Endian
             )
-            -> Vec<$type>
+            -> Result<Vec<$type>, io::Error>
             {
                 // The following "clippy allows" is for the case where we
                 // we configure the conversion for 1-byte types like u8 or i8
@@ -242,7 +281,7 @@ macro_rules! build_vec_u8conversion
                 #[allow(clippy::modulo_one)]
                 if u8_vec.len() % $number_of_bytes != 0 
                 {
-                    panic!("from_u8_vec (Vec): Mangled EXIF data encountered!")
+                    return Err(io::Error::new(io::ErrorKind::InvalidData, "from_u8_vec_res (Vec): Mangled EXIF data encountered!"));
                 }
 
                 let mut result: Vec<$type> = Vec::new();
@@ -256,7 +295,7 @@ macro_rules! build_vec_u8conversion
                     ) as $type);
                 }
 
-                return result;
+                Ok(result)
             }
         }
     }
@@ -286,13 +325,13 @@ macro_rules! to_u8_vec_macro {
     };
 }
 
-macro_rules! from_u8_vec_macro {
+macro_rules! from_u8_vec_res_macro {
     ($type:ty, $value:expr, $endian:expr)
     =>
     {
-        <$type as U8conversion<$type>>::from_u8_vec($value, $endian)
+        <$type as U8conversion<$type>>::from_u8_vec_res($value, $endian)
     }
 }
 
 pub(crate) use to_u8_vec_macro;
-pub(crate) use from_u8_vec_macro;
+pub(crate) use from_u8_vec_res_macro;

@@ -30,6 +30,11 @@ check_signature
 )
 -> Result<Cursor<&Vec<u8>>, std::io::Error>
 {
+    if file_buffer.len() < 12
+    {
+        return io_error!(InvalidData, "Can't open WebP file - File too small to contain required signatures!");
+    }
+
     check_riff_signature(file_buffer      )?;
     check_byte_count(    file_buffer, None)?;
     check_webp_signature(file_buffer      )?;
@@ -64,7 +69,7 @@ get_next_chunk
 
     // Construct name of chunk and its length
     let chunk_name = String::from_utf8(chunk_start[0..4].to_vec());
-    let mut chunk_length = from_u8_vec_macro!(u32, &chunk_start[4..8], &Endian::Little);
+    let mut chunk_length = from_u8_vec_res_macro!(u32, &chunk_start[4..8], &Endian::Little)?;
 
     // Account for the possible padding byte
     chunk_length += chunk_length % 2;
@@ -352,7 +357,7 @@ update_file_size_information
     let file_size_buffer = cursor.get_ref()[4..8].to_vec();
 
     // ...converting it to u32 representation...
-    let old_file_size = from_u8_vec_macro!(u32, &file_size_buffer, &Endian::Little);
+    let old_file_size = from_u8_vec_res_macro!(u32, &file_size_buffer, &Endian::Little)?;
 
     // ...adding the delta byte count (and performing some checks)...
     if delta < 0
@@ -394,7 +399,7 @@ convert_to_extended_format
     let (width, height) = match first_chunk.descriptor().header().as_str()
     {
         "VP8" 
-            => {debug!("VP8 !"); todo!()},
+            => {debug!("VP8 !"); io_error!(Other, "Conversion from Simple File Format with 'VP8' chunk to Extended File Format not yet implemented!") },
         "VP8L"
             => get_dimension_info_from_vp8l_chunk(first_chunk.payload()),
         _ 
@@ -439,7 +444,7 @@ get_dimension_info_from_vp8l_chunk
     let width_height_info_buffer = payload[1..5].to_vec();
     
     // Convert to a single u32 number for bit-mask operations
-    let width_height_info = from_u8_vec_macro!(u32, &width_height_info_buffer, &Endian::Little);
+    let width_height_info = from_u8_vec_res_macro!(u32, &width_height_info_buffer, &Endian::Little)?;
     
     let mut width  = 0;
     let mut height = 0;

@@ -114,7 +114,7 @@ impl Metadata
         &self,
         tag:   &ExifTag
     )
-    -> GetTagIterator
+    -> GetTagIterator<'_>
     {
         return self.get_tag_by_hex(tag.as_u16(), Some(tag.get_group()));
     }
@@ -130,7 +130,7 @@ impl Metadata
         hex:   u16,
         group: Option<ExifTagGroup>,
     )
-    -> GetTagIterator
+    -> GetTagIterator<'_>
     {
         GetTagIterator 
         {
