@@ -27,6 +27,7 @@ exclude = [
     "additional-documentation/*",
     "Cargo.lock",
     "debug/*",
+    "fuzz/*",
     "examples/*",
     "issue_tests/*",
     "heif_conformance_tests/*",
@@ -47,6 +48,41 @@ brotli = "8.0.1"
 name = "tests"
 path = "tests/main.rs"
 
+# Used for fuzzer - fast iterations, with optimalzations and debug info
+[profile.release]
+overflow-checks = true
+debug = true
+debug-assertions = true
+
 [workspace]
-members = [".", "issue_tests", "heif_conformance_tests"]
+members = [".", "issue_tests", "heif_conformance_tests", "fuzz"]
 resolver = "3"
+
+[lints.clippy]
+modulo_one = "allow" # used in macros
+from_over_into = "allow"
+identity_op = "allow"
+upper_case_acronyms = "allow" # IDAT etc. are uppercase by convention
+collapsible_else_if = "allow"
+new_without_default = "allow"
+doc_lazy_continuation = "allow"
+same_item_push = "allow"
+needless_late_init = "allow"
+empty_line_after_doc_comments = "allow"
+
+unused_io_amount = "allow" # TODO
+needless_range_loop = "allow" # TODO
+match_same_arms = "allow" # TODO
+
+# Clippy non-default rules
+match_wildcard_for_single_variants = "warn"
+unwrap_used = "warn"
+todo = "warn"
+unreachable = "warn"
+
+
+# Nice to have warnings
+#unnecessary_wraps = "warn" # this can be fixed after fixing unwrap results
+#expect_used = "warn" # This is should will require to change public API
+#panic = "warn" # Needs some API changes
+#wildcard_imports = "warn"

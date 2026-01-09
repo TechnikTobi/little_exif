@@ -19,6 +19,18 @@ macro_rules! io_error {
 	};
 }
 
+#[macro_export]
+macro_rules! io_error_plain {
+ ($kind:ident, $message:expr)
+ =>
+ {
+  std::io::Error::new(
+   std::io::ErrorKind::$kind,
+   $message
+		)
+ };
+}
+
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::path::Path;

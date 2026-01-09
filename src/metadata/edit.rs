@@ -23,7 +23,7 @@ Metadata
 		self.image_file_directories.retain(|ifd| ifd.get_ifd_type() == ExifTagGroup::GENERIC);
 
 		// Remove tags in IFDs that are not important
-		for ifd in self.image_file_directories.iter_mut()
+		for ifd in &mut self.image_file_directories
 		{
 			let mut tags_to_be_removed = Vec::new();
 

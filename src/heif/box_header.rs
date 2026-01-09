@@ -183,11 +183,14 @@ BoxHeader
     set_box_type_via_string
     (
         &mut self,
-        new_type: String
+        new_type: &str
     )
     {
         self.box_type = BoxType::from_4_bytes(
-            new_type.as_bytes().try_into().unwrap()
+            match new_type.as_bytes().try_into() {
+                Ok(arr) => arr,
+                Err(_) => panic!("Invalid box type string length"),
+            }
         );
     }
 
@@ -198,7 +201,7 @@ BoxHeader
     )
     -> u8
     {
-        return self.version.unwrap();
+        return self.version.expect("BoxHeader: version is not set");
     }
 
     pub(super) fn
@@ -236,8 +239,8 @@ BoxHeader
         // Serialize version and flags (if present)
         if self.box_type.extends_fullbox()
         {
-            serialized.push(self.version.unwrap());
-            for flag in self.flags.unwrap()
+            serialized.push(self.version.expect("BoxHeader: version is not set when serializing"));
+            for flag in self.flags.expect("BoxHeader: flags not set when serializing")
             {
                 serialized.push(flag);
             }

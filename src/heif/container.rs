@@ -97,16 +97,15 @@ HeifContainer
     (
         &self
     )
-    -> &MetaBox
+    -> Result<&MetaBox, std::io::Error>
     {
-        return match self.boxes.iter()
-            .find(|b| b.get_header().get_box_type() == BoxType::meta)
-            .unwrap()
-            .as_any()
-            .downcast_ref::<MetaBox>() {
-                Some(unboxed) => unboxed,
-                None          => panic!("Can't unbox ItemInfoBox!")
-            };
+        match self.boxes.iter().find(|b| b.get_header().get_box_type() == BoxType::meta) {
+            Some(b) => match b.as_any().downcast_ref::<MetaBox>() {
+                Some(unboxed) => Ok(unboxed),
+                None => io_error!(Other, "Found meta box but could not downcast to MetaBox"),
+            },
+            None => io_error!(Other, "No meta box found in HEIF container"),
+        }
     }
 
     fn
@@ -114,16 +113,15 @@ HeifContainer
     (
         &mut self
     )
-    -> &mut MetaBox
+    -> Result<&mut MetaBox, std::io::Error>
     {
-        return match self.boxes.iter_mut()
-            .find(|b| b.get_header().get_box_type() == BoxType::meta)
-            .unwrap()
-            .as_any_mut()
-            .downcast_mut::<MetaBox>() {
-                Some(unboxed) => unboxed,
-                None          => panic!("Can't unbox ItemInfoBox!")
-            };
+        match self.boxes.iter_mut().find(|b| b.get_header().get_box_type() == BoxType::meta) {
+            Some(b) => match b.as_any_mut().downcast_mut::<MetaBox>() {
+                Some(unboxed) => Ok(unboxed),
+                None => io_error!(Other, "Found meta box but could not downcast to MetaBox (mut)"),
+            },
+            None => io_error!(Other, "No meta box found in HEIF container"),
+        }
     }
 
     
@@ -135,9 +133,10 @@ HeifContainer
     )
     -> Result<u16, std::io::Error>
     {
-        if let Some(item) = self.get_meta_box().get_item_info_box().get_exif_item()
-        {
-            return Ok(item.item_id);
+        if let Ok(meta) = self.get_meta_box() {
+            if let Some(item) = meta.get_item_info_box().get_exif_item() {
+                return Ok(item.item_id);
+            }
         }
 
         return io_error!(Other, "No EXIF item found!");
@@ -149,37 +148,37 @@ HeifContainer
         &self,
         exif_item_id: u16,
     )
-    -> (u64, u64)
+    -> Result<(u64, u64), std::io::Error>
     {
-        let exif_item = self
-            .get_meta_box()
-            .get_item_location_box()
-            .get_item_location_entry(exif_item_id);
+        let exif_item = match self.get_meta_box() {
+            Ok(meta) => meta.get_item_location_box().get_item_location_entry(exif_item_id),
+            Err(e) => return Err(e),
+        };
         let exif_extents = &exif_item.extents;
 
-        if exif_extents.len() != 1
-        {
-            panic!("Expected exactly one EXIF extent info entry! Please create a new ticket at https://github.com/TechnikTobi/little_exif with an example image file");
+        if exif_extents.len() != 1 {
+            return io_error!(Other, "Expected exactly one EXIF extent info entry");
         }
 
         match exif_item.get_construction_method()
         {
             super::boxes::item_location::ItemConstructionMethod::FILE => {
-
-                // Unwrap is ok here as we have previously established that 
-                // this first element must exist via if exif_extents.len() != 1
-                return (
-                    exif_extents.first().unwrap().extent_offset + exif_item.base_offset,
-                    exif_extents.first().unwrap().extent_length
-                );
+                if let Some(first) = exif_extents.first() {
+                    return Ok((
+                        first.extent_offset + exif_item.base_offset,
+                        first.extent_length
+                    ));
+                } else {
+                    return io_error!(Other, "Expected one EXIF extent");
+                }
             },
 
             super::boxes::item_location::ItemConstructionMethod::IDAT => {
-                panic!("HEIF: item constr. method 'IDAT' currently not supported. Please create a new ticket at https://github.com/TechnikTobi/little_exif with an example image file");
+                return io_error!(Other, "HEIF: item constr. method 'IDAT' currently not supported. Please create a new ticket at https://github.com/TechnikTobi/little_exif with an example image file");
             },
 
             super::boxes::item_location::ItemConstructionMethod::ITEM => {
-                panic!("HEIF: item constr. method 'ITEM' currently not supported. Please create a new ticket at https://github.com/TechnikTobi/little_exif with an example image file");
+                return io_error!(Other, "HEIF: item constr. method 'ITEM' currently not supported. Please create a new ticket at https://github.com/TechnikTobi/little_exif with an example image file");
             },
         }
     }
@@ -195,7 +194,7 @@ HeifContainer
     {
         // Locate exif data
         let exif_item_id    = self.get_item_id_exif_data()?;
-        let (start, length) = self.get_exif_data_pos_and_len(exif_item_id);
+        let (start, length) = self.get_exif_data_pos_and_len(exif_item_id)?;
 
         // Reset cursor to start of exif data
         cursor.seek(std::io::SeekFrom::Start(start))?;
@@ -242,8 +241,8 @@ HeifContainer
         let exif_item_id = self.get_item_id_exif_data()?;
 
         // Determine the start and length of the previous exif data area
-        let (start, length) = self.get_exif_data_pos_and_len(exif_item_id);
-        
+        let (start, length) = self.get_exif_data_pos_and_len(exif_item_id)?;
+
         // If the length is zero, we assume that this is a previously newly 
         // created exif data area, which requires special handling.
         // If the length is non-zero, there has been exif data before:
@@ -341,8 +340,7 @@ HeifContainer
             let new_exif_start = self.get_start_address_for_new_exif_area();
 
             // If there is no iref box yet, create one so we can find one
-            self.get_meta_box_mut()
-                .create_new_item_reference_box_if_none_exists_yet();
+            self.get_meta_box_mut()?.create_new_item_reference_box_if_none_exists_yet();
 
             // Acquire the item location, the item information and the item 
             // reference boxes that are inside the meta box. For some reason, 
@@ -353,7 +351,8 @@ HeifContainer
             let mut iinf_opt = None;
             let mut iref_opt = None;
 
-            for other_box in self.get_meta_box_mut().other_boxes.iter_mut()
+            let meta_mut_ref = self.get_meta_box_mut()?;
+            for other_box in &mut meta_mut_ref.other_boxes
             {
                 if other_box.get_header().get_box_type() == BoxType::iloc
                 {
@@ -375,13 +374,18 @@ HeifContainer
                 }
             }
 
-            assert!(iloc_opt.is_some());
-            assert!(iinf_opt.is_some());
-            assert!(iref_opt.is_some());
-
-            let iloc = iloc_opt.unwrap();
-            let iinf = iinf_opt.unwrap();
-            let iref = iref_opt.unwrap();
+            let iloc = match iloc_opt {
+                Some(v) => v,
+                None => return io_error!(Other, "iloc box should exist"),
+            };
+            let iinf = match iinf_opt {
+                Some(v) => v,
+                None => return io_error!(Other, "iinf box should exist"),
+            };
+            let iref = match iref_opt {
+                Some(v) => v,
+                None => return io_error!(Other, "iref box should exist"),
+            };
 
             // Note that the given `new_exif_start` value is based on old
             // length values (which change due to adding a new item to both the
@@ -397,7 +401,7 @@ HeifContainer
                 "Exif"
             );
             let               iref_size_delta  = iref.create_new_single_item_reference_box(
-                "cdsc".to_string(), // TODO: Check if this is always this type?
+                "cdsc",             // TODO: Check if this is always this type?
                 new_iloc_id, 
                 vec![1]             // TODO: Check if this is always item #1?
             );
@@ -408,8 +412,8 @@ HeifContainer
             );
 
             // Fix up the size of the meta box as well
-            let new_box_size = self.get_meta_box().serialize().len();
-            self.get_meta_box_mut().get_header_mut().set_box_size(new_box_size);
+            let new_box_size = self.get_meta_box()?.serialize().len();
+            self.get_meta_box_mut()?.get_header_mut().set_box_size(new_box_size);
 
             // No change to the mdat data at this point as we set up the
             // iloc item so that the exif area currently has a length of zero
@@ -419,9 +423,10 @@ HeifContainer
         }
 
         // Get position and length of current exif area
-        let (old_exif_pos, old_exif_len) = id.as_ref()
-            .map(|id| self.get_exif_data_pos_and_len(*id))
-            .unwrap_or((0, 0));
+        let (old_exif_pos, old_exif_len) = match &id {
+            Ok(idv) => self.get_exif_data_pos_and_len(*idv)?,
+            Err(_) => (0, 0),
+        };
 
         // Get cursor for file
         let mut cursor = Cursor::new(file_buffer);
@@ -432,7 +437,8 @@ HeifContainer
             metadata
         )?;
 
-        for item in self.get_meta_box_mut().get_item_location_box_mut().items.iter_mut()
+        let meta_mut = self.get_meta_box_mut()?;
+        for item in &mut meta_mut.get_item_location_box_mut().items
         {
             // First, check if any extent of this item has the same offset as
             // the old exif data area. In that case, there must be only one
@@ -442,20 +448,24 @@ HeifContainer
                     item.base_offset + extent.extent_offset == old_exif_pos
                 })
             {
-                if item.extents.len() != 1
-                {
-                    panic!("Expect to have exactly one extent info for EXIF!");
-                }
+                assert!(item.extents.len() == 1, "Expect to have exactly one extent info for EXIF!");
 
                 // In case of the EXIF extent information we need to update
                 // the length information, not the offset!
+                let first_extent = match item.extents.first() {
+                    Some(f) => f,
+                    None => return io_error!(Other, "Expected one extent for EXIF"),
+                };
                 let new_ext_len = (
-                    item.extents.first().unwrap().extent_length as i64
+                    first_extent.extent_length as i64
                     + delta
                 ) as u64;
-                item.extents.first_mut().unwrap().extent_length = new_ext_len;
+                match item.extents.first_mut() {
+                    Some(fm) => fm.extent_length = new_ext_len,
+                    None => return io_error!(Other, "Expected one extent for EXIF (mut)"),
+                }
 
-                continue;
+                 continue;
             }
 
             if item.get_construction_method() == ItemConstructionMethod::IDAT
@@ -499,7 +509,7 @@ HeifContainer
 
             // At this point we have no option left but to modify all 
             // individual extent offsets
-            for extent in item.extents.iter_mut()
+            for extent in &mut item.extents
             {
                 let complete_offset = item.base_offset + extent.extent_offset;
 

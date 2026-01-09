@@ -5,6 +5,7 @@ use std::io::Read;
 use std::io::Seek;
 
 use crate::general_file_io::io_error;
+use crate::io_error_plain;
 
 /// Reads in the next 1 bytes, starting at the current position of the cursor.
 /// The function call advances the cursor by 1 bytes.

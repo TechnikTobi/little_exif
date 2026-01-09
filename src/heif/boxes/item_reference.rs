@@ -112,7 +112,7 @@ ItemReferenceBox
     -> Self
     {
         let mut header = BoxHeader::new_full_box_header();
-        header.set_box_type_via_string("iref".to_string());
+        header.set_box_type_via_string("iref");
         header.set_version(Some(1));
 
         return ItemReferenceBox { header, references: Vec::new() };
@@ -151,7 +151,7 @@ ItemReferenceBox
     create_new_single_item_reference_box
     (
         &mut self,
-        reference_type: String,
+        reference_type: &str,
         from_item_ID:   u32,
         to_item_ID:     Vec<u32>
     )

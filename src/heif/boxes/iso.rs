@@ -15,8 +15,8 @@ use crate::heif::boxes::ParsableIsoBox;
 pub struct
 IsoBox
 {
-    header:    BoxHeader,
-    data:      Vec<u8>,
+    header: BoxHeader,
+    data:   Vec<u8>,
 }
 
 impl
