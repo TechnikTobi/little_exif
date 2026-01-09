@@ -38,10 +38,10 @@ ImageFileDirectory
     remove_tag
     (
         &mut self,
-        input_tag: &ExifTag
+        tag_hex: u16
     )
     {
-        self.tags.retain(|tag| tag.as_u16() != input_tag.as_u16());
+        self.tags.retain(|tag| tag.as_u16() != tag_hex);
         self.sort_tags();
     }
 }
