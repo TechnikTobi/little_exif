@@ -1,4 +1,4 @@
-// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2024-2026 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::io::Cursor;
@@ -53,9 +53,8 @@ Metadata
             if file_type != detected_type
             {
                 warn!(
-                    "The supplied file type information ({:?}) and detected ({:?}) do NOT match!",
-                    file_type,
-                    detected_type
+                    "The supplied file type information ({file_type:?}) and \
+                    detected ({detected_type:?}) do NOT match!"
                 );
             }
         }
@@ -82,8 +81,8 @@ Metadata
                 => return io_error!(
                     Other, 
                     format!(
-                        "Function 'new_from_vec' not yet implemented for {:?}", 
-                        file_type
+                        "Function 'new_from_vec' not yet implemented for \
+                        {file_type:?}"
                     )
                 ),
         };

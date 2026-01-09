@@ -1,10 +1,10 @@
-// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2025-2026 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-/// Note: While the standard 14496-12 (which defines the base ISO BMFF stuff
-/// but with focus on video files) states that a `moov` box is *required* on 
-/// top level, the Image File Format standard 23008-12 tells us that files with
-/// the brand `mif1` do *not* require such a box. 
+// Note: While the standard 14496-12 (which defines the base ISO BMFF stuff
+// but with focus on video files) states that a `moov` box is *required* on 
+// top level, the Image File Format standard 23008-12 tells us that files with
+// the brand `mif1` do *not* require such a box. 
 
 mod box_type;
 mod box_header;
@@ -98,7 +98,7 @@ file_write_metadata
     // Seek back to start, write the file and adjust its length, possibly 
     // truncating the file if new contents are shorter
     file.seek(std::io::SeekFrom::Start(0))?;
-    file.write_all(cursor.get_mut())?;
+    file.write_all(cursor.get_ref())?;
     file.set_len(cursor.get_ref().len() as u64)?;
 
     return Ok(());
@@ -109,7 +109,7 @@ file_write_metadata
 pub(crate) fn 
 as_u8_vec
 (
-    general_encoded_metadata: &[u8]
+    general_encoded_metadata: &[u8],
 ) 
 -> Vec<u8> 
 {
@@ -161,7 +161,7 @@ file_clear_metadata
     // Seek back to start, write the file and adjust its length, possibly 
     // truncating the file if new contents are shorter
     file.seek(std::io::SeekFrom::Start(0))?;
-    file.write_all(cursor.get_mut())?;
+    file.write_all(cursor.get_ref())?;
     file.set_len(cursor.get_ref().len() as u64)?;
 
     return Ok(());

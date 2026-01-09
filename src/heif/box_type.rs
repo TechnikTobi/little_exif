@@ -1,4 +1,4 @@
-// Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
+// Copyright © 2025-2026 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 #[allow(non_camel_case_types)]
@@ -382,7 +382,7 @@ BoxType
             BoxType::uri  |
             BoxType::uriI |
             BoxType::hmhd |
-            BoxType::sthd
+            BoxType::sthd 
         )
     }
 }
