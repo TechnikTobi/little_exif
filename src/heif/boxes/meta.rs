@@ -228,8 +228,15 @@ HandlerBox
 
 
         let mut name: Vec<u8> = Vec::new();
-        name.try_reserve_exact(number_of_bytes_that_form_the_name)?; // This may cause out of memory
-        cursor.take(number_of_bytes_that_form_the_name as u64).read_to_end(&mut name)?;
+
+        // This may cause an out of memory error, but won't panic like vec![]
+        name.try_reserve_exact(number_of_bytes_that_form_the_name)?;
+
+        // Can't use read_exact here because the name buffer we read into is
+        // still size 0 (only has reserved capacity!)
+        cursor
+            .take(number_of_bytes_that_form_the_name as u64)
+            .read_to_end(&mut name)?;
 
         return Ok(HandlerBox { 
             header, 
