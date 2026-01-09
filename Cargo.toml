@@ -27,6 +27,7 @@ exclude = [
     "additional-documentation/*",
     "Cargo.lock",
     "debug/*",
+    "fuzz/*",
     "examples/*",
     "issue_tests/*",
     "heif_conformance_tests/*",
