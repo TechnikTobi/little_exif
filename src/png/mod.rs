@@ -76,9 +76,9 @@ fn encode_byte(byte: &u8) -> [u8; 2]
 fn
 check_signature
 (
-    file_buffer: &Vec<u8>
+    file_buffer: &[u8]
 )
--> Result<Cursor<&Vec<u8>>, std::io::Error>
+-> Result<Cursor<&[u8]>, std::io::Error>
 {
     if !file_buffer.starts_with(&PNG_SIGNATURE)
     {
@@ -109,7 +109,7 @@ file_check_signature
         return io_error!(InvalidData, "Can't open PNG file - Can't read signature!");
     }
 
-    check_signature(&signature_buffer.to_vec())?;
+    check_signature(signature_buffer.as_ref())?;
 
     // Signature is valid - can proceed using the file as PNG file
     return Ok(file);
@@ -124,7 +124,7 @@ file_check_signature
 pub(crate) fn
 vec_parse_png
 (
-    file_buffer: &Vec<u8>
+    file_buffer: &[u8]
 )
 -> Result<Vec<PngChunk>, std::io::Error>
 {
@@ -233,7 +233,7 @@ get_next_chunk_descriptor
 pub(crate) fn
 read_metadata
 (
-    file_buffer: &Vec<u8>
+    file_buffer: &[u8]
 )
 -> Result<Vec<u8>, std::io::Error>
 {
@@ -696,7 +696,7 @@ generic_write_metadata
 fn
 encode_metadata_png
 (
-    exif_vec: &Vec<u8>
+    exif_vec: &[u8]
 )
 -> Vec<u8>
 {
@@ -741,7 +741,7 @@ encode_metadata_png
 fn
 decode_metadata_png
 (
-    encoded_data: &Vec<u8>
+    encoded_data: &[u8]
 )
 -> Result<Vec<u8>, std::io::Error>
 {
@@ -901,7 +901,7 @@ decode_metadata_png
 pub(crate) fn
 as_u8_vec
 (
-    general_encoded_metadata: &Vec<u8>,
+    general_encoded_metadata: &[u8],
     as_zTXt_chunk:            bool
 )
 -> Vec<u8>

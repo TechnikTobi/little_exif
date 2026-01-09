@@ -164,7 +164,7 @@ macro_rules! build_tag_enum {
 			(
 				hex_value: u16,
 				format:    &ExifTagFormat,
-				raw_data:  &Vec<u8>,
+				raw_data:  &[u8],
 				endian:    &Endian,
 				group:     &ExifTagGroup,
 			)
@@ -178,11 +178,11 @@ macro_rules! build_tag_enum {
 						)),
 					)*
 
-					(0x0111, _) => Ok(ExifTag::StripOffsets(   <INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian), Vec::new())),
-					(0x0117, _) => Ok(ExifTag::StripByteCounts(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian),           )),
+					(0x0111, _) => Ok(ExifTag::StripOffsets(   <INT32U as U8conversion<INT32U>>::from_u8_vec(raw_data, endian), Vec::new())),
+					(0x0117, _) => Ok(ExifTag::StripByteCounts(<INT32U as U8conversion<INT32U>>::from_u8_vec(raw_data, endian),           )),
 
-					(0x0201, _) => Ok(ExifTag::ThumbnailOffset(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian), Vec::new())),
-					(0x0202, _) => Ok(ExifTag::ThumbnailLength(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian),           )),
+					(0x0201, _) => Ok(ExifTag::ThumbnailOffset(<INT32U as U8conversion<INT32U>>::from_u8_vec(raw_data, endian), Vec::new())),
+					(0x0202, _) => Ok(ExifTag::ThumbnailLength(<INT32U as U8conversion<INT32U>>::from_u8_vec(raw_data, endian),           )),
 
 					_ => {
 						// In this case, the given hex_value represents a tag that is unknown

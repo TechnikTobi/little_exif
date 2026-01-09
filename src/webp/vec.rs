@@ -26,9 +26,9 @@ use super::*;
 fn
 check_signature
 (
-    file_buffer: &Vec<u8>
+    file_buffer: &[u8]
 )
--> Result<Cursor<&Vec<u8>>, std::io::Error>
+-> Result<Cursor<&[u8]>, std::io::Error>
 {
     if file_buffer.len() < 12
     {
@@ -52,7 +52,7 @@ check_signature
 fn
 get_next_chunk
 (
-    cursor: &mut Cursor<&Vec<u8>>
+    cursor: &mut Cursor<&[u8]>
 )
 -> Result<RiffChunk, std::io::Error>
 {
@@ -108,7 +108,7 @@ get_next_chunk
 fn
 get_next_chunk_descriptor
 (
-    cursor: &mut Cursor<&Vec<u8>>
+    cursor: &mut Cursor<&[u8]>
 )
 -> Result<RiffChunkDescriptor, std::io::Error>
 {
@@ -124,7 +124,7 @@ get_next_chunk_descriptor
 pub(crate) fn
 parse_webp
 (
-    file_buffer: &Vec<u8>
+    file_buffer: &[u8]
 )
 -> Result<Vec<RiffChunkDescriptor>, std::io::Error>
 {
@@ -192,9 +192,9 @@ parse_webp
 fn
 check_exif_in_file
 (
-    file_buffer: &Vec<u8>
+    file_buffer: &[u8]
 )
--> Result<(Cursor<&Vec<u8>>, Vec<RiffChunkDescriptor>), std::io::Error>
+-> Result<(Cursor<&[u8]>, Vec<RiffChunkDescriptor>), std::io::Error>
 {
     // Parse the WebP file - if this fails, we surely can't read any metadata
     let parsed_webp_result = parse_webp(file_buffer)?;
@@ -251,7 +251,7 @@ check_exif_in_file
 pub(crate) fn
 read_metadata
 (
-    file_buffer: &Vec<u8>
+    file_buffer: &[u8]
 )
 -> Result<Vec<u8>, std::io::Error>
 {

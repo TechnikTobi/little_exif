@@ -289,7 +289,7 @@ file_write_metadata
 pub(crate) fn
 read_metadata
 (
-    file_buffer: &Vec<u8>
+    file_buffer: &[u8]
 )
 -> Result<Vec<u8>, std::io::Error>
 {

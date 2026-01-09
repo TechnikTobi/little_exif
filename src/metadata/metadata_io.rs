@@ -39,7 +39,7 @@ Metadata
     pub fn
     new_from_vec
     (
-        file_buffer: &Vec<u8>,
+        file_buffer: &[u8],
         file_type:   FileExtension
     )
     -> Result<Metadata, std::io::Error>
