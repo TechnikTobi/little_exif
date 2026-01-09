@@ -193,7 +193,7 @@ read_from_file_avif()
 	Ok(())
 }
 
-
+#[cfg(test)]
 fn
 read_from_vec_generic
 (
@@ -657,7 +657,8 @@ write_to_file_avif_no_iref()
 	Ok(())
 }
 
-fn 
+#[cfg(test)]
+fn
 compare_write_to_generic
 (
 	original_file:  &str,

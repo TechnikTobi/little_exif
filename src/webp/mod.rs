@@ -15,7 +15,8 @@ use std::fs::File;
 
 use crate::endian::Endian;
 use crate::general_file_io::io_error;
-use crate::u8conversion::from_u8_vec_macro;
+use crate::io_error_plain;
+use crate::u8conversion::from_u8_vec_res_macro;
 use crate::u8conversion::to_u8_vec_macro;
 use crate::u8conversion::U8conversion;
 
@@ -26,15 +27,18 @@ check_riff_signature
 )
 -> Result<(), std::io::Error>
 {
-    // Check the RIFF signature
-    if !file_buffer[0..4].iter()
-        .zip(RIFF_SIGNATURE.iter())
-        .filter(|&(read, constant)| read == constant)
-        .count() == RIFF_SIGNATURE.len()
+    let bytes_to_check = match file_buffer.get(0..4)
     {
+        Some(bytes) => bytes,
+        None => {
+            return io_error!(InvalidData, "Can't open WebP file - File too small to contain RIFF signature!");
+        }
+    };
+
+    if bytes_to_check != RIFF_SIGNATURE {
         return io_error!(
-            InvalidData, 
-            format!("Can't open WebP file - Expected RIFF signature but found {}!", from_u8_vec_macro!(String, &file_buffer[0..4], &Endian::Big))
+            InvalidData,
+            format!("Can't open WebP file - Expected RIFF signature but found {}!", from_u8_vec_res_macro!(String, bytes_to_check, &Endian::Big)?)
         );
     }
 
@@ -48,14 +52,15 @@ check_webp_signature
 )
 -> Result<(), std::io::Error>
 {
-    if !file_buffer[8..12].iter()
-        .zip(WEBP_SIGNATURE.iter())
-        .filter(|&(read, constant)| read == constant)
-        .count() == WEBP_SIGNATURE.len()
+    let Some(buffer_to_check) = file_buffer.get(8..12) else {
+        return io_error!(InvalidData, "Can't open WebP file - File too small to contain WEBP signature!");
+    };
+
+    if buffer_to_check != WEBP_SIGNATURE
     {
         return io_error!(
             InvalidData, 
-            format!("Can't open WebP file - Expected WEBP signature but found {}!", from_u8_vec_macro!(String, &file_buffer[8..12], &Endian::Big))
+            format!("Can't open WebP file - Expected WEBP signature but found {}!", from_u8_vec_res_macro!(String, buffer_to_check, &Endian::Big)?)
         );
     }
 
@@ -70,11 +75,13 @@ check_byte_count
 )
 -> Result<(), std::io::Error>
 {
-    let byte_count = from_u8_vec_macro!(
+    let byte_count = from_u8_vec_res_macro!(
         u32, 
         &file_buffer[4..8], 
         &Endian::Little
-    ) + 8;
+    )?.checked_add(8).ok_or(
+        io_error_plain!(InvalidData, "Can't open WebP file - Byte count in RIFF header is too large!")
+    )?;
 
     if let Some(file) = opt_file
     {

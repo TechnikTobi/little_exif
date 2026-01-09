@@ -7,8 +7,8 @@ edition = "2021"
 # Installation
 # cargo install cargo-fuzz
 
-# Running
-# cargo +nightly fuzz run read_exif --release
+# Running command(Providing example images is recommended, because it will speed up the process - it will generate corpus files in this folder):
+# ASAN_OPTIONS=allocator_may_return_null=1 cargo +nightly fuzz run read_exif -j8 --release /path/to/images -- -max_len=99999 -max_total_time=3600 -rss_limit_mb=20000
 
 [package.metadata]
 cargo-fuzz = true
