@@ -78,7 +78,7 @@ check_byte_count
 
     if let Some(file) = opt_file
     {
-        if file.metadata().unwrap().len() != byte_count as u64
+        if file.metadata()?.len() != byte_count as u64
         {
             return io_error!(InvalidData, "Can't open WebP file - Promised byte count does not correspond with file size!");
         }

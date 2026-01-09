@@ -186,7 +186,7 @@ file_clear_metadata
     loop
     {
         let position        = file.stream_position()?;
-        let old_file_length = file.metadata().unwrap().len();
+        let old_file_length = file.metadata()?.len();
         if position >= old_file_length { return Ok(()); }
 
         file.read_exact(&mut length_buffer)?;
