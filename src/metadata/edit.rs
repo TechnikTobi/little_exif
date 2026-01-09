@@ -55,7 +55,7 @@ Metadata
 
 			for tag in tags_to_be_removed
 			{
-				ifd.remove_tag(&tag);
+				ifd.remove_tag(tag.as_u16());
 			}
 		}
 	}

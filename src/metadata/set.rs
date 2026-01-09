@@ -2,7 +2,7 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use crate::exif_tag::ExifTag;
-
+use crate::ifd::ExifTagGroup;
 use super::Metadata;
 
 impl
@@ -40,18 +40,39 @@ Metadata
 	)
 	-> usize
 	{
+		self.remove_tag_by_hex_group(
+			remove_me.as_u16(),
+			remove_me.get_group()
+		)
+	}
+
+	/// Removes a tag from the metadata struct, based on its hex value and
+	/// associated group. If, for whatever reason, this tag appears in multiple
+	/// IFDs, all instances will be removed, assuming the groups match.
+	/// The count of calls on `remove_tag` gets returned. If this is zero,
+	/// no removals were performed.
+	#[allow(clippy::needless_pass_by_value)]
+	pub fn
+	remove_tag_by_hex_group
+	(
+		&mut self,
+		tag_hex: u16,
+		tag_group: ExifTagGroup
+	)
+		-> usize
+	{
 		let mut removed_count = 0;
 
 		// Traverse all IFD numbers up to the max. known one
 		for ifd_number in 0..=self.get_max_generic_ifd_number()
 		{
 			// Does this IFD exist?
-			if self.get_ifd(remove_me.get_group(), ifd_number).is_some()
+			if self.get_ifd(tag_group, ifd_number).is_some()
 			{
 				// If so, get it as mutable and call remove_tag on it
 				self.get_ifd_mut(
-					remove_me.get_group(), ifd_number
-				).remove_tag(&remove_me);
+					tag_group, ifd_number
+				).remove_tag(tag_hex);
 
 				removed_count += 1;
 			}
