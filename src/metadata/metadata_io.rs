@@ -77,7 +77,7 @@ Metadata
                 => tiff::vec::read_metadata(file_buffer),
             FileExtension::WEBP
                 => webp::vec::read_metadata(file_buffer),
-            FileExtension::NAKED_JXL
+            _
                 => return io_error!(
                     Other, 
                     format!(
@@ -172,7 +172,7 @@ Metadata
                 => tiff::file::read_metadata(path),
             FileExtension::WEBP 
                 => webp::file::read_metadata(path),
-            FileExtension::NAKED_JXL
+            _
                 => return io_error!(
                     Other, 
                     format!(
@@ -208,7 +208,7 @@ Metadata
                 => tiff::vec::clear_metadata(file_buffer),
             FileExtension::WEBP
                 => webp::vec::clear_metadata(file_buffer),
-            FileExtension::NAKED_JXL
+            _
                 => return io_error!(
                     Other, 
                     format!(
@@ -357,7 +357,7 @@ Metadata
                 => tiff::file::clear_metadata(path),
             FileExtension::WEBP 
                 => webp::file::clear_metadata(path),
-            FileExtension::NAKED_JXL
+            _
                 => return io_error!(
                     Other, 
                     format!(
@@ -434,7 +434,7 @@ Metadata
                 => tiff::vec::write_metadata(file_buffer, self),
             FileExtension::WEBP
                 => webp::vec::write_metadata(file_buffer, self),
-            FileExtension::NAKED_JXL
+            _
                 => return io_error!(
                     Other, 
                     format!(
@@ -475,7 +475,7 @@ Metadata
                 => tiff::file::write_metadata(path, self),
             FileExtension::WEBP 
                 => webp::file::write_metadata(path, self),
-            FileExtension::NAKED_JXL
+            _
                 => return io_error!(
                     Other, 
                     format!(
