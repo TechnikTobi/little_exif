@@ -24,7 +24,8 @@ U8conversion<T>
         u8_vec: &[u8],
         endian: &Endian
     )
-    -> T {
+    -> T 
+    {
         match Self::from_u8_vec_res(u8_vec, endian)
         {
             Ok(value) => value,
@@ -84,14 +85,26 @@ macro_rules! build_u8conversion
 
                 let res = match *endian
                 {
-                    Endian::Little => <paste!{[<$type>]}>::from_le_bytes(u8_vec[0..$number_of_bytes].try_into().map_err(|_| io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "from_u8_vec_res: Mangled EXIF data encountered!"
-                    ))?),
-                    Endian::Big    => <paste!{[<$type>]}>::from_be_bytes(u8_vec[0..$number_of_bytes].try_into().map_err(|_| io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "from_u8_vec_res: Mangled EXIF data encountered!"
-                    ))?),
+                    Endian::Little => {
+                        <paste!{[<$type>]}>::from_le_bytes(
+                            u8_vec[0..$number_of_bytes]
+                                .try_into()
+                                .map_err(|_| io::Error::new(
+                                    io::ErrorKind::InvalidData,
+                                    "from_u8_vec_res: Mangled EXIF data encountered!"
+                                ))?
+                        )
+                    },
+                    Endian::Big => {
+                        <paste!{[<$type>]}>::from_be_bytes(
+                            u8_vec[0..$number_of_bytes]
+                                .try_into()
+                                .map_err(|_| io::Error::new(
+                                    io::ErrorKind::InvalidData,
+                                    "from_u8_vec_res: Mangled EXIF data encountered!"
+                                ))?
+                        )
+                    },
                 };
 
                 Ok(res)
