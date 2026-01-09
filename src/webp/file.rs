@@ -69,7 +69,7 @@ get_next_chunk
 {
     // Read the start of the chunk
     let mut chunk_start = [0u8; 8];
-    let mut bytes_read = file.read(&mut chunk_start).unwrap();
+    let mut bytes_read = file.read(&mut chunk_start)?;
 
     // Check that indeed 8 bytes were read
     if bytes_read != 8
@@ -86,7 +86,7 @@ get_next_chunk
 
     // Read RIFF chunk data
     let mut chunk_data_buffer = vec![0u8; chunk_length as usize];
-    bytes_read = file.read(&mut chunk_data_buffer).unwrap();
+    bytes_read = file.read(&mut chunk_data_buffer)?;
     if bytes_read != chunk_length as usize
     {
         return io_error!(
@@ -142,15 +142,15 @@ parse_webp
     let file_result = check_signature(path);
     let mut chunks = Vec::new();
 
-    if file_result.is_err()
+    if let Err(e) = file_result
     {
-        return Err(file_result.err().unwrap());
+        return Err(e);
     }
 
-    let mut file = file_result.unwrap();
+    let Ok(mut file) = file_result else { unreachable!() };
 
     // The amount of data we expect to read while parsing the chunks
-    let expected_length = file.metadata().unwrap().len();
+    let expected_length = file.metadata()?.len();
 
     // How much data we have parsed so far.
     // Starts with 12 bytes: 
@@ -187,13 +187,16 @@ parse_webp
             // in the file and we are done with parsing.
             // If the subroutine fails due to other reasons, the error gets
             // propagated further.
-            if next_chunk_descriptor_result.as_ref().err().unwrap().kind() == std::io::ErrorKind::UnexpectedEof
+            if let Err(e) = next_chunk_descriptor_result
             {
-                break;
-            }
-            else
-            {
-                return Err(next_chunk_descriptor_result.err().unwrap());
+                if e.kind() == std::io::ErrorKind::UnexpectedEof
+                {
+                    break;
+                }
+                else
+                {
+                    return Err(e);
+                }
             }
         }
     }
@@ -239,10 +242,10 @@ check_exif_in_file
     // - RIFF + file size + WEBP -> 12 byte
     // - VP8X header             ->  4 byte
     // - VP8X chunk size         ->  4 byte
-    let mut file = check_signature(path).unwrap();
+    let mut file = check_signature(path)?;
     let mut flag_buffer = vec![0u8; 4usize];
     file.seek(SeekFrom::Start(12u64 + 4u64 + 4u64))?;
-    if file.read(&mut flag_buffer).unwrap() != 4
+    if file.read(&mut flag_buffer)? != 4
     {
         return io_error!(Other, "Could not read flags of VP8X chunk!");
     }
@@ -271,7 +274,7 @@ read_metadata
 {
     // Check the file signature, parse it, check that it has a VP8X chunk and
     // the EXIF flag is set there
-    let (mut file, parse_webp_result) = check_exif_in_file(path).unwrap();
+    let (mut file, parse_webp_result) = check_exif_in_file(path)?;
 
     // At this point we have established that the file has to contain an EXIF
     // chunk at some point. So, now we need to find & return it
@@ -284,7 +287,7 @@ read_metadata
     loop
     {
         // Read the chunk type into the buffer
-        if file.read(&mut header_buffer).unwrap() != 4
+        if file.read(&mut header_buffer)? != 4
         {
             return io_error!(Other, "Could not read chunk type while traversing WebP file!");
         }
@@ -293,7 +296,15 @@ read_metadata
         // Check that this is still the type that we expect from the previous
         // parsing over the file
         // TODO: Maybe remove this part?
-        let expected_chunk_type = parse_webp_result.get(chunk_index).unwrap().header();
+        let Some(chunk_at_index) = parse_webp_result.get(chunk_index) else
+        {
+            return io_error!(
+                Other, 
+                format!("Could not get chunk descriptor at index {} while traversing WebP file!", chunk_index)
+            );
+        }; 
+
+        let expected_chunk_type = chunk_at_index.header();
         if chunk_type != expected_chunk_type
         {
             return io_error!(
@@ -307,7 +318,7 @@ read_metadata
 
         // Get the size of this chunk from the previous parsing process and skip
         // the 4 bytes regarding the size
-        let chunk_size = parse_webp_result.get(chunk_index).unwrap().len();
+        let chunk_size = chunk_at_index.len();
         file.seek(std::io::SeekFrom::Current(4))?;
 
         if chunk_type.to_lowercase() == EXIF_CHUNK_HEADER.to_lowercase()
@@ -404,15 +415,7 @@ convert_to_extended_format
 {
     // Start by getting the first chunk of the WebP file
     file.seek(SeekFrom::Start(12))?;
-    let first_chunk_result = get_next_chunk(file);
-
-    // Check that this get operation was successful
-    if first_chunk_result.is_err()
-    {
-        return Err(first_chunk_result.err().unwrap());
-    }
-
-    let first_chunk = first_chunk_result.unwrap();
+    let first_chunk = get_next_chunk(file)?;
 
     // Find out what simple type of WebP file we are dealing with
     let (width, height) = match first_chunk.descriptor().header().as_str()
@@ -513,7 +516,7 @@ set_exif_flag
     let parsed_webp_result = parse_webp(path)?;
 
     // Open the file for further processing
-    let mut file = check_signature(path).unwrap();
+    let mut file = check_signature(path)?;
 
     // Next, check if this is an Extended File Format WebP file
     // In this case, the first Chunk SHOULD have the type "VP8X"
@@ -535,7 +538,7 @@ set_exif_flag
     // So, read in the flags and set the EXIF flag according to the given bool
     let mut flag_buffer = vec![0u8; 4usize];
     file.seek(SeekFrom::Start(12u64 + 4u64 + 4u64))?;
-    if file.read(&mut flag_buffer).unwrap() != 4
+    if file.read(&mut flag_buffer)? != 4
     {
         return io_error!(Other, "Could not read flags of VP8X chunk!");
     }
@@ -570,24 +573,21 @@ clear_metadata
 {
     // Check the file signature, parse it, check that it has a VP8X chunk and
     // the EXIF flag is set there
-    let exif_check_result = check_exif_in_file(path);
-    if let Err(check_error) = exif_check_result
+    let (mut file, parse_webp_result) = match check_exif_in_file(path) 
     {
-        match check_error.to_string().as_str()
-        {
-            "No EXIF chunk according to VP8X flags!"
-                => return Ok(()),
-            "Expected first chunk of WebP file to be of type 'VP8X' but instead got VP8L!"
-                => return Ok(()),
-            _
-                => return Err(check_error)
+        Ok((file, parse_webp_result)) => (file, parse_webp_result),
+        Err(e) => {
+            match e.to_string().as_str()
+            {
+                "No EXIF chunk according to VP8X flags!"
+                    => return Ok(()),
+                "Expected first chunk of WebP file to be of type 'VP8X' but instead got VP8L!"
+                    => return Ok(()),
+                _
+                    => return Err(e)
+            }
         }
-    }
-
-    // At this point we know that the result can't be an error, otherwise
-    // we would have returned already.
-    #[allow(clippy::unwrap_used)]
-    let (mut file, parse_webp_result) = exif_check_result.unwrap();
+    };
 
     // Compute a delta of how much the file size information has to change
     let mut delta = 0i32;
@@ -616,7 +616,7 @@ clear_metadata
         }
 
         // Get the current size of the file in bytes
-        let old_file_byte_count = file.metadata().unwrap().len();
+        let old_file_byte_count = file.metadata()?.len();
 
         // Get a backup of the current cursor position
         let exif_chunk_start_cursor_position = SeekFrom::Start(file.stream_position()?);
@@ -691,30 +691,31 @@ write_metadata
         // Depending on its type, either continue normally or return it
         let chunk_descriptor_result = get_next_chunk_descriptor(&mut file);
 
-        if let Ok(chunk_descriptor) = chunk_descriptor_result
+        match chunk_descriptor_result
         {
-            let mut chunk_type_found_in_pre_exif_chunks = false;
+            Ok(chunk_descriptor) => {
+                let mut chunk_type_found_in_pre_exif_chunks = false;
 
-            // Check header of chunk descriptor against any of the known chunks
-            // that should come before the EXIF chunk
-            for pre_exif_chunk in &pre_exif_chunks
-            {
-                chunk_type_found_in_pre_exif_chunks |= pre_exif_chunk.to_lowercase() == chunk_descriptor.header().to_lowercase();
-            }
+                // Check header of chunk descriptor against any of the known chunks
+                // that should come before the EXIF chunk
+                for pre_exif_chunk in &pre_exif_chunks
+                {
+                    chunk_type_found_in_pre_exif_chunks |= pre_exif_chunk.to_lowercase() == chunk_descriptor.header().to_lowercase();
+                }
 
-            if !chunk_type_found_in_pre_exif_chunks
-            {
-                break;
-            }
-        }
-        else
-        {
-            match chunk_descriptor_result.as_ref().err().unwrap().kind()
-            {
-                std::io::ErrorKind::UnexpectedEof
-                    => break, // No further chunks, place EXIF chunk here
-                _
-                    => return Err(chunk_descriptor_result.err().unwrap())
+                if !chunk_type_found_in_pre_exif_chunks
+                {
+                    break;
+                }
+            },
+            Err(e) => {
+                match e.kind()
+                {
+                    std::io::ErrorKind::UnexpectedEof
+                        => break, // No further chunks, place EXIF chunk here
+                    _
+                        => return Err(e)
+                }
             }
         }
     }

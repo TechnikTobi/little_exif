@@ -193,9 +193,9 @@ Metadata
 
             assert!(filter_result.len() <= 1);
 
-            if filter_result.is_empty() { continue; }
+            let Some(last_ifd) = filter_result.last() else { continue; };
 
-            if let Ok((next_link_section, link_vec)) = filter_result.last().unwrap().encode_ifd(
+            if let Ok((next_link_section, link_vec)) = last_ifd.encode_ifd(
                 self, 
                 &mut ifds_with_offset_info_only, 
                 &mut encode_vec, 
