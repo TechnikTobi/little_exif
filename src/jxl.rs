@@ -266,7 +266,7 @@ box_contains_exif
 pub(crate) fn
 read_metadata
 (
-    file_buffer: &Vec<u8>
+    file_buffer: &[u8]
 )
 -> Result<Vec<u8>, std::io::Error>
 {
@@ -411,7 +411,7 @@ encode_metadata_jxl
 fn
 find_insert_position
 (
-    file_buffer: &Vec<u8>
+    file_buffer: &[u8]
 )
 -> Result<usize, std::io::Error>
 {

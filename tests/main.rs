@@ -197,7 +197,7 @@ read_from_file_avif()
 fn
 read_from_vec_generic
 (
-	image_data: &Vec<u8>,
+	image_data: &[u8],
 	filetype: little_exif::filetype::FileExtension
 )
 -> Result<(), std::io::Error>
