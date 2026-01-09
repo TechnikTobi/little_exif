@@ -22,59 +22,6 @@ different type than the file extension tells us, the content takes precedence.
 
 use std::path::Path;
 
-extern crate little_exif_0_6_14;
-extern crate little_exif_0_6_20;
-extern crate little_exif;
-
-#[test]
-#[should_panic (expected = "called `Option::unwrap()` on a `None` value")]
-fn
-read_exif_data_old_fails()
-{
-    let heic_path = Path::new("resources/issue_000070/IMG_2762.HEIC");
-    // let jpeg_path = Path::new("resources/issue_000070/IMG_2762.JPEG");
-
-    let mut tag_counter = 0;
-    for _ in &little_exif_0_6_14::metadata::Metadata::new_from_path(heic_path).unwrap()
-    {
-        tag_counter += 1;
-    }
-
-    assert_eq!(tag_counter, 43);
-}
-
-#[test]
-fn
-read_exif_data_old_works_because_it_is_a_jpeg()
-{
-    // let heic_path = Path::new("resources/issue_000070/IMG_2762.HEIC");
-    let jpeg_path = Path::new("resources/issue_000070/IMG_2762.JPEG");
-
-    let mut tag_counter = 0;
-    for _ in &little_exif_0_6_14::metadata::Metadata::new_from_path(jpeg_path).unwrap()
-    {
-        tag_counter += 1;
-    }
-
-    assert_eq!(tag_counter, 43);
-}
-
-#[test]
-fn
-read_exif_data_fixed()
-{
-    let heic_path = Path::new("resources/issue_000070/IMG_2762.HEIC");
-    // let jpeg_path = Path::new("resources/issue_000070/IMG_2762.JPEG");
-
-    let mut tag_counter = 0;
-    for _ in &little_exif_0_6_20::metadata::Metadata::new_from_path(heic_path).unwrap()
-    {
-        tag_counter += 1;
-    }
-
-    assert_eq!(tag_counter, 43);
-}
-
 #[test]
 fn
 read_exif_data_current()

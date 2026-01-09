@@ -24,43 +24,6 @@ Related commits:
 
 use std::path::Path;
 
-extern crate little_exif_0_5_0;
-extern crate little_exif_0_5_1;
-extern crate little_exif;
-
-#[test]
-#[should_panic (expected = "assertion `left != right` failed\n  left: 0\n right: 0")]
-fn
-read_exif_data_fails()
-{
-    let path = Path::new("resources/issue_000019/2019_Stuttgart_Emilio_SL_925-014-126.JPG");
-
-    let mut tag_counter = 0;
-
-    for _ in little_exif_0_5_0::metadata::Metadata::new_from_path(path).unwrap().data()
-    {
-        tag_counter += 1;
-    }
-
-    assert_ne!(tag_counter, 0);
-}
-
-#[test]
-fn
-read_exif_data_fixed()
-{
-    let path = Path::new("resources/issue_000019/2019_Stuttgart_Emilio_SL_925-014-126.JPG");
-
-    let mut tag_counter = 0;
-
-    for _ in little_exif_0_5_1::metadata::Metadata::new_from_path(path).unwrap().data()
-    {
-        tag_counter += 1;
-    }
-
-    assert_eq!(tag_counter, 40);
-}
-
 #[test]
 fn
 read_exif_data_current()
