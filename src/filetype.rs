@@ -27,7 +27,7 @@ FileExtension
 impl
 FileExtension
 {
-    pub(crate) fn
+    pub fn
     auto_detect
     <T: Seek + Read>
     (

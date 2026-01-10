@@ -134,7 +134,7 @@ HeifContainer
     -> Result<u16, std::io::Error>
     {
         if let Ok(meta) = self.get_meta_box() {
-            if let Some(item) = meta.get_item_info_box().get_exif_item() {
+            if let Some(item) = meta.get_item_info_box()?.get_exif_item() {
                 return Ok(item.item_id);
             }
         }
@@ -151,7 +151,7 @@ HeifContainer
     -> Result<(u64, u64), std::io::Error>
     {
         let exif_item = match self.get_meta_box() {
-            Ok(meta) => meta.get_item_location_box().get_item_location_entry(exif_item_id),
+            Ok(meta) => meta.get_item_location_box()?.get_item_location_entry(exif_item_id)?,
             Err(e) => return Err(e),
         };
         let exif_extents = &exif_item.extents;
@@ -204,6 +204,18 @@ HeifContainer
         let exif_tiff_header_offset = read_be_u32(cursor)? as usize;
 
         cursor.seek(std::io::SeekFrom::Current(exif_tiff_header_offset as i64))?;
+
+        if length < 4 + exif_tiff_header_offset as u64
+        {
+            return io_error!(
+                InvalidData,
+                format!(
+                    "EXIF data length ({}) is smaller than expected minimum size ({})",
+                    length,
+                    4 + exif_tiff_header_offset as u64
+                )
+            );
+        }
 
         // Read in the remaining bytes
         let mut exif_buffer = vec![0u8; 
@@ -438,7 +450,7 @@ HeifContainer
         )?;
 
         let meta_mut = self.get_meta_box_mut()?;
-        for item in &mut meta_mut.get_item_location_box_mut().items
+        for item in &mut meta_mut.get_item_location_box_mut()?.items
         {
             // First, check if any extent of this item has the same offset as
             // the old exif data area. In that case, there must be only one

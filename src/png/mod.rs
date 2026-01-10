@@ -767,7 +767,9 @@ decode_metadata_png
             continue;
         }
 
-        let Some(other_byte) = opt_other_byte else { panic!(); };
+        let Some(other_byte) = opt_other_byte else {
+            return io_error!(Other, "Mangled PNG EXIF data encountered during decoding!");
+        };
 
         let value_string = "".to_owned()
             + &(other_byte as char).to_string()

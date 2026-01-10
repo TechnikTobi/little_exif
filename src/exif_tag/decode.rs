@@ -101,7 +101,7 @@ decode_tag_with_format_exceptions
 					{
 						0x00 | 0x30 => vec![0u8],
 						0x01 | 0x31 => vec![1u8],
-						_ => panic!("Problem while decoding GPSAltitudeRef. Please open a new issue for little_exif!")
+						_ => io_error!(InvalidData, "Problem while decoding GPSAltitudeRef. Please open a new issue for little_exif!")?
 					};
 
 					return ExifTag::from_u16_with_data(

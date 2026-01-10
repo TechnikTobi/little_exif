@@ -610,12 +610,12 @@ ImageFileDirectory
                         }
                         else
                         {
-                            panic!("Could not find IFD in parent struct!");
+                            return io_error!(Other, format!("Could not find SubIFD {group:?} for offset tag 0x{:04x}!", tag.as_u16()));
                         }
                     }
                     else
                     {
-                        panic!("Could not determine type of SubIFD!");
+                        return io_error!(Other, format!("Could not determine SubIFD type for offset tag 0x{:04x}!", tag.as_u16()));
                     }
                 }
             };

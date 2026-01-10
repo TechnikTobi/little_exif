@@ -13,6 +13,7 @@ use crate::util::read_be_u32;
 use crate::heif::box_header::BoxHeader;
 use crate::heif::boxes::GenericIsoBox;
 use crate::heif::boxes::ParsableIsoBox;
+use crate::io_error;
 
 #[allow(non_snake_case)]
 #[derive(Debug)]
@@ -63,7 +64,7 @@ SingleItemTypeReferenceBox
         }
         else
         {
-            panic!("Expected either version == 0 or version == 1 for iref box! Please create a new ticket at https://github.com/TechnikTobi/little_exif with an example image file");
+            return io_error!(InvalidData, "Expected either version == 0 or version == 1 for iref box! Please create a new ticket at https://github.com/TechnikTobi/little_exif with an example image file");
         };
 
         let from_item_ID = if is_large 
@@ -130,6 +131,11 @@ ItemReferenceBox
         let mut bytes_read = 0;
 
         let mut references = Vec::new();
+
+        if header.get_box_size() < header.get_header_size()
+        {
+            return io_error!(InvalidData, "Box size is smaller than header size for iref box");
+        }
 
         while bytes_read < header.get_box_size() - header.get_header_size()
         {
