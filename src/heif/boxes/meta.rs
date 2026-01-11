@@ -47,14 +47,20 @@ MetaBox
     (
         &self
     )
-    -> &ItemInfoBox
+    -> Result<&ItemInfoBox, std::io::Error>
     {
         match self.other_boxes.iter().find(|b| b.get_header().get_box_type() == BoxType::iinf) {
             Some(b) => match b.as_any().downcast_ref::<ItemInfoBox>() {
-                Some(unboxed) => unboxed,
-                None => panic!("Found iinf box but could not downcast to ItemInfoBox"),
+                Some(unboxed) => Ok(unboxed),
+                None => io_error!(
+                    InvalidData,
+                    "Found iinf box but could not downcast to ItemInfoBox"
+                ),
             },
-            None => panic!("No iinf box found in MetaBox"),
+            None => io_error!(
+                NotFound,
+                "No iinf box found in MetaBox"
+            ),
         }
     }
 
@@ -63,14 +69,20 @@ MetaBox
     (
         &self
     )
-    -> &ItemLocationBox
+    -> Result<&ItemLocationBox, std::io::Error>
     {
         match self.other_boxes.iter().find(|b| b.get_header().get_box_type() == BoxType::iloc) {
             Some(b) => match b.as_any().downcast_ref::<ItemLocationBox>() {
-                Some(unboxed) => unboxed,
-                None => panic!("Found iloc box but could not downcast to ItemLocationBox"),
+                Some(unboxed) => Ok(unboxed),
+                None => io_error!(
+                    InvalidData,
+                    "Found iloc box but could not downcast to ItemLocationBox"
+                ),
             },
-            None => panic!("No iloc box found in MetaBox"),
+            None => io_error!(
+                NotFound,
+                "No iloc box found in MetaBox"
+            ),
         }
     }
 
@@ -79,14 +91,20 @@ MetaBox
     (
         &mut self
     )
-    -> &mut ItemLocationBox
+    -> Result<&mut ItemLocationBox, std::io::Error>
     {
         match self.other_boxes.iter_mut().find(|b| b.get_header().get_box_type() == BoxType::iloc) {
             Some(b) => match b.as_any_mut().downcast_mut::<ItemLocationBox>() {
-                Some(unboxed) => unboxed,
-                None => panic!("Found iloc box but could not downcast to ItemLocationBox (mut)"),
+                Some(unboxed) => Ok(unboxed),
+                None => io_error!(
+                    InvalidData,
+                    "Found iloc box but could not downcast to ItemLocationBox"
+                ),
             },
-            None => panic!("No iloc box found in MetaBox"),
+            None => io_error!(
+                NotFound,
+                "No iloc box found in MetaBox"
+            ),
         }
     }
 
@@ -152,10 +170,21 @@ MetaBox
                 )
             );
         }
+
+        if header.get_box_size() < header.get_header_size() {
+            return io_error!(
+                InvalidData,
+                format!(
+                    "MetaBox has invalid size: box size {} is too small",
+                    header.get_box_size()
+                )
+            );
+        }
         // Read in the remaining bytes for this box
         let     remaining_bytes = header.get_box_size() - header.get_header_size();
-        let mut meta_box_bytes  = vec![0u8; remaining_bytes];
-        cursor.read_exact(&mut meta_box_bytes)?;
+        let mut meta_box_bytes: Vec<u8> = Vec::new();
+        meta_box_bytes.try_reserve_exact(remaining_bytes as usize)?;
+        cursor.take(remaining_bytes as u64).read_to_end(&mut meta_box_bytes)?;
 
         // Construct local cursor for these bytes
         let mut local_cursor = Cursor::new(meta_box_bytes);
@@ -219,18 +248,43 @@ HandlerBox
             read_be_u32(cursor)?
         ];
 
-        let number_of_bytes_that_form_the_name = header.get_box_size() 
-            - header.get_header_size() // header
-            - 4                        // pre_defined
-            - 4                        // handler_type
-            - 12                       // reserved
-            ;
+        // Check that there is enough data left to read the box name
+        if header.get_box_size() < header.get_header_size() + 4 + 4 + 12 
+        {
+            return io_error!(
+                InvalidData,
+                format!(
+                    "HandlerBox has invalid size: box size {} is too small to contain mandatory name field",
+                    header.get_box_size()
+                )
+            );
+        }
 
+        // Check that the remaining data is not unreasonably large 
+        // This threshold is somewhat arbitrary
+        if header.get_box_size() > (u32::MAX/16) as u64
+        {
+            return io_error!(
+                Unsupported,
+                format!(
+                    "HandlerBox size {} exceeds maximum supported size ({})",
+                    header.get_box_size(),
+                    (u32::MAX/16)
+                )
+            );
+        }
+
+        let number_of_bytes_that_form_the_name = header.get_box_size() as u64
+            - header.get_header_size() as u64 // header
+            - 4                               // pre_defined
+            - 4                               // handler_type
+            - 12                              // reserved
+            ;
 
         let mut name: Vec<u8> = Vec::new();
 
         // This may cause an out of memory error, but won't panic like vec![]
-        name.try_reserve_exact(number_of_bytes_that_form_the_name)?;
+        name.try_reserve_exact(number_of_bytes_that_form_the_name as usize)?;
 
         // Can't use read_exact here because the name buffer we read into is
         // still size 0 (only has reserved capacity!)

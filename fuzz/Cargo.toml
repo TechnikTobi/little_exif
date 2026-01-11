@@ -15,6 +15,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
+pretty_assertions = "1.4.1"
 
 [dependencies.little_exif]
 path = ".."
@@ -22,6 +23,13 @@ path = ".."
 [[bin]]
 name = "read_exif"
 path = "fuzz_targets/read_exif.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "metadata"
+path = "fuzz_targets/metadata.rs"
 test = false
 doc = false
 bench = false

@@ -104,7 +104,7 @@ Metadata
             }
             else
             {
-                panic!("Unreachable code reached in Metadata::general_decoding_wrapper (1)");
+                return io_error!(Other, "Unreachable code reached in Metadata::general_decoding_wrapper (1)");
             }
         }
         else if let Err(decode_error) = raw_pre_decode_general
@@ -114,7 +114,7 @@ Metadata
         }
         else
         {
-            panic!("Unreachable code reached in Metadata::general_decoding_wrapper (2)");
+            return io_error!(Other, "Unreachable code reached in Metadata::general_decoding_wrapper (2)");
         }
     }
 

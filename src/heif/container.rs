@@ -99,8 +99,11 @@ HeifContainer
     )
     -> Result<&MetaBox, std::io::Error>
     {
-        match self.boxes.iter().find(|b| b.get_header().get_box_type() == BoxType::meta) {
-            Some(b) => match b.as_any().downcast_ref::<MetaBox>() {
+        match self.boxes.iter()
+            .find(|b| b.get_header().get_box_type() == BoxType::meta) 
+        {
+            Some(b) => match b.as_any().downcast_ref::<MetaBox>() 
+            {
                 Some(unboxed) => Ok(unboxed),
                 None => io_error!(Other, "Found meta box but could not downcast to MetaBox"),
             },
@@ -115,8 +118,11 @@ HeifContainer
     )
     -> Result<&mut MetaBox, std::io::Error>
     {
-        match self.boxes.iter_mut().find(|b| b.get_header().get_box_type() == BoxType::meta) {
-            Some(b) => match b.as_any_mut().downcast_mut::<MetaBox>() {
+        match self.boxes.iter_mut()
+            .find(|b| b.get_header().get_box_type() == BoxType::meta) 
+        {
+            Some(b) => match b.as_any_mut().downcast_mut::<MetaBox>() 
+            {
                 Some(unboxed) => Ok(unboxed),
                 None => io_error!(Other, "Found meta box but could not downcast to MetaBox (mut)"),
             },
@@ -133,8 +139,9 @@ HeifContainer
     )
     -> Result<u16, std::io::Error>
     {
-        if let Ok(meta) = self.get_meta_box() {
-            if let Some(item) = meta.get_item_info_box().get_exif_item() {
+        if let Ok(meta) = self.get_meta_box() 
+        {
+            if let Some(item) = meta.get_item_info_box()?.get_exif_item() {
                 return Ok(item.item_id);
             }
         }
@@ -150,13 +157,15 @@ HeifContainer
     )
     -> Result<(u64, u64), std::io::Error>
     {
-        let exif_item = match self.get_meta_box() {
-            Ok(meta) => meta.get_item_location_box().get_item_location_entry(exif_item_id),
+        let exif_item = match self.get_meta_box() 
+        {
+            Ok(meta) => meta.get_item_location_box()?.get_item_location_entry(exif_item_id)?,
             Err(e) => return Err(e),
         };
-        let exif_extents = &exif_item.extents;
 
-        if exif_extents.len() != 1 {
+        let exif_extents = &exif_item.extents;
+        if exif_extents.len() != 1 
+        {
             return io_error!(Other, "Expected exactly one EXIF extent info entry");
         }
 
@@ -204,6 +213,18 @@ HeifContainer
         let exif_tiff_header_offset = read_be_u32(cursor)? as usize;
 
         cursor.seek(std::io::SeekFrom::Current(exif_tiff_header_offset as i64))?;
+
+        if length < 4 + exif_tiff_header_offset as u64
+        {
+            return io_error!(
+                InvalidData,
+                format!(
+                    "EXIF data length ({}) is smaller than expected minimum size ({})",
+                    length,
+                    4 + exif_tiff_header_offset as u64
+                )
+            );
+        }
 
         // Read in the remaining bytes
         let mut exif_buffer = vec![0u8; 
@@ -412,7 +433,7 @@ HeifContainer
             );
 
             // Fix up the size of the meta box as well
-            let new_box_size = self.get_meta_box()?.serialize().len();
+            let new_box_size = self.get_meta_box()?.serialize().len() as u64;
             self.get_meta_box_mut()?.get_header_mut().set_box_size(new_box_size);
 
             // No change to the mdat data at this point as we set up the
@@ -438,7 +459,7 @@ HeifContainer
         )?;
 
         let meta_mut = self.get_meta_box_mut()?;
-        for item in &mut meta_mut.get_item_location_box_mut().items
+        for item in &mut meta_mut.get_item_location_box_mut()?.items
         {
             // First, check if any extent of this item has the same offset as
             // the old exif data area. In that case, there must be only one
@@ -545,7 +566,7 @@ HeifContainer
                 && 
                 !new_exif_written
             {
-                let new_size = (iso_box.get_header().get_box_size() as i64 + delta) as usize;
+                let new_size = (iso_box.get_header().get_box_size() as i64 + delta) as u64;
                 iso_box.get_header_mut().set_box_size(new_size);
                 serialized = iso_box.serialize();
 

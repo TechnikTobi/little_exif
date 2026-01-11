@@ -5,6 +5,7 @@ use std::io::Read;
 use std::io::Seek;
 
 use crate::debug_println;
+use crate::io_error_plain;
 use crate::endian::Endian;
 use crate::general_file_io::io_error;
 use crate::u8conversion::U8conversion;
@@ -354,11 +355,16 @@ ItemLocationBox
         &self,
         item_id: u16
     )
-    -> &ItemLocationEntry
+    -> Result<&ItemLocationEntry, std::io::Error>
     {
         self.items.iter()
             .find(|item| item.item_id == item_id as u32)
-            .expect("ItemLocationEntry not found for given item_id")
+            .ok_or(
+                io_error_plain!(
+                    Other, 
+                    format!("ItemLocationEntry with item_id {} not found!", item_id)
+                )
+            )
     }
 
     // Returns the ID of the new entry and by how many bytes this box got longer
@@ -369,7 +375,7 @@ ItemLocationBox
         data_start:  u64,
         data_length: u64
     )
-    -> (u32, usize)
+    -> (u32, u64)
     {
         // Determine largest iloc ID so far
         let old_largest_id = self.items
@@ -403,7 +409,7 @@ ItemLocationBox
         // TODO: make this more efficient by only computing how much memory is
         // needed, not by actually serializing (and thus, allocating memory)
         let old_box_size = self.header.get_box_size();
-        let new_box_size = self.serialize().len();
+        let new_box_size = self.serialize().len() as u64;
         self.header.set_box_size(new_box_size);
 
         return (
