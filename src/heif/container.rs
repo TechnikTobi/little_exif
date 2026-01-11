@@ -99,8 +99,11 @@ HeifContainer
     )
     -> Result<&MetaBox, std::io::Error>
     {
-        match self.boxes.iter().find(|b| b.get_header().get_box_type() == BoxType::meta) {
-            Some(b) => match b.as_any().downcast_ref::<MetaBox>() {
+        match self.boxes.iter()
+            .find(|b| b.get_header().get_box_type() == BoxType::meta) 
+        {
+            Some(b) => match b.as_any().downcast_ref::<MetaBox>() 
+            {
                 Some(unboxed) => Ok(unboxed),
                 None => io_error!(Other, "Found meta box but could not downcast to MetaBox"),
             },
@@ -115,8 +118,11 @@ HeifContainer
     )
     -> Result<&mut MetaBox, std::io::Error>
     {
-        match self.boxes.iter_mut().find(|b| b.get_header().get_box_type() == BoxType::meta) {
-            Some(b) => match b.as_any_mut().downcast_mut::<MetaBox>() {
+        match self.boxes.iter_mut()
+            .find(|b| b.get_header().get_box_type() == BoxType::meta) 
+        {
+            Some(b) => match b.as_any_mut().downcast_mut::<MetaBox>() 
+            {
                 Some(unboxed) => Ok(unboxed),
                 None => io_error!(Other, "Found meta box but could not downcast to MetaBox (mut)"),
             },
@@ -133,7 +139,8 @@ HeifContainer
     )
     -> Result<u16, std::io::Error>
     {
-        if let Ok(meta) = self.get_meta_box() {
+        if let Ok(meta) = self.get_meta_box() 
+        {
             if let Some(item) = meta.get_item_info_box()?.get_exif_item() {
                 return Ok(item.item_id);
             }
@@ -150,13 +157,15 @@ HeifContainer
     )
     -> Result<(u64, u64), std::io::Error>
     {
-        let exif_item = match self.get_meta_box() {
+        let exif_item = match self.get_meta_box() 
+        {
             Ok(meta) => meta.get_item_location_box()?.get_item_location_entry(exif_item_id)?,
             Err(e) => return Err(e),
         };
-        let exif_extents = &exif_item.extents;
 
-        if exif_extents.len() != 1 {
+        let exif_extents = &exif_item.extents;
+        if exif_extents.len() != 1 
+        {
             return io_error!(Other, "Expected exactly one EXIF extent info entry");
         }
 
