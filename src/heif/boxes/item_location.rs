@@ -4,7 +4,8 @@
 use std::io::Read;
 use std::io::Seek;
 
-use crate::{debug_println, io_error_plain};
+use crate::debug_println;
+use crate::io_error_plain;
 use crate::endian::Endian;
 use crate::general_file_io::io_error;
 use crate::u8conversion::U8conversion;
@@ -358,7 +359,12 @@ ItemLocationBox
     {
         self.items.iter()
             .find(|item| item.item_id == item_id as u32)
-            .ok_or(io_error_plain!(Other, format!("ItemLocationEntry with item_id {} not found!", item_id)))
+            .ok_or(
+                io_error_plain!(
+                    Other, 
+                    format!("ItemLocationEntry with item_id {} not found!", item_id)
+                )
+            )
     }
 
     // Returns the ID of the new entry and by how many bytes this box got longer
