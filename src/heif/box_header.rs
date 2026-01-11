@@ -5,6 +5,7 @@ use std::io::Read;
 use std::io::Seek;
 
 use crate::endian::Endian;
+use crate::io_error;
 use crate::u8conversion::U8conversion;
 use crate::u8conversion::to_u8_vec_macro;
 use crate::util::read_16_bytes;
@@ -20,10 +21,10 @@ use super::box_type::BoxType;
 pub struct
 BoxHeader
 {
-    box_size:    usize,
+    box_size:    u64,
     largesize:   bool,
     box_type:    BoxType,
-    header_size: usize,           // not sure if needed
+    header_size: u64,             // not sure if needed; u64 for convenience
     version:     Option<u8>,      // only if box type uses full headers
     flags:       Option<[u8; 3]>, // only if box type uses full headers
 }
@@ -100,7 +101,7 @@ BoxHeader
         let box_type = BoxType::from_4_bytes(read_4_bytes(cursor)?);
 
         let mut header = Self {
-            box_size:    box_size as usize,
+            box_size:    box_size as u64,
             largesize:   false,
             box_type:    box_type.clone(),
             header_size: 8,
@@ -119,9 +120,25 @@ BoxHeader
 
         // Uses largesize box size
         if header.box_size == 1
-        {
-            header.box_size  = read_be_u64(cursor)? as usize;
+        { 
+            header.box_size  = read_be_u64(cursor)?;
             header.largesize = true;
+
+            // Can't process boxes that are truly larger than u32::MAX on 
+            // 32-bit systems
+            if usize::BITS == u32::BITS && header.box_size > u32::MAX as u64
+            {
+                return io_error!(
+                    Unsupported,
+                    format!(
+                        "Box size {} exceeds maximum supported size on 32-bit systems",
+                        header.box_size
+                    )
+                );
+            }
+            {
+
+            }
 
             // Adjust header size information
             header.header_size += 8;
@@ -144,7 +161,7 @@ BoxHeader
     (
         &self
     )
-    -> usize
+    -> u64
     {
         return self.box_size;
     }
@@ -164,7 +181,7 @@ BoxHeader
     (
         &self
     )
-    -> usize
+    -> u64
     {
         return self.header_size;
     }
@@ -173,7 +190,7 @@ BoxHeader
     set_box_size
     (
         &mut self,
-        new_size: usize
+        new_size: u64
     )
     {
         self.box_size = new_size;

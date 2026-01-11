@@ -183,9 +183,8 @@ MetaBox
         // Read in the remaining bytes for this box
         let     remaining_bytes = header.get_box_size() - header.get_header_size();
         let mut meta_box_bytes: Vec<u8> = Vec::new();
-        meta_box_bytes.try_reserve_exact(remaining_bytes)?;
+        meta_box_bytes.try_reserve_exact(remaining_bytes as usize)?;
         cursor.take(remaining_bytes as u64).read_to_end(&mut meta_box_bytes)?;
-
 
         // Construct local cursor for these bytes
         let mut local_cursor = Cursor::new(meta_box_bytes);
@@ -249,30 +248,43 @@ HandlerBox
             read_be_u32(cursor)?
         ];
 
-        // Checking for every single operation if could cause an overflow would be tedious
-        // So disallowing box size, which is close to the maximum size of usize, to simplify overflow checks
-        if header.get_box_size() > usize::MAX - 1000 || header.get_box_size() < header.get_header_size() + 4 + 4 + 12 {
+        // Check that there is enough data left to read the box name
+        if header.get_box_size() < header.get_header_size() + 4 + 4 + 12 
+        {
             return io_error!(
                 InvalidData,
                 format!(
-                    "HandlerBox has invalid size: box size {} is too large or too small",
+                    "HandlerBox has invalid size: box size {} is too small to contain mandatory name field",
                     header.get_box_size()
                 )
             );
         }
 
-        let number_of_bytes_that_form_the_name = header.get_box_size() 
-            - header.get_header_size() // header
-            - 4                        // pre_defined
-            - 4                        // handler_type
-            - 12                       // reserved
-            ;
+        // Check that the remaining data is not unreasonably large 
+        // This threshold is somewhat arbitrary
+        if header.get_box_size() > (u32::MAX/16) as u64
+        {
+            return io_error!(
+                Unsupported,
+                format!(
+                    "HandlerBox size {} exceeds maximum supported size ({})",
+                    header.get_box_size(),
+                    (u32::MAX/16)
+                )
+            );
+        }
 
+        let number_of_bytes_that_form_the_name = header.get_box_size() as u64
+            - header.get_header_size() as u64 // header
+            - 4                               // pre_defined
+            - 4                               // handler_type
+            - 12                              // reserved
+            ;
 
         let mut name: Vec<u8> = Vec::new();
 
         // This may cause an out of memory error, but won't panic like vec![]
-        name.try_reserve_exact(number_of_bytes_that_form_the_name)?;
+        name.try_reserve_exact(number_of_bytes_that_form_the_name as usize)?;
 
         // Can't use read_exact here because the name buffer we read into is
         // still size 0 (only has reserved capacity!)

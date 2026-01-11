@@ -60,7 +60,7 @@ IsoBox
         let mut buffer: Vec<u8> = Vec::new();
 
         // This may cause an out of memory error, but won't panic like vec![]
-        buffer.try_reserve_exact(data_left_to_read)?;
+        buffer.try_reserve_exact(data_left_to_read as usize)?;
 
         // Can't use read_exact here because the name buffer we read into is
         // still size 0 (only has reserved capacity!)

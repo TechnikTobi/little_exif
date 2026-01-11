@@ -161,16 +161,16 @@ ItemReferenceBox
         from_item_ID:   u32,
         to_item_ID:     Vec<u32>
     )
-    -> usize
+    -> u64
     {
         // Determine is_large and the box size
         let is_large = self.header.get_version() >= 1;
         let ID_size  = if is_large { 4 } else { 2 };
         let box_size = 0
-            + 8                          // header
-            + ID_size                    // from_item_id
-            + 2                          // reference_count
-            + to_item_ID.len() * ID_size // to_item_id
+            + 8                                 // header
+            + ID_size                           // from_item_id
+            + 2                                 // reference_count
+            + to_item_ID.len() as u64 * ID_size // to_item_id
             ; 
 
         let mut new_reference_header = BoxHeader::new_simple_box_header();

@@ -77,9 +77,9 @@ ItemInfoEntryBox
 
         // Determine how much data is left for this entry
         let data_read_so_far = header.get_header_size() 
-            + 2                    // item_id
-            + 2                    // item_protection_index
-            + item_name.len() + 1; // string len + null terminator
+            + 2                           // item_id
+            + 2                           // item_protection_index
+            + item_name.len() as u64 + 1; // string len + null terminator
 
         if data_read_so_far > header.get_box_size()
         {
@@ -96,7 +96,7 @@ ItemInfoEntryBox
         let data_left_to_read = header.get_box_size() - data_read_so_far;
 
         let mut additional_data: Vec<u8> = Vec::new();
-        additional_data.try_reserve_exact(data_left_to_read)?;
+        additional_data.try_reserve_exact(data_left_to_read as usize)?;
         cursor.take(data_left_to_read as u64).read_to_end(&mut additional_data)?;
 
         debug_println!("ID: {}, Name: {}", item_id, item_name);
@@ -156,7 +156,7 @@ ItemInfoBox
         iloc_id: u32,
         name:    &str,
     )
-    -> usize
+    -> u64
     {
         self.items.push(ItemInfoEntryBox 
             { 
@@ -175,7 +175,7 @@ ItemInfoBox
         // TODO: make this more efficient by only computing how much memory is
         // needed, not by actually serializing (and thus, allocating memory)
         let old_box_size = self.header.get_box_size();
-        let new_box_size = self.serialize().len();
+        let new_box_size = self.serialize().len() as u64;
         self.header.set_box_size(new_box_size);
 
         return new_box_size - old_box_size;

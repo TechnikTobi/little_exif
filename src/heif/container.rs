@@ -424,7 +424,7 @@ HeifContainer
             );
 
             // Fix up the size of the meta box as well
-            let new_box_size = self.get_meta_box()?.serialize().len();
+            let new_box_size = self.get_meta_box()?.serialize().len() as u64;
             self.get_meta_box_mut()?.get_header_mut().set_box_size(new_box_size);
 
             // No change to the mdat data at this point as we set up the
@@ -557,7 +557,7 @@ HeifContainer
                 && 
                 !new_exif_written
             {
-                let new_size = (iso_box.get_header().get_box_size() as i64 + delta) as usize;
+                let new_size = (iso_box.get_header().get_box_size() as i64 + delta) as u64;
                 iso_box.get_header_mut().set_box_size(new_size);
                 serialized = iso_box.serialize();
 
