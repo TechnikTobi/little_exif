@@ -18,7 +18,6 @@ I updated the `decode_tag_with_format_exceptions` (which already contains some G
 
 use std::path::Path;
 
-extern crate little_exif;
 use little_exif::metadata::Metadata;
 use little_exif::exif_tag::ExifTag;
 use little_exif::filetype::FileExtension;

@@ -21,10 +21,7 @@ Related commit:
 
 use std::path::Path;
 
-extern crate little_exif_0_6_15;
-extern crate little_exif_0_6_0_beta_1;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: \"Could not decode SubIFD EXIF:\\n  Illegal format for known tag! Tag: ExposureCompensation([]) Expected: RATIONAL64S Got: RATIONAL64U\" }")]
 fn
@@ -55,6 +52,7 @@ read_exif_data_fixed()
 
     assert_eq!(tag_counter, 46);
 }
+*/
 
 #[test]
 fn

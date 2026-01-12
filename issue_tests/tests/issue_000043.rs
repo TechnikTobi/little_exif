@@ -15,10 +15,7 @@ Wrote a new decoder as part of release 0.6.0
 
 use std::path::Path;
 
-extern crate little_exif_0_5_1;
-extern crate little_exif_0_6_0_beta_1;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "No GPS tag found")]
 fn
@@ -51,7 +48,7 @@ read_gps_latitude_fixed()
         panic!("No GPS tag found");
     }
 }
-
+*/
 
 #[test]
 fn

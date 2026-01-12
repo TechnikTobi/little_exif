@@ -23,7 +23,6 @@ file-based, fixed in this commit:
 
 use std::path::Path;
 
-extern crate little_exif;
 use little_exif::metadata::Metadata;
 use little_exif::exif_tag::ExifTag;
 use little_exif::filetype::FileExtension;

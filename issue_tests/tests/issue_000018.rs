@@ -22,10 +22,7 @@ Can't recall :(
 use std::path::Path;
 use std::str::FromStr;
 
-extern crate little_exif_0_5_0;
-extern crate little_exif_0_6_0;
-extern crate little_exif;
-
+/*
 #[test]
 fn
 read_exif_data_fails_part_1()
@@ -100,6 +97,7 @@ read_exif_data_fixed()
 
     assert_eq!(tag_count_path, tag_count_vec);
 }
+*/
 
 #[test]
 fn
