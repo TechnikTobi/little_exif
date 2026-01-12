@@ -561,7 +561,7 @@ build_tag_enum![
 
 	(XResolution,                 0x011a, RATIONAL64U,   Some::<u32>(1),    true,      GENERIC),                        // Not EXIF but TIFF   x       x         x             x 
 	(YResolution,                 0x011b, RATIONAL64U,   Some::<u32>(1),    true,      GENERIC),                        // Not EXIF but TIFF   x       x         x             x 
-	(PlanarConfiguration,         0x011c, INT16U,        Some::<u32>(1),    true,      GENERIC),               
+	(PlanarConfiguration,         0x011c, INT16U,        Some::<u32>(1),    true,      GENERIC),
 
 	(ResolutionUnit,              0x0128, INT16U,        Some::<u32>(1),    true,      GENERIC),                        // Not EXIF but TIFF   x       x         x             x 
 
