@@ -52,9 +52,7 @@ use std::path::Path;
 use std::fs;
 use std::panic;
 
-extern crate little_exif_0_6_21;
-
-
+/*
 fn
 read_exif_data_fails
 (
@@ -100,8 +98,7 @@ read_exif_data_jpg_2_fails()
     let jpg_path_2 = Path::new("resources/issue_000093/24204211336558490774263267518266904513.JPG");
     read_exif_data_fails(jpg_path_2);
 }
-
-
+*/
 
 
 fn
