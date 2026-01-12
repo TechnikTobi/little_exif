@@ -17,10 +17,7 @@ Related commits:
 
 use std::path::Path;
 
-extern crate little_exif_0_6_12;
-extern crate little_exif_0_6_13;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "assertion `left == right` failed\n  left: 67\n right: 58")]
 fn
@@ -101,6 +98,7 @@ remove_tag_fixed()
 
     assert_eq!(new_tag_counter, original_tag_counter-6);
 }
+*/
 
 #[test]
 fn

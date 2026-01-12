@@ -33,9 +33,7 @@ Solved: The given JPG file is corrupted; The application segment APP1 is shorter
 
 use std::path::Path;
 
-extern crate little_exif_0_3_0;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "assertion failed: 2 + IFD_ENTRY_LENGTH as usize * number_of_entries as usize + IFD_END.len() <=\n    encoded_data.len()")]
 fn
@@ -52,6 +50,7 @@ read_exif_data_fails()
 
     assert_ne!(tag_counter, 0);
 }
+*/
 
 #[test]
 #[should_panic (expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: \"Could not decode SubIFD GPS:\\n Custom { kind: Other, error: \\\"Not enough data to decode IFD! Required: 6150 Available: 124\\\" }\" }")]

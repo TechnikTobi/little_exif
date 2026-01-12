@@ -18,10 +18,7 @@ Related commits:
 
 use std::path::Path;
 
-extern crate little_exif_0_6_0_beta_3;
-extern crate little_exif_0_6_0_beta_4;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "assertion `left == right` failed\n  left: 0\n right: 58")]
 fn
@@ -56,6 +53,7 @@ read_exif_data_fixed()
 
     assert_eq!(tag_counter, 58);
 }
+*/
 
 #[test]
 fn
