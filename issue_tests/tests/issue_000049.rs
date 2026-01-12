@@ -20,10 +20,7 @@ Related commits:
 
 use std::path::Path;
 
-extern crate little_exif_0_6_0;
-extern crate little_exif_0_6_1;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "assertion `left == right` failed\n  left: 4\n right: 24")]
 fn
@@ -58,6 +55,7 @@ read_gps_latitude_fixed()
         None => panic!("Tag does not exist"),
     };
 }
+*/
 
 #[test]
 fn

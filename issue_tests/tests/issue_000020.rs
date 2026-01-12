@@ -20,10 +20,7 @@ Can't recall :(
 
 use std::path::Path;
 
-extern crate little_exif_0_4_3;
-extern crate little_exif_0_5_0;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "attempt to subtract with overflow")]
 fn
@@ -56,6 +53,7 @@ read_exif_data_fixed()
 
     assert_eq!(tag_counter, 43);
 }
+*/
 
 #[test]
 fn

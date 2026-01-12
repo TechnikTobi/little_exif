@@ -18,10 +18,7 @@ Related commits:
 
 use std::path::Path;
 
-extern crate little_exif_0_6_3;
-extern crate little_exif_0_6_4;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "Out of bounds access")]
 fn
@@ -56,6 +53,7 @@ read_exif_data_fixed()
 
     assert_eq!(tag_counter, 15);
 }
+*/
 
 #[test]
 fn

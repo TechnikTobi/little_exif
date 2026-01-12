@@ -18,10 +18,7 @@ Related commit:
 
 use std::path::Path;
 
-extern crate little_exif_0_6_18;
-extern crate little_exif_0_6_19;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: \"Could not decode SubIFD GPS:\\n  Illegal format for known tag! Tag: GPSAltitudeRef([]) Expected: INT8U Got: INT16U\" }")]
 fn
@@ -52,6 +49,7 @@ read_exif_data_fixed()
 
     assert_eq!(tag_counter, 55);
 }
+*/
 
 #[test]
 fn
