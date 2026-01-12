@@ -20,6 +20,43 @@ Can't recall :(
 
 use std::path::Path;
 
+extern crate little_exif_0_4_3;
+extern crate little_exif_0_5_0;
+extern crate little_exif;
+
+#[test]
+#[should_panic (expected = "attempt to subtract with overflow")]
+fn
+read_exif_data_fails()
+{
+    let path = Path::new("resources/issue_000020/2017_emilio_meister_IMG_4436.JPG");
+
+    let mut tag_counter = 0;
+
+    for _ in little_exif_0_4_3::metadata::Metadata::new_from_path(path).unwrap().data()
+    {
+        tag_counter += 1;
+    }
+
+    assert_eq!(tag_counter, 47);
+}
+
+#[test]
+fn
+read_exif_data_fixed()
+{
+    let path = Path::new("resources/issue_000020/2017_emilio_meister_IMG_4436.JPG");
+
+    let mut tag_counter = 0;
+
+    for _ in little_exif_0_5_1::metadata::Metadata::new_from_path(path).unwrap().data()
+    {
+        tag_counter += 1;
+    }
+
+    assert_eq!(tag_counter, 43);
+}
+
 #[test]
 fn
 read_exif_data_current()

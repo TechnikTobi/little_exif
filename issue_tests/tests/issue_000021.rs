@@ -21,6 +21,41 @@ Related commit:
 
 use std::path::Path;
 
+extern crate little_exif_0_6_15;
+extern crate little_exif_0_6_0_beta_1;
+extern crate little_exif;
+
+#[test]
+#[should_panic (expected = "called `Result::unwrap()` on an `Err` value: Custom { kind: Other, error: \"Could not decode SubIFD EXIF:\\n  Illegal format for known tag! Tag: ExposureCompensation([]) Expected: RATIONAL64S Got: RATIONAL64U\" }")]
+fn
+read_exif_data_fails()
+{
+    let png_path = Path::new("resources/issue_000021/dsc22921.jpg");
+
+    let mut tag_counter = 0;
+    for _ in &little_exif_0_6_15::metadata::Metadata::new_from_path(png_path).unwrap()
+    {
+        tag_counter += 1;
+    }
+
+    assert_eq!(tag_counter, 46);
+}
+
+#[test]
+fn
+read_exif_data_fixed()
+{
+    let png_path = Path::new("resources/issue_000021/dsc22921.jpg");
+
+    let mut tag_counter = 0;
+    for _ in &little_exif_0_6_16_beta_1::metadata::Metadata::new_from_path(png_path).unwrap()
+    {
+        tag_counter += 1;
+    }
+
+    assert_eq!(tag_counter, 46);
+}
+
 #[test]
 fn
 read_exif_data_current()

@@ -5,3 +5,46 @@ edition = "2021"
 
 [dev-dependencies]
 little_exif  = { path = ".." }
+
+little_exif_0_3_0 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.3.0" }
+little_exif_0_3_1 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.3.1" }
+little_exif_0_3_2 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.3.2" }
+little_exif_0_3_3 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.3.3" }
+
+little_exif_0_4_0 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.4.0" }
+little_exif_0_4_1 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.4.1" }
+little_exif_0_4_2 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.4.2" }
+little_exif_0_4_3 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.4.3" }
+
+little_exif_0_5_0_beta_0 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.5.0-beta.0" }
+little_exif_0_5_0_beta_1 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.5.0-beta.1" }
+little_exif_0_5_0_beta_2 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.5.0-beta.2" }
+little_exif_0_5_0_beta_3 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.5.0-beta.3" }
+
+little_exif_0_5_0 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.5.0" }
+little_exif_0_5_1 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.5.1" }
+
+little_exif_0_6_0_beta_1 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.0-beta.1" }
+little_exif_0_6_0_beta_2 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.0-beta.2" }
+little_exif_0_6_0_beta_3 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.0-beta.3" }
+little_exif_0_6_0_beta_4 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.0-beta.4" }
+little_exif_0_6_0_beta_5 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.0-beta.5" }
+little_exif_0_6_0_beta_6 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.0-beta.6" }
+little_exif_0_6_0_beta_7 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.0-beta.7" }
+
+little_exif_0_6_0  = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.0"  }
+little_exif_0_6_1  = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.1"  }
+little_exif_0_6_2  = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.2"  }
+little_exif_0_6_3  = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.3"  }
+little_exif_0_6_4  = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.4"  }
+little_exif_0_6_5  = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.5"  }
+little_exif_0_6_6  = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.6"  }
+little_exif_0_6_12 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.12" }
+little_exif_0_6_13 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.13" }
+little_exif_0_6_14 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.14" }
+little_exif_0_6_15 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.15" }
+little_exif_0_6_16_beta_1 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.16-beta.1" }
+little_exif_0_6_18 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.18" }
+little_exif_0_6_19 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.19" }
+little_exif_0_6_20 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.20" }
+little_exif_0_6_21 = { git = "https://github.com/TechnikTobi/little_exif.git", package = "little_exif", tag = "v0.6.21" }
