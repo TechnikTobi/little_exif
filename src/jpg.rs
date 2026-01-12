@@ -96,7 +96,7 @@ clear_metadata
 )
 -> Result<(), std::io::Error>
 {
-    return clear_segment(file_buffer, 0xe1);
+    return clear_segment(file_buffer, 0xe1, Some(&EXIF_HEADER));
 }
 
 
@@ -105,6 +105,7 @@ clear_segment
 (
     file_buffer:    &mut Vec<u8>,
     segment_marker: u8,
+    prefix_bytes:   Option<&[u8]>,
 )
 -> Result<(), std::io::Error>
 {
@@ -159,24 +160,51 @@ clear_segment
                 // Backup current position, account for the 4 bytes already read
                 let backup_position = cursor.position() - 4;
 
+                let mut do_not_delete_segment_override = false;
+
+                // If we are given prefix bytes to check for, read them in
+                if let Some(prefix) = prefix_bytes
+                {
+                    let mut prefix_buffer = vec![0u8; prefix.len()];
+                    cursor.read_exact(&mut prefix_buffer)?;
+                    cursor.seek(SeekFrom::Current(-(prefix_buffer.len() as i64)))?;
+
+                    // We are given a prefix but don't know yet if it matches
+                    // So set the override to true for now as we might have to
+                    // skip deleting this segment if we don't get a match
+                    do_not_delete_segment_override = true;
+
+                    // Only delete the segment if the prefix matches
+                    if prefix_buffer.as_slice() == prefix
+                    {
+                        do_not_delete_segment_override = false;
+                    }
+                }
+
                 // Skip the segment
                 cursor.seek(SeekFrom::Current(remaining_length as i64))?;
 
-                // Copy data from there onwards into a buffer
-                let mut temp_buffer = Vec::new();
-                cursor.read_to_end(&mut temp_buffer)?;
+                // Overwrite segment only if we are allowed to
+                if !do_not_delete_segment_override
+                {
+                    // Copy data from there onwards into a buffer
+                    let mut temp_buffer = Vec::new();
+                    cursor.read_to_end(&mut temp_buffer)?;
 
-                // Overwrite segment
-                cursor.set_position(backup_position);
-                cursor.write_all(&temp_buffer)?;
+                    // Overwrite segment
+                    cursor.set_position(backup_position);
+                    cursor.write_all(&temp_buffer)?;
 
-                // Cut off right-most bytes that are now duplicates due 
-                // to the previous shift-to-left operation
-                let cutoff_index = backup_position as usize + temp_buffer.len();
-                cursor.get_mut().truncate(cutoff_index);
+                    // Cut off right-most bytes that are now duplicates due 
+                    // to the previous shift-to-left operation
+                    let cutoff_index = 0
+                        + backup_position as usize 
+                        + temp_buffer.len();
+                    cursor.get_mut().truncate(cutoff_index);
 
-                // Seek to start of next segment
-                cursor.set_position(backup_position);
+                    // Seek to start of next segment
+                    cursor.set_position(backup_position);
+                }
             }
             else if byte_buffer[0] == 0xda
             {
@@ -218,6 +246,7 @@ file_clear_segment
 (
     path:           &Path,
     segment_marker: u8,
+    prefix_bytes:   Option<&[u8]>,
 )
 -> Result<(), std::io::Error>
 {
@@ -227,7 +256,7 @@ file_clear_segment
     let mut file_buffer: Vec<u8> = std::fs::read(path)?;
 
     // Clear the metadata in the APP1 segment from the file buffer
-    clear_segment(&mut file_buffer, segment_marker)?;
+    clear_segment(&mut file_buffer, segment_marker, prefix_bytes)?;
     
     // Write the file
     // Possible to optimize further by returning the purged bytestream itself?
@@ -244,7 +273,7 @@ file_clear_metadata
 )
 -> Result<(), std::io::Error>
 {
-    return file_clear_segment(path, 0xe1);
+    return file_clear_segment(path, 0xe1, Some(&EXIF_HEADER));
 }
 
 

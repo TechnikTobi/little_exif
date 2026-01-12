@@ -235,7 +235,7 @@ Metadata
         match file_type
         {
             FileExtension::JPEG 
-                =>  jpg::clear_segment(file_buffer, 0xec),
+                =>  jpg::clear_segment(file_buffer, 0xec, None),
             _
                 => return io_error!(
                     Other, 
@@ -263,7 +263,7 @@ Metadata
         match file_type
         {
             FileExtension::JPEG 
-                =>  jpg::clear_segment(file_buffer, 0xed),
+                =>  jpg::clear_segment(file_buffer, 0xed, None),
             _
                 => return io_error!(
                     Other, 
@@ -292,7 +292,7 @@ Metadata
         match file_type
         {
             FileExtension::JPEG 
-                =>  jpg::file_clear_segment(path, 0xec),
+                =>  jpg::file_clear_segment(path, 0xec, None),
             _
                 => return io_error!(
                     Other, 
@@ -321,7 +321,7 @@ Metadata
         match file_type
         {
             FileExtension::JPEG 
-                =>  jpg::file_clear_segment(path, 0xed),
+                =>  jpg::file_clear_segment(path, 0xed, None),
             _
                 => return io_error!(
                     Other, 
