@@ -121,7 +121,19 @@ clear_segment
     loop
     {
         // Read next byte into buffer
-        cursor.read_exact(&mut byte_buffer)?;
+        if let Err(e) = cursor.read_exact(&mut byte_buffer)
+        {
+            if e.kind() == std::io::ErrorKind::UnexpectedEof
+            {
+                // Reached end of file without encountering EOI marker 0xd9
+                // See issue #93 for examples where this happens
+                return Ok(());
+            }
+            else
+            {
+                return Err(e);
+            }
+        }
 
         if previous_byte_was_marker_prefix
         {
@@ -170,7 +182,21 @@ clear_segment
             {
                 // See `generic_read_metadata`
                 cursor.seek(SeekFrom::Current(remaining_length as i64))?;
-                skip_ecs(&mut cursor)?;
+
+                if let Err(e) = skip_ecs(&mut cursor)
+                {
+                    if e.kind() == std::io::ErrorKind::UnexpectedEof
+                    {
+                        // Again, same as the check above, we have reached end
+                        // of file without encountering EOI marker 0xd9
+                        // See issue #93 for examples where this happens
+                        return Ok(());
+                    }
+                    else
+                    {
+                        return Err(e);
+                    }
+                }
             }
             else
             {
@@ -327,7 +353,6 @@ skip_ecs
 )
 -> Result<(), std::io::Error>
 {
-
     let mut byte_buffer = [0u8; 1];                                             // A buffer for reading in a byte of data from the file
     let mut previous_byte_was_marker_prefix = false;                            // A boolean for remembering if the previous byte was a marker prefix (0xFF)
 
