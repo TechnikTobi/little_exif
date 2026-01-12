@@ -63,6 +63,67 @@ use std::path::Path;
 use std::fs::copy;
 use std::fs::remove_file;
 
+extern crate little_exif_0_6_20;
+extern crate little_exif_0_5_0_beta_2;
+extern crate little_exif;
+
+#[test]
+#[should_panic (expected = "called `Option::unwrap()` on a `None` value")]
+fn
+write_exif_data_fails()
+{
+    let path_orig = Path::new("resources/issue_000076/2017_stockholm_emilio.jpg");
+    let path_copy = Path::new("resources/issue_000076/2017_stockholm_emilio_copy.jpg");
+
+    // Remove file from previous run and replace it with fresh copy
+    if let Err(error) = remove_file(&path_copy)
+    {
+        println!("{}", error);
+    }
+    copy(&path_orig, &path_copy).unwrap();
+
+    // Ensure that the JPEG does not have any EXIF data as stated in the
+    // original problem description: "Take a JPEG image without EXIF metadata"
+    let exif_read_result = little_exif_0_6_20::metadata::Metadata::new_from_path(path_copy);
+    assert!(exif_read_result.is_err());
+    assert_eq!(
+        exif_read_result.unwrap_err().get_ref().unwrap().to_string(),
+        "No EXIF data found!".to_string()
+    );
+
+    let metadata = little_exif_0_6_20::metadata::Metadata::new();
+    metadata.write_to_file(path_copy).unwrap();
+}
+
+
+#[test]
+fn
+write_exif_data_fixed()
+{
+    let path_orig = Path::new("resources/issue_000076/2017_stockholm_emilio.jpg");
+    let path_copy = Path::new("resources/issue_000076/2017_stockholm_emilio_copy2.jpg");
+
+    // Remove file from previous run and replace it with fresh copy
+    if let Err(error) = remove_file(&path_copy)
+    {
+        println!("{}", error);
+    }
+    copy(&path_orig, &path_copy).unwrap();
+
+    // Ensure that the JPEG does not have any EXIF data as stated in the
+    // original problem description: "Take a JPEG image without EXIF metadata"
+    let exif_read_result = little_exif_0_6_21::metadata::Metadata::new_from_path(path_copy);
+    assert!(exif_read_result.is_err());
+    assert_eq!(
+        exif_read_result.unwrap_err().get_ref().unwrap().to_string(),
+        "No EXIF data found!".to_string()
+    );
+
+    let metadata = little_exif_0_6_21::metadata::Metadata::new();
+    metadata.write_to_file(path_copy).unwrap();
+}
+
+
 #[test]
 fn
 write_exif_data_current()
