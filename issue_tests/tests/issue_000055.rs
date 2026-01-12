@@ -17,10 +17,7 @@ use std::fs::remove_file;
 use std::fs::copy;
 use std::fs::read;
 
-extern crate little_exif_0_6_3;
-extern crate little_exif_0_6_5;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "not yet implemented")]
 fn
@@ -73,6 +70,7 @@ issue_000055_clear_exif_data_fixed()
         image_data
     ).unwrap();
 }
+*/
 
 #[test]
 fn

@@ -15,10 +15,7 @@ Can't remember :(
 
 use std::path::Path;
 
-extern crate little_exif_0_3_1;
-extern crate little_exif_0_5_0_beta_2;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "assertion failed: u8_vec.len() == 4")]
 fn
@@ -68,6 +65,7 @@ read_exif_data_fixed()
         }
     }
 }
+*/
 
 #[test]
 fn

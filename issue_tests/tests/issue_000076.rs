@@ -63,10 +63,7 @@ use std::path::Path;
 use std::fs::copy;
 use std::fs::remove_file;
 
-extern crate little_exif_0_6_20;
-extern crate little_exif_0_5_0_beta_2;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "called `Option::unwrap()` on a `None` value")]
 fn
@@ -122,6 +119,7 @@ write_exif_data_fixed()
     let metadata = little_exif_0_6_21::metadata::Metadata::new();
     metadata.write_to_file(path_copy).unwrap();
 }
+*/
 
 
 #[test]

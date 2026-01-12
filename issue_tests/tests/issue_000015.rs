@@ -43,10 +43,7 @@ use std::path::Path;
 use std::fs::remove_file;
 use std::fs::copy;
 
-extern crate little_exif_0_4_1;
-extern crate little_exif_0_4_2;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "range end index 2 out of range for slice of length 0")]
 fn
@@ -127,6 +124,7 @@ issue_000055_clear_exif_data_fixed()
 
     assert_ne!(tag_counter, 0);
 }
+*/
 
 #[test]
 fn

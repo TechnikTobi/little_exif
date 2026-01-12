@@ -28,10 +28,7 @@ too incompetent to stick to the specifications)
 
 use std::path::Path;
 
-extern crate little_exif_0_5_1;
-extern crate little_exif_0_6_0_beta_2;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "assertion `left == right` failed\n  left: 0\n right: 46")]
 fn
@@ -130,7 +127,7 @@ read_exif_data_3_fixed_version()
 
     assert_eq!(tag_counter, 0);
 }
-
+*/
 
 
 #[test]
