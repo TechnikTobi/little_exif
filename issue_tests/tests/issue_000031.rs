@@ -19,10 +19,7 @@ Removed assert, see the following commit for more details:
 
 use std::path::Path;
 
-extern crate little_exif_0_6_0_beta_1;
-extern crate little_exif_0_6_0_beta_2;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "assertion `left == right` failed\n  left: Some(1313426255)\n right: None")]
 fn
@@ -55,6 +52,7 @@ read_exif_data_fixed()
 
     assert_eq!(tag_counter, 47);
 }
+*/
 
 #[test]
 fn

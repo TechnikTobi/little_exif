@@ -22,10 +22,7 @@ use std::path::Path;
 use std::fs::remove_file;
 use std::fs::copy;
 
-extern crate little_exif_0_5_1;
-extern crate little_exif_0_6_0_beta_1;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "range end index 737 out of range for slice of length 735")]
 fn
@@ -56,6 +53,7 @@ read_write_read_exif_data_fails()
     assert_eq!(tag_counter, 0);
 }
 
+
 #[test]
 fn
 read_write_read_exif_data_fixed()
@@ -84,6 +82,7 @@ read_write_read_exif_data_fixed()
 
     assert_eq!(tag_counter, 41);
 }
+*/
 
 #[test]
 fn

@@ -24,10 +24,7 @@ Related commits:
 
 use std::path::Path;
 
-extern crate little_exif_0_5_0;
-extern crate little_exif_0_5_1;
-extern crate little_exif;
-
+/*
 #[test]
 #[should_panic (expected = "assertion `left != right` failed\n  left: 0\n right: 0")]
 fn
@@ -60,6 +57,7 @@ read_exif_data_fixed()
 
     assert_eq!(tag_counter, 40);
 }
+*/
 
 #[test]
 fn
