@@ -70,6 +70,41 @@ To run a single test from that file use
 cargo test --test issue_000002 read_and_write_exif_data_1
 ```
 
+## Logging
+
+This library uses the [`log`](https://crates.io/crates/log) crate for various levels of logging.
+
+### Setup
+
+To enable this logging, you will need to add & initialize a logger implementation, such as [`env_logger`](https://docs.rs/env_logger/latest/env_logger/), but there are other loggers available, see the list on [available logging implementations](https://docs.rs/log/latest/log/#available-logging-implementations) in the [`log`](https://docs.rs/log/latest/log/) crate.
+
+Add the implementation to your crate:
+
+```bash
+cargo add env_logger
+```
+
+Initialize the logger in your application:
+
+```rust
+fn main() 
+{
+    env_logger::init();
+
+    // your little_exif code ...
+}
+```
+
+### Usage
+
+In `env_logger`, you can view `little_exif`'s debug-level logs, for example, by setting the `RUST_LOG` env var:
+```bash
+env RUST_LOG=debug cargo run
+```
+
+For other log levels, see [`env_logger`'s documentation](https://docs.rs/env_logger/latest/env_logger/) or the documentation of the logger of your choice.
+
+
 ## FAQ
 
 ### I tried writing the ImageDescription tag on a JPEG file, but it does not show up. Why?
