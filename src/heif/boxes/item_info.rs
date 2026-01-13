@@ -4,8 +4,6 @@
 use std::io::Read;
 use std::io::Seek;
 
-use crate::debug_println;
-
 use crate::endian::Endian;
 use crate::general_file_io::io_error;
 use crate::u8conversion::U8conversion;
@@ -99,7 +97,7 @@ ItemInfoEntryBox
         additional_data.try_reserve_exact(data_left_to_read as usize)?;
         cursor.take(data_left_to_read as u64).read_to_end(&mut additional_data)?;
 
-        debug_println!("ID: {}, Name: {}", item_id, item_name);
+        log::trace!("Successfully read in ItemInfoEntryBox with ID: {item_id}, Name: {item_name}");
 
         return Ok(ItemInfoEntryBox {
             header,

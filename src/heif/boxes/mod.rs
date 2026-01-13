@@ -4,7 +4,6 @@
 use std::io::Read;
 use std::io::Seek;
 
-use crate::debug_println;
 use crate::heif::boxes::item_reference::ItemReferenceBox;
 
 use super::box_type::BoxType;
@@ -76,7 +75,7 @@ read_next_box
 {
     let header = BoxHeader::read_box_header(cursor)?;
 
-    debug_println!("{:?}", header);
+    log::trace!("Read in next HEIF box - Success! Header: {:?}", header);
 
     return read_box_based_on_header(cursor, header);
 }

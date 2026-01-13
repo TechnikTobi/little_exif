@@ -4,7 +4,6 @@
 use std::io::Read;
 use std::io::Seek;
 
-use crate::debug_println;
 use crate::io_error_plain;
 use crate::endian::Endian;
 use crate::general_file_io::io_error;
@@ -218,7 +217,7 @@ ItemLocationEntry
             extents
         };
 
-        debug_println!("{:?}", entry);
+        log::trace!("Read in ItemLocationEntry: {:?}", entry);
 
         return Ok(entry);
     }

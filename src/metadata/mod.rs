@@ -12,8 +12,6 @@ use std::io::Read;
 use std::io::Seek;
 use std::io::Write;
 
-use log::error;
-
 use crate::endian::*;
 use crate::general_file_io::io_error;
 use crate::general_file_io::EXIF_HEADER;
@@ -99,7 +97,7 @@ Metadata
             }
             else if let Err(decode_error) = decoding_result
             {
-                error!("Error during decoding (1): {decode_error}");
+                log::error!("Error during decoding (1): {decode_error}");
                 return Err(decode_error);
             }
             else
@@ -109,7 +107,7 @@ Metadata
         }
         else if let Err(decode_error) = raw_pre_decode_general
         {
-            error!("Error during decoding (2): {decode_error:?}");
+            log::error!("Error during decoding (2): {decode_error:?}");
             return Err(decode_error);
         }
         else

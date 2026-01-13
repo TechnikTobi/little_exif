@@ -1,8 +1,6 @@
 // Copyright © 2024-2026 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use log::warn;
-
 use crate::exif_tag::ExifTag;
 
 use super::ImageFileDirectory;
@@ -24,7 +22,7 @@ ImageFileDirectory
     {
         if input_tag.get_group() != self.ifd_type
         {
-            warn!("The tag {input_tag:?} is set in an IFD that has not a matching group.");
+            log::warn!("The tag {input_tag:?} is set in an IFD that has not a matching group.");
         }
         self.tags.retain(|tag| tag.as_u16() != input_tag.as_u16());
         self.tags.push(input_tag);

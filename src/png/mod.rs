@@ -17,7 +17,6 @@ use std::path::Path;
 
 use crc::Crc;
 use crc::CRC_32_ISO_HDLC;
-use log::warn;
 use miniz_oxide::deflate::compress_to_vec_zlib;
 use text::construct_similar_with_new_data;
 use text::get_data_from_text_chunk;
@@ -221,7 +220,7 @@ get_next_chunk_descriptor
             return Ok(png_chunk)
         },
         Err(e) => {
-            warn!("Unknown PNG chunk name: {chunk_name}");
+            log::warn!("Unknown PNG chunk name: {chunk_name}");
             return Ok(e)
         }
     };

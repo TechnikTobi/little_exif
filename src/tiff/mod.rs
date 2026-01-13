@@ -5,8 +5,6 @@ use std::io::Seek;
 use std::io::Read;
 use std::io::Write;
 
-use log::warn;
-
 use crate::general_file_io::EXIF_HEADER;
 use crate::io_error;
 use crate::metadata::Metadata;
@@ -108,19 +106,19 @@ check_for_required_tags
     // BitsPerSample: 0x0102
     if metadata.get_tag_by_hex(0x0102, Some(GENERIC)).count() == 0
     {
-        warn!("All TIFF variants (except for bilevel graphics) require BitsPerSample (0x0102) tag!");
+        log::warn!("All TIFF variants (except for bilevel graphics) require BitsPerSample (0x0102) tag!");
     }
 
     // SamplesPerPixel: 0x0115
     if metadata.get_tag_by_hex(0x0115, Some(GENERIC)).count() == 0
     {
-        warn!("Full-Color TIFFs require SamplesPerPixel (0x0115) tag!");
+        log::warn!("Full-Color TIFFs require SamplesPerPixel (0x0115) tag!");
     }
 
     // ColorMap: 0x0140
     if metadata.get_tag_by_hex(0x0140, Some(GENERIC)).count() == 0
     {
-        warn!("Palette-Color TIFFs require ColorMap (0x0140) tag!");
+        log::warn!("Palette-Color TIFFs require ColorMap (0x0140) tag!");
     }
 
     return Ok(())

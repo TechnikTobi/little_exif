@@ -6,8 +6,6 @@ use std::io::Read;
 use std::io::Seek;
 use std::io::Write;
 
-use log::debug;
-
 use crate::general_file_io::EXIF_HEADER;
 use crate::metadata::Metadata;
 use crate::util::insert_multiple_at;
@@ -399,7 +397,7 @@ convert_to_extended_format
     let (width, height) = match first_chunk.descriptor().header().as_str()
     {
         "VP8" 
-            => {debug!("VP8 !"); io_error!(Other, "Conversion from Simple File Format with 'VP8' chunk to Extended File Format not yet implemented!") },
+            => {log::debug!("VP8 !"); io_error!(Other, "Conversion from Simple File Format with 'VP8' chunk to Extended File Format not yet implemented!") },
         "VP8L"
             => get_dimension_info_from_vp8l_chunk(first_chunk.payload()),
         _ 

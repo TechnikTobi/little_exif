@@ -1,7 +1,6 @@
 // Copyright © 2025 Tobias J. Prisching <tobias.prisching@icloud.com> and CONTRIBUTORS
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
-use log::error;
 use quick_xml::events::BytesStart;
 use quick_xml::events::Event;
 use quick_xml::Reader;
@@ -103,7 +102,7 @@ remove_exif_from_xmp
             }
 
             Err(error_message) => {
-                error!(
+                log::error!(
                     "Error at position {}: {:?}", 
                     reader.buffer_position(), 
                     error_message

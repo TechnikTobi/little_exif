@@ -4,8 +4,6 @@
 use std::io::Cursor;
 use std::path::Path;
 
-use log::warn;
-
 use crate::filetype::get_file_type;
 use crate::filetype::FileExtension;
 use crate::general_file_io::io_error;
@@ -52,7 +50,7 @@ Metadata
         {
             if file_type != detected_type
             {
-                warn!(
+                log::warn!(
                     "The supplied file type information ({file_type:?}) and \
                     detected ({detected_type:?}) do NOT match!"
                 );
@@ -60,7 +58,7 @@ Metadata
         }
         else
         {
-            warn!("Could not automatically detect file type!");
+            log::warn!("Could not automatically detect file type!");
         }
 
         let raw_pre_decode_general = match file_type
@@ -145,13 +143,13 @@ Metadata
         {
             if extension_based_file_type != content_based_file_type
             {
-                warn!("File extension and file content yield different file type, content takes precedence");
+                log::warn!("File extension and file content yield different file type, content takes precedence");
                 extension_based_file_type = content_based_file_type;
             }
         }
         else
         {
-            warn!("Could not determine file type based on content, fall back on file extension");
+            log::warn!("Could not determine file type based on content, fall back on file extension");
         }
 
         let file_type = extension_based_file_type;
