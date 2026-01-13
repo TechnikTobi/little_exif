@@ -189,8 +189,8 @@ mod tests
         for (input, expected) in table 
         {
             let result = FileExtension::from_str(input);
-            assert!(result.is_ok(), "Failed to parse '{}'", input);
-            assert_eq!(result.unwrap(), expected, "Parsed value mismatch for '{}'", input);
+            assert!(result.is_ok(), "Failed to parse '{input}'");
+            assert_eq!(result.unwrap(), expected, "Parsed value mismatch for '{input}'");
         }
     }
 }

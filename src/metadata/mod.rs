@@ -356,7 +356,7 @@ use super::Metadata;
     new_test_1()
     -> Result<(), std::io::Error>
     {
-        let image_data = read("tests/read_sample.tif").unwrap();
+        let image_data = read("tests/read_sample.tif")?;
 
         Metadata::decode(&mut Cursor::new(&image_data))?;
 
@@ -369,8 +369,8 @@ use super::Metadata;
     new_test_2()
     -> Result<(), std::io::Error>
     {
-        // let image_data = read("tests/multi_page.tif").unwrap();
-        let image_data = read("tests/multi_page_mod.tif").unwrap();
+        // let image_data = read("tests/multi_page.tif")?;
+        let image_data = read("tests/multi_page_mod.tif")?;
 
         let data = Metadata::decode(&mut Cursor::new(&image_data))?;
 

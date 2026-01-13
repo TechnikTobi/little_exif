@@ -390,9 +390,9 @@ macro_rules! build_tag_enum {
 							}
 
 							// Check if the value has a predefined number of components
-							if $component_number.is_some()
+							if let Some(num_of_components) = $component_number
 							{
-								return $component_number.unwrap() as u32;
+								return num_of_components as u32;
 							}
 
 							// Otherwise, return 0
