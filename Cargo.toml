@@ -48,7 +48,7 @@ brotli = "8.0.1"
 name = "tests"
 path = "tests/main.rs"
 
-# Used for fuzzer - fast iterations, with optimalzations and debug info
+# Used for fuzzer - fast iterations, with optimizations and debug info
 [profile.release]
 overflow-checks = true
 debug = true
