@@ -128,13 +128,15 @@ MetaBox
     (
         &mut self
     )
+    -> u64
     {
         if self.get_item_reference_box().is_some()
         {
-            return;
+            return 0;
         }
 
-        let new_iref_box = ItemReferenceBox::new();
+        let new_iref_box      = ItemReferenceBox::new();
+        let new_iref_box_size = new_iref_box.get_header().get_box_size();
 
         let index = self.other_boxes
             .iter()
@@ -142,6 +144,8 @@ MetaBox
             .expect("Could not find iinf box to insert iref before");
          
         self.other_boxes.insert(index, Box::new(new_iref_box));
+
+        return new_iref_box_size;
     }
 }
 
