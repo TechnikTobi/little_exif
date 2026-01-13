@@ -67,7 +67,13 @@ it was before, as the garbage collection can't clean up the old commits due
 to the tags still pointing to them.
 Unfortunately, there is currently no known way that works for "re-mapping"
 tags to the new commits. So, in order to fully resize the repo, the tags 
-needed to be removed locally & remotely
+needed to be removed locally & remotely. 
+
+Check if any tag points to an old SHA, as those blobs are still alive (and
+consuming storage space on the GitHub server):
+```bash
+git show-ref --tags
+```
 
 ### Remove the local tags
 Can't fully remember if this is 100% required/if this command even works,
@@ -96,4 +102,9 @@ Verify that no remote tags exist anymore by re-running the previous command.
 Optional: Perform one final force-push:
 ```bash
 git push --force --all origin
+```
+
+To check whether or not this was successful, check size using
+```bash
+git count-objects -vH
 ```
