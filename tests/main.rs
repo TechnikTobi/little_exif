@@ -504,7 +504,6 @@ write_to_file_png()
 	Ok(())
 }
 
-#[ignore]
 #[test]
 fn 
 write_to_file_webp_simple_lossy() 
