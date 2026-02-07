@@ -2,6 +2,7 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use crate::endian::Endian;
+use crate::exif_tag_format::RATIONAL64S;
 use crate::exif_tag_format::RATIONAL64U;
 use crate::rational::*;
 use crate::general_file_io::io_error;
@@ -129,6 +130,17 @@ decode_tag_with_format_exceptions
 
 				return raw_tag.set_value_to_iR64_vec(iR64_data).map_err(
 					|e| io_error_plain!(Other, format!("Could not decode tag {:?}: {}", raw_tag, e))
+				);
+			}
+
+			(ExifTagFormat::RATIONAL64U, ExifTagFormat::RATIONAL64S) => {
+			    let iR64_data = <RATIONAL64S as U8conversion<RATIONAL64S>>::from_u8_vec(raw_data, endian);
+				let uR64_data = iR64_data
+                    .into_iter().map(|x| x.into()).collect::<Vec<u32>>()
+                    .into_iter().map(|x| x.into()).collect::<Vec<uR64>>();
+
+				return raw_tag.set_value_to_uR64_vec(uR64_data).map_err(
+                    |e| io_error_plain!(Other, format!("Could not decode tag {:?}: {}", raw_tag, e))
 				);
 			}
 

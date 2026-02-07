@@ -3,6 +3,7 @@
 
 use crate::endian::Endian;
 use crate::rational::iR64;
+use crate::rational::uR64;
 use crate::u8conversion::*;
 
 use super::ExifTag;
@@ -58,4 +59,5 @@ build_set_function![(set_value_to_int8u_vec,  Vec<u8>,   INT8U)];
 build_set_function![(set_value_to_int16u_vec, Vec<u16>,  INT16U)];
 build_set_function![(set_value_to_int32u_vec, Vec<u32>,  INT32U)];
 build_set_function![(set_value_to_iR64_vec,   Vec<iR64>, RATIONAL64S)];
+build_set_function![(set_value_to_uR64_vec,   Vec<uR64>, RATIONAL64U)];
 build_set_function![(set_value_to_undef,      Vec<u8>,   UNDEF)];
