@@ -2,7 +2,7 @@
 // See https://github.com/TechnikTobi/little_exif#license for licensing details
 
 use std::io;
-use paste::paste;
+use pastey::paste;
 
 use crate::endian::Endian;
 use crate::rational::*;
