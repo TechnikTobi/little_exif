@@ -131,11 +131,11 @@ get_exif_filtered_event<'a>
     new_event.extend_attributes(
         event.attributes()
             .filter_map(Result::ok)
-            .filter(|attribute| 
+            .filter(|attribute|
                 {
                     if let Ok(key) = std::str::from_utf8(
                         attribute.key.as_ref()
-                    ) 
+                    )
                     {
                         !key.starts_with("exif:")
                     } else {
@@ -146,4 +146,46 @@ get_exif_filtered_event<'a>
     );
 
     return Ok(new_event);
+}
+
+#[cfg(test)]
+mod tests
+{
+    use super::remove_exif_from_xmp;
+
+    /// Strips `exif:` elements and attributes while preserving the rest of the
+    /// XMP payload, including XML entity references such as `&amp;`.
+    ///
+    /// quick-xml 0.38 began reporting entity references as their own
+    /// `Event::GeneralRef` events rather than inlining them in the surrounding
+    /// `Event::Text`. This test guards that the filtering loop still forwards
+    /// those references verbatim, so text like `Tom &amp; Jerry` survives the
+    /// read/write round-trip unchanged.
+    #[test]
+    fn
+    strips_exif_and_preserves_entities()
+    -> Result<(), Box<dyn std::error::Error>>
+    {
+        let input = concat!(
+            "<rdf:Description ",
+            "xmlns:exif=\"http://ns.adobe.com/exif/1.0/\" ",
+            "xmlns:dc=\"http://purl.org/dc/elements/1.1/\" ",
+            "exif:ColorSpace=\"1\">",
+            "<exif:ISOSpeedRatings>100</exif:ISOSpeedRatings>",
+            "<dc:title>Tom &amp; Jerry</dc:title>",
+            "</rdf:Description>"
+        );
+
+        let output = String::from_utf8(remove_exif_from_xmp(input.as_bytes())?)?;
+
+        // The exif element and the exif: attribute are removed ...
+        assert!(!output.contains("ISOSpeedRatings"), "exif element leaked: {output}");
+        assert!(!output.contains("ColorSpace"),      "exif attribute leaked: {output}");
+
+        // ... while non-exif content and the entity reference are preserved.
+        assert!(output.contains("dc:title"),         "dc:title dropped: {output}");
+        assert!(output.contains("Tom &amp; Jerry"),  "entity not preserved: {output}");
+
+        Ok(())
+    }
 }
