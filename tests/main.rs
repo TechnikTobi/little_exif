@@ -374,6 +374,71 @@ file_clear_metadata_jxl()
 	Ok(())
 }
 
+const JXL_SIGNATURE_BOX: [u8; 12] = [
+	0x00, 0x00, 0x00, 0x0c,
+	b'J', b'X', b'L', b' ',
+	0x0d, 0x0a, 0x87, 0x0a,
+];
+
+#[test]
+fn
+clear_metadata_jxl_handles_zero_sized_boxes()
+-> Result<(), std::io::Error>
+{
+	let mut with_exif = JXL_SIGNATURE_BOX.to_vec();
+	with_exif.extend(0u32.to_be_bytes());
+	with_exif.extend(b"Exif");
+	with_exif.extend([0, 0, 0, 6]);
+
+	Metadata::clear_metadata(
+		&mut with_exif,
+		little_exif::filetype::FileExtension::JXL
+	)?;
+	assert_eq!(with_exif, JXL_SIGNATURE_BOX);
+
+	Ok(())
+}
+
+#[test]
+fn
+clear_metadata_jxl_handles_extended_box_sizes()
+-> Result<(), std::io::Error>
+{
+	let mut image_data = JXL_SIGNATURE_BOX.to_vec();
+	image_data.extend(1u32.to_be_bytes());
+	image_data.extend(b"Exif");
+	image_data.extend(20u64.to_be_bytes());
+	image_data.extend([0, 0, 0, 6]);
+
+	Metadata::clear_metadata(
+		&mut image_data,
+		little_exif::filetype::FileExtension::JXL
+	)?;
+	assert_eq!(image_data, JXL_SIGNATURE_BOX);
+
+	Ok(())
+}
+
+#[test]
+fn
+file_clear_metadata_jxl_handles_zero_sized_box()
+-> Result<(), std::io::Error>
+{
+	let path = Path::new("tests/issue_99_special_box_sizes.jxl");
+
+	let mut with_exif = JXL_SIGNATURE_BOX.to_vec();
+	with_exif.extend(0u32.to_be_bytes());
+	with_exif.extend(b"Exif");
+	with_exif.extend([0, 0, 0, 6]);
+	std::fs::write(path, with_exif)?;
+
+	Metadata::file_clear_metadata(path)?;
+	assert_eq!(std::fs::read(path)?, JXL_SIGNATURE_BOX);
+
+	remove_file(path)?;
+	Ok(())
+}
+
 #[test]
 fn
 file_write_and_clear_metadata_jpg()
