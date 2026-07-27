@@ -73,6 +73,22 @@ new_from_vec()
 	let _ = Metadata::new_from_vec(&image_data, little_exif::filetype::FileExtension::JPEG).unwrap();
 }
 
+#[test]
+fn
+from_u16_with_invalid_data_returns_error()
+{
+	let raw_data = vec![1];
+	let result = ExifTag::from_u16_with_data(
+		0xffff,
+		&little_exif::exif_tag_format::ExifTagFormat::INT16U,
+		&raw_data,
+		&little_exif::endian::Endian::Little,
+		&little_exif::ifd::ExifTagGroup::GENERIC,
+	);
+
+	assert!(result.is_err());
+}
+
 
 
 fn
