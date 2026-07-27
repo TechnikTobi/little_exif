@@ -227,14 +227,17 @@ ItemLocationEntry
     (
         &self
     )
-    -> ItemConstructionMethod
+    -> Result<ItemConstructionMethod, std::io::Error>
     {
         return match self.reserved_and_construction_method as u8 & 0x0f
         {
-            0 => ItemConstructionMethod::FILE,
-            1 => ItemConstructionMethod::IDAT,
-            2 => ItemConstructionMethod::ITEM,
-            _ => panic!("Unknown item construction method!")
+            0 => Ok(ItemConstructionMethod::FILE),
+            1 => Ok(ItemConstructionMethod::IDAT),
+            2 => Ok(ItemConstructionMethod::ITEM),
+            method => io_error!(
+                InvalidData,
+                format!("Unknown item construction method: {method}")
+            ),
         };
     }
 
@@ -316,6 +319,22 @@ ItemLocationBox
             1 | 2 => temp as u8 & 0x0f,
             _     => 0,
         };
+
+        for (name, size) in [
+            ("offset_size",      offset_size),
+            ("length_size",      length_size),
+            ("base_offset_size", base_offset_size),
+            ("index_size",       index_size),
+        ]
+        {
+            if !matches!(size, 0 | 4 | 8)
+            {
+                return io_error!(
+                    InvalidData,
+                    format!("Invalid {name}: {size}")
+                );
+            }
+        }
 
         let item_count = match header.get_version()
         {
@@ -423,10 +442,11 @@ ItemLocationBox
         &mut self,
         value: i64
     )
+    -> Result<(), std::io::Error>
     {
         for item in &mut self.items
         {
-            if item.get_construction_method() == ItemConstructionMethod::IDAT
+            if item.get_construction_method()? == ItemConstructionMethod::IDAT
             {
                 // In this case the offset information is relative to the
                 // position of an idat box -> not affected by change in length
@@ -434,7 +454,7 @@ ItemLocationBox
                 continue;
             }
 
-            if item.get_construction_method() == ItemConstructionMethod::ITEM
+            if item.get_construction_method()? == ItemConstructionMethod::ITEM
             {
                 // Offset is relative to another item's extent
                 // Also nothing to do here (for now...)
@@ -458,6 +478,8 @@ ItemLocationBox
                 extent.extent_offset = (extent.extent_offset as i64 + value) as u64;
             }
         }
+
+        return Ok(());
     }
 }
 
