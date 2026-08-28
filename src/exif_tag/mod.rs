@@ -4,7 +4,7 @@
 pub(crate) mod decode;
 pub(super) mod set_value_to;
 
-use paste::paste;
+use pastey::paste;
 
 use crate::endian::Endian;
 use crate::u8conversion::*;
