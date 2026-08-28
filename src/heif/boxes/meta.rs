@@ -128,24 +128,30 @@ MetaBox
     (
         &mut self
     )
-    -> u64
+    -> Result<u64, std::io::Error>
     {
         if self.get_item_reference_box().is_some()
         {
-            return 0;
+            return Ok(0);
         }
 
         let new_iref_box      = ItemReferenceBox::new();
         let new_iref_box_size = new_iref_box.get_header().get_box_size();
 
-        let index = self.other_boxes
+        let Some(index) = self.other_boxes
             .iter()
             .position(|x| x.get_header().get_box_type() == BoxType::iinf)
-            .expect("Could not find iinf box to insert iref before");
+        else
+        {
+            return io_error!(
+                InvalidData,
+                "Could not find iinf box to insert iref before"
+            );
+        };
          
         self.other_boxes.insert(index, Box::new(new_iref_box));
 
-        return new_iref_box_size;
+        return Ok(new_iref_box_size);
     }
 }
 

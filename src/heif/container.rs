@@ -169,7 +169,7 @@ HeifContainer
             return io_error!(Other, "Expected exactly one EXIF extent info entry");
         }
 
-        match exif_item.get_construction_method()
+        match exif_item.get_construction_method()?
         {
             super::boxes::item_location::ItemConstructionMethod::FILE => {
                 if let Some(first) = exif_extents.first() {
@@ -362,7 +362,8 @@ HeifContainer
 
             // If there is no iref box yet, create one so we can find one,
             // and get the size delta of the new box for extents
-            let mut iref_size_delta = self.get_meta_box_mut()?.create_new_item_reference_box_if_none_exists_yet();
+            let mut iref_size_delta = self.get_meta_box_mut()?
+                .create_new_item_reference_box_if_none_exists_yet()?;
 
             // Acquire the item location, the item information and the item 
             // reference boxes that are inside the meta box. For some reason, 
@@ -431,7 +432,7 @@ HeifContainer
             // Fix the extents in the iloc box
             iloc.add_to_extents(
                 (iloc_size_delta + iinf_size_delta + iref_size_delta) as i64
-            );
+            )?;
 
             // Fix up the size of the meta box as well
             let new_box_size = self.get_meta_box()?.serialize().len() as u64;
@@ -490,7 +491,7 @@ HeifContainer
                  continue;
             }
 
-            if item.get_construction_method() == ItemConstructionMethod::IDAT
+            if item.get_construction_method()? == ItemConstructionMethod::IDAT
             {
                 // In this case the offset information is relative to the
                 // position of an idat box -> not affected by change in length
@@ -498,7 +499,7 @@ HeifContainer
                 continue;
             }
 
-            if item.get_construction_method() == ItemConstructionMethod::ITEM
+            if item.get_construction_method()? == ItemConstructionMethod::ITEM
             {
                 // Offset is relative to another item's extent
                 // Also nothing to do here (for now...)

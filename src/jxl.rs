@@ -123,6 +123,90 @@ file_check_signature
     return Ok(file);
 }
 
+struct
+JxlBoxHeader
+{
+    size:        u64,
+    header_size: u64,
+    box_type:    [u8; 4],
+}
+
+impl
+JxlBoxHeader
+{
+    fn
+    payload_size
+    (
+        &self
+    )
+    -> u64
+    {
+        self.size - self.header_size
+    }
+}
+
+fn
+read_box_header
+<T: Read>
+(
+    reader:       &mut T,
+    bytes_left:   u64,
+)
+-> Result<JxlBoxHeader, std::io::Error>
+{
+    if bytes_left < 8
+    {
+        return io_error!(InvalidData, "Truncated JXL box header!");
+    }
+
+    let mut length_buffer = [0u8; 4];
+    let mut type_buffer   = [0u8; 4];
+    reader.read_exact(&mut length_buffer)?;
+    reader.read_exact(&mut type_buffer)?;
+
+    let short_size = from_u8_vec_res_macro!(u32, &length_buffer, &Endian::Big)?;
+    let (size, header_size) = match short_size
+    {
+        0 => (bytes_left, 8),
+        1 => {
+            if bytes_left < 16
+            {
+                return io_error!(InvalidData, "Truncated extended JXL box header!");
+            }
+
+            let mut extended_length_buffer = [0u8; 8];
+            reader.read_exact(&mut extended_length_buffer)?;
+            (
+                from_u8_vec_res_macro!(u64, &extended_length_buffer, &Endian::Big)?,
+                16,
+            )
+        },
+        size => (size as u64, 8),
+    };
+
+    if size < header_size
+    {
+        return io_error!(
+            InvalidData,
+            format!("Invalid JXL box size {size}: header requires {header_size} bytes")
+        );
+    }
+
+    if size > bytes_left
+    {
+        return io_error!(
+            InvalidData,
+            format!("Invalid JXL box size {size}: only {bytes_left} bytes remain")
+        );
+    }
+
+    return Ok(JxlBoxHeader {
+        size,
+        header_size,
+        box_type: type_buffer,
+    });
+}
+
 
 
 pub(crate) fn
@@ -140,27 +224,36 @@ clear_metadata
     {
         if position >= file_buffer.len() { return Ok(()); }
 
-        // Get the first 4 bytes at the current cursor position to determine
-        // the length of the current box 
-        let length_buffer = file_buffer[position..position+4].to_vec();
-        let length        = from_u8_vec_res_macro!(u32, &length_buffer, &Endian::Big)? as usize;
+        let bytes_left = file_buffer.len() - position;
+        let mut cursor = Cursor::new(&file_buffer[position..]);
+        let header = read_box_header(&mut cursor, bytes_left as u64)?;
+        let length = usize::try_from(header.size).map_err(|_| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "JXL box size does not fit into memory address space"
+            )
+        })?;
+        let header_size = header.header_size as usize;
+        let box_end = position + length;
 
-        // Next, read the box type
-        let type_buffer = file_buffer[position+4..position+8].to_vec();
+        if header.box_type == BROB_BOX && header.payload_size() < 4
+        {
+            return io_error!(InvalidData, "JXL brob box is missing its wrapped box type!");
+        }
 
         if box_contains_exif(
             &mut Cursor::new(
-                file_buffer[position+8..position+12].to_vec()
+                &file_buffer[position+header_size..box_end]
             ), 
-            [type_buffer[0], type_buffer[1], type_buffer[2], type_buffer[3]]
+            header.box_type
         )?
         {
-            range_remove(file_buffer, position, position+length);
+            range_remove(file_buffer, position, box_end);
         }
         else
         {
             // Not an EXIF box so skip it
-            position += length;
+            position = box_end;
         }
     }
 }
@@ -174,24 +267,24 @@ file_clear_metadata
 {
     let mut file = file_check_signature(path)?;
 
-    let mut length_buffer = [0u8; 4];
-    let mut type_buffer   = [0u8; 4];
-
     loop
     {
         let position        = file.stream_position()?;
         let old_file_length = file.metadata()?.len();
         if position >= old_file_length { return Ok(()); }
 
-        file.read_exact(&mut length_buffer)?;
-        file.read_exact(&mut type_buffer)?;
+        let header = read_box_header(&mut file, old_file_length - position)?;
+        let box_end = position + header.size;
 
-        let length = from_u8_vec_res_macro!(u32, &length_buffer, &Endian::Big)? as usize;
+        if header.box_type == BROB_BOX && header.payload_size() < 4
+        {
+            return io_error!(InvalidData, "JXL brob box is missing its wrapped box type!");
+        }
 
-        if box_contains_exif(&mut file, type_buffer)?
+        if box_contains_exif(&mut file, header.box_type)?
         {
             // Seek past the EXIF box ...
-            file.seek(SeekFrom::Current((length-8) as i64))?;
+            file.seek(SeekFrom::Start(box_end))?;
 
 
             // ... copy everything from here onwards into a buffer ...
@@ -207,13 +300,12 @@ file_clear_metadata
 
             // ... and finally update the file size - otherwise there will be
             // duplicate bytes at the end!
-            file.set_len(old_file_length - length as u64)?;
+            file.set_len(old_file_length - header.size)?;
         }
         else
         {
             // Not an EXIF box so skip it
-            assert_eq!(position+8, file.stream_position()?);
-            file.seek(SeekFrom::Current((length-8) as i64))?;
+            file.seek(SeekFrom::Start(box_end))?;
         }
     }
 }

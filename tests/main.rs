@@ -73,6 +73,22 @@ new_from_vec()
 	let _ = Metadata::new_from_vec(&image_data, little_exif::filetype::FileExtension::JPEG).unwrap();
 }
 
+#[test]
+fn
+from_u16_with_invalid_data_returns_error()
+{
+	let raw_data = vec![1];
+	let result = ExifTag::from_u16_with_data(
+		0xffff,
+		&little_exif::exif_tag_format::ExifTagFormat::INT16U,
+		&raw_data,
+		&little_exif::endian::Endian::Little,
+		&little_exif::ifd::ExifTagGroup::GENERIC,
+	);
+
+	assert!(result.is_err());
+}
+
 
 
 fn
@@ -355,6 +371,71 @@ file_clear_metadata_jxl()
 	// Clear metadata
 	Metadata::file_clear_metadata(Path::new("tests/sample_copy_no_metadata2.jxl"))?;
 
+	Ok(())
+}
+
+const JXL_SIGNATURE_BOX: [u8; 12] = [
+	0x00, 0x00, 0x00, 0x0c,
+	b'J', b'X', b'L', b' ',
+	0x0d, 0x0a, 0x87, 0x0a,
+];
+
+#[test]
+fn
+clear_metadata_jxl_handles_zero_sized_boxes()
+-> Result<(), std::io::Error>
+{
+	let mut with_exif = JXL_SIGNATURE_BOX.to_vec();
+	with_exif.extend(0u32.to_be_bytes());
+	with_exif.extend(b"Exif");
+	with_exif.extend([0, 0, 0, 6]);
+
+	Metadata::clear_metadata(
+		&mut with_exif,
+		little_exif::filetype::FileExtension::JXL
+	)?;
+	assert_eq!(with_exif, JXL_SIGNATURE_BOX);
+
+	Ok(())
+}
+
+#[test]
+fn
+clear_metadata_jxl_handles_extended_box_sizes()
+-> Result<(), std::io::Error>
+{
+	let mut image_data = JXL_SIGNATURE_BOX.to_vec();
+	image_data.extend(1u32.to_be_bytes());
+	image_data.extend(b"Exif");
+	image_data.extend(20u64.to_be_bytes());
+	image_data.extend([0, 0, 0, 6]);
+
+	Metadata::clear_metadata(
+		&mut image_data,
+		little_exif::filetype::FileExtension::JXL
+	)?;
+	assert_eq!(image_data, JXL_SIGNATURE_BOX);
+
+	Ok(())
+}
+
+#[test]
+fn
+file_clear_metadata_jxl_handles_zero_sized_box()
+-> Result<(), std::io::Error>
+{
+	let path = Path::new("tests/issue_99_special_box_sizes.jxl");
+
+	let mut with_exif = JXL_SIGNATURE_BOX.to_vec();
+	with_exif.extend(0u32.to_be_bytes());
+	with_exif.extend(b"Exif");
+	with_exif.extend([0, 0, 0, 6]);
+	std::fs::write(path, with_exif)?;
+
+	Metadata::file_clear_metadata(path)?;
+	assert_eq!(std::fs::read(path)?, JXL_SIGNATURE_BOX);
+
+	remove_file(path)?;
 	Ok(())
 }
 
@@ -654,6 +735,95 @@ write_to_file_avif_no_iref()
 	metadata.write_to_file(Path::new("tests/write_sample_no_iref_copy.avif"))?;
 
 	Ok(())
+}
+
+fn
+find_bytes
+(
+	haystack: &[u8],
+	needle:   &[u8],
+)
+-> usize
+{
+	haystack
+		.windows(needle.len())
+		.position(|window| window == needle)
+		.expect("Test fixture should contain requested box")
+}
+
+fn
+set_be_u32
+(
+	bytes:  &mut [u8],
+	offset: usize,
+	value:  u32,
+)
+{
+	bytes[offset..offset + 4].copy_from_slice(&value.to_be_bytes());
+}
+
+#[test]
+fn
+read_from_vec_avif_rejects_invalid_construction_method()
+{
+	let mut image_data = read("tests/read_sample.avif").unwrap();
+	let meta_type = find_bytes(&image_data, b"meta");
+	let iloc_type = find_bytes(&image_data, b"iloc");
+
+	// iloc v1 stores a construction method after each item ID.
+	image_data[iloc_type + 4] = 1;
+	let first_item = iloc_type + 12;
+	image_data.splice(first_item + 2..first_item + 2, [0, 0]);
+	let second_item = first_item + 20;
+	image_data.splice(second_item + 2..second_item + 2, [0, 15]);
+
+	let iloc_start = iloc_type - 4;
+	let meta_start = meta_type - 4;
+	let iloc_size = u32::from_be_bytes(
+		image_data[iloc_start..iloc_start + 4].try_into().unwrap()
+	);
+	let meta_size = u32::from_be_bytes(
+		image_data[meta_start..meta_start + 4].try_into().unwrap()
+	);
+	set_be_u32(&mut image_data, iloc_start, iloc_size + 4);
+	set_be_u32(&mut image_data, meta_start, meta_size + 4);
+
+	let result = Metadata::new_from_vec(
+		&image_data,
+		little_exif::filetype::FileExtension::HEIF
+	);
+	assert!(result.is_err());
+}
+
+#[test]
+fn
+write_to_vec_avif_rejects_invalid_iloc_field_sizes()
+{
+	let mut image_data = read("tests/write_sample_no_iref.avif").unwrap();
+	let meta_type = find_bytes(&image_data, b"meta");
+	let iloc_type = find_bytes(&image_data, b"iloc");
+	let iloc_start = iloc_type - 4;
+	let meta_start = meta_type - 4;
+
+	// Empty iloc boxes must still validate their field widths.
+	image_data[iloc_type + 8] = 0x34;
+	image_data[iloc_type + 10..iloc_type + 12].copy_from_slice(&0u16.to_be_bytes());
+	image_data.drain(iloc_type + 12..iloc_type + 26);
+
+	let iloc_size = u32::from_be_bytes(
+		image_data[iloc_start..iloc_start + 4].try_into().unwrap()
+	);
+	let meta_size = u32::from_be_bytes(
+		image_data[meta_start..meta_start + 4].try_into().unwrap()
+	);
+	set_be_u32(&mut image_data, iloc_start, iloc_size - 14);
+	set_be_u32(&mut image_data, meta_start, meta_size - 14);
+
+	let result = Metadata::new().write_to_vec(
+		&mut image_data,
+		little_exif::filetype::FileExtension::HEIF
+	);
+	assert!(result.is_err());
 }
 
 #[cfg(test)]

@@ -11,6 +11,18 @@ use crate::u8conversion::*;
 use crate::exif_tag_format::*;
 use crate::ifd::ExifTagGroup;
 
+fn
+decode_raw_data
+<T: U8conversion<T>>
+(
+	raw_data: &[u8],
+	endian:   &Endian,
+)
+-> Result<T, String>
+{
+	T::from_u8_vec_res(raw_data, endian).map_err(|error| error.to_string())
+}
+
 #[allow(non_camel_case_types)]
 #[derive(PartialEq)]
 pub enum
@@ -173,16 +185,19 @@ macro_rules! build_tag_enum {
 				match (hex_value, group)
 				{
 					$(
-						($hex_value, ExifTagGroup::$group) => Ok(ExifTag::$tag(
-							<paste!{[<$format_enum>]} as U8conversion<paste!{[<$format_enum>]}>>::from_u8_vec(raw_data, endian)
-						)),
+						($hex_value, ExifTagGroup::$group) => decode_raw_data::<paste!{[<$format_enum>]}>(raw_data, endian)
+							.map(ExifTag::$tag),
 					)*
 
-					(0x0111, _) => Ok(ExifTag::StripOffsets(   <INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian), Vec::new())),
-					(0x0117, _) => Ok(ExifTag::StripByteCounts(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian),           )),
+					(0x0111, _) => decode_raw_data::<INT32U>(raw_data, endian)
+						.map(|value| ExifTag::StripOffsets(value, Vec::new())),
+					(0x0117, _) => decode_raw_data::<INT32U>(raw_data, endian)
+						.map(ExifTag::StripByteCounts),
 
-					(0x0201, _) => Ok(ExifTag::ThumbnailOffset(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian), Vec::new())),
-					(0x0202, _) => Ok(ExifTag::ThumbnailLength(<INT32U as U8conversion<INT32U>>::from_u8_vec(&raw_data, endian),           )),
+					(0x0201, _) => decode_raw_data::<INT32U>(raw_data, endian)
+						.map(|value| ExifTag::ThumbnailOffset(value, Vec::new())),
+					(0x0202, _) => decode_raw_data::<INT32U>(raw_data, endian)
+						.map(ExifTag::ThumbnailLength),
 
 					_ => {
 						// In this case, the given hex_value represents a tag that is unknown
@@ -190,16 +205,16 @@ macro_rules! build_tag_enum {
 						{
 							ExifTagFormat::INT8U       => Ok(ExifTag::UnknownINT8U(      <INT8U       as U8conversion<INT8U      >>::from_u8_vec(raw_data, endian), hex_value, *group)),
 							ExifTagFormat::STRING      => Ok(ExifTag::UnknownSTRING(     <STRING      as U8conversion<STRING     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
-							ExifTagFormat::INT16U      => Ok(ExifTag::UnknownINT16U(     <INT16U      as U8conversion<INT16U     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
-							ExifTagFormat::INT32U      => Ok(ExifTag::UnknownINT32U(     <INT32U      as U8conversion<INT32U     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
-							ExifTagFormat::RATIONAL64U => Ok(ExifTag::UnknownRATIONAL64U(<RATIONAL64U as U8conversion<RATIONAL64U>>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::INT16U      => decode_raw_data::<INT16U     >(raw_data, endian).map(|value| ExifTag::UnknownINT16U(     value, hex_value, *group)),
+							ExifTagFormat::INT32U      => decode_raw_data::<INT32U     >(raw_data, endian).map(|value| ExifTag::UnknownINT32U(     value, hex_value, *group)),
+							ExifTagFormat::RATIONAL64U => decode_raw_data::<RATIONAL64U>(raw_data, endian).map(|value| ExifTag::UnknownRATIONAL64U(value, hex_value, *group)),
 							ExifTagFormat::INT8S       => Ok(ExifTag::UnknownINT8S(      <INT8S       as U8conversion<INT8S      >>::from_u8_vec(raw_data, endian), hex_value, *group)),
 							ExifTagFormat::UNDEF       => Ok(ExifTag::UnknownUNDEF(      <UNDEF       as U8conversion<UNDEF      >>::from_u8_vec(raw_data, endian), hex_value, *group)),
-							ExifTagFormat::INT16S      => Ok(ExifTag::UnknownINT16S(     <INT16S      as U8conversion<INT16S     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
-							ExifTagFormat::INT32S      => Ok(ExifTag::UnknownINT32S(     <INT32S      as U8conversion<INT32S     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
-							ExifTagFormat::RATIONAL64S => Ok(ExifTag::UnknownRATIONAL64S(<RATIONAL64S as U8conversion<RATIONAL64S>>::from_u8_vec(raw_data, endian), hex_value, *group)),
-							ExifTagFormat::FLOAT       => Ok(ExifTag::UnknownFLOAT(      <FLOAT       as U8conversion<FLOAT      >>::from_u8_vec(raw_data, endian), hex_value, *group)),
-							ExifTagFormat::DOUBLE      => Ok(ExifTag::UnknownDOUBLE(     <DOUBLE      as U8conversion<DOUBLE     >>::from_u8_vec(raw_data, endian), hex_value, *group)),
+							ExifTagFormat::INT16S      => decode_raw_data::<INT16S     >(raw_data, endian).map(|value| ExifTag::UnknownINT16S(     value, hex_value, *group)),
+							ExifTagFormat::INT32S      => decode_raw_data::<INT32S     >(raw_data, endian).map(|value| ExifTag::UnknownINT32S(     value, hex_value, *group)),
+							ExifTagFormat::RATIONAL64S => decode_raw_data::<RATIONAL64S>(raw_data, endian).map(|value| ExifTag::UnknownRATIONAL64S(value, hex_value, *group)),
+							ExifTagFormat::FLOAT       => decode_raw_data::<FLOAT      >(raw_data, endian).map(|value| ExifTag::UnknownFLOAT(      value, hex_value, *group)),
+							ExifTagFormat::DOUBLE      => decode_raw_data::<DOUBLE     >(raw_data, endian).map(|value| ExifTag::UnknownDOUBLE(     value, hex_value, *group)),
 						}
 					},
 				}
