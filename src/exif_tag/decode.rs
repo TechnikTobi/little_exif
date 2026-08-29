@@ -20,7 +20,7 @@ decode_tag_with_format_exceptions
 (
 	raw_tag:  &ExifTag,
 	format:    ExifTagFormat,
-	raw_data: &Vec<u8>,
+	raw_data: &[u8],
 	endian:   &Endian,
 	hex_tag:   u16,
 	group:    &ExifTagGroup
@@ -138,7 +138,7 @@ decode_tag_with_format_exceptions
 					raw_tag.as_u16()    == 0x001b            && // GPSProcessingMethod	
 					raw_tag.get_group() == ExifTagGroup::GPS
 				{
-					return raw_tag.set_value_to_undef(raw_data.clone()).map_err(
+					return raw_tag.set_value_to_undef(raw_data.to_vec()).map_err(
 						|e| io_error_plain!(Other, format!("Could not decode tag {:?}: {}", raw_tag, e))
 					);
 				}

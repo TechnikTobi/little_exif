@@ -76,9 +76,8 @@ fn run_for_file_types(data: &[u8]) {
     ];
 
     for file_type in file_types.iter() {
-        match Metadata::new_from_vec(&data.to_vec(), *file_type) {
+        match Metadata::new_from_vec(data, *file_type) {
             Ok(metadata) => {
-                // process_metadata_strict(data, metadata.clone(), *file_type);
                 process_metadata_non_strict(data, metadata.clone(), *file_type);
                 clean_metadata(metadata);
             }
