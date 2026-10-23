@@ -153,6 +153,10 @@ clear_segment
 
             // Decode the length to determine how much more data there is
             let length = from_u8_vec_res_macro!(u16, &length_buffer, &Endian::Big)?;
+            if length < 2
+            {
+                return io_error!(InvalidData, "Mangled JPG data encountered!");
+            }
             let remaining_length = (length - 2) as usize;
 
             if byte_buffer[0] == segment_marker                                 // Given marker, e.g. for APP1
