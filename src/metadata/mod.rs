@@ -7,6 +7,7 @@ pub mod edit;
 pub mod get;
 pub mod set;
 
+use std::collections::HashSet;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
@@ -304,8 +305,15 @@ Metadata
         // Decode all the IFDs
         let mut ifds = Vec::new();
         let mut generic_ifd_nr = 0;
+        let mut visited_ifd_offsets = HashSet::new();
         while let Some(ifd_offset) = ifd_offset_option
         {
+            // A malformed next-IFD pointer may reference an earlier IFD,
+            // including itself. Without cycle detection this loop can keep
+            // appending IFDs until the process runs out of memory.
+            if !visited_ifd_offsets.insert(ifd_offset) {
+                return io_error!(Other, format!("Cyclic IFD link at offset {ifd_offset}"));
+            }
             data_cursor.set_position(data_start_position);
             data_cursor.seek(std::io::SeekFrom::Current(ifd_offset as i64))?;
 
@@ -350,6 +358,29 @@ mod tests
     use std::io::Cursor;
 
 use super::Metadata;
+
+    #[test]
+    fn rejects_self_referential_ifd() {
+        // Little-endian TIFF, IFD0 at offset 8, zero tags, next IFD = 8.
+        let data = vec![
+            0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x08, 0x00, 0x00, 0x00,
+        ];
+        let err = Metadata::decode(&mut Cursor::new(&data)).unwrap_err();
+        assert!(err.to_string().contains("Cyclic IFD link"), "{err}");
+    }
+
+    #[test]
+    fn rejects_two_ifd_cycle() {
+        // IFD at offset 8 -> IFD at offset 14 -> IFD at offset 8.
+        let data = vec![
+            0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x0e, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x08, 0x00, 0x00, 0x00,
+        ];
+        let err = Metadata::decode(&mut Cursor::new(&data)).unwrap_err();
+        assert!(err.to_string().contains("Cyclic IFD link"), "{err}");
+    }
 
     #[test]
     fn
